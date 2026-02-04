@@ -1,0 +1,92 @@
+npx expo start          --> to start development on mobile
+
+npm run reset-project   --> to reset project to bare minimum code
+
+npm install nativewind tailwindcss react-native-reanimated react-native-safe-area-context
+
+npx tailwindcss init
+
+override tailwind.config.js with configuration from nativewind expo site
+
+create file globals.css inside /app
+
+create babel.config.js inside root directory and copy default babel preset from same site
+
+npx expo customize metro.config.js --> modify metro.config.js
+
+create nativewind-env.d.ts and place /// some weird text inside
+
+fix the path inside metro.config.js and make its ./app/globals
+
+npx expo start --clear  --> to restart fresh and make sure changes are saved
+
+create tailwind theme colors inside tailwind.config.js
+
+rnfes --> basic code snippet
+////////////////////////////////////////////////////////////////////////
+import React from 'react'
+import { StyleSheet, Text, View } from 'react-native'
+
+
+const NAME = () => {
+    return (
+        <View>
+            <Text>NAME</Text>
+        </View>
+    )
+}
+
+export default NAME
+const styles = StyleSheet.create({})
+////////////////////////////////////////////////////////////////////////
+
+rnfe
+////////////////////////////////////////////////////////////////////////
+import React from 'react'
+import { Text, View } from 'react-native'
+
+
+const Profile = () => {
+    return (
+        <View>
+            <Text>Profile</Text>
+        </View>
+    )
+}
+export default Profile
+////////////////////////////////////////////////////////////////////////
+
+Dynamic Routing
+
+make a folder "movie"
+then add a file inside called [id].tsx
+now when you route to /movie/100
+it will open the screen [id].tsx will value id = 100
+you can use that id to load movie specific data for any movie
+
+you can add more files inside, the expo router will check first for exact matches
+before the dynamic ones
+
+you can make private files by naming start with underscore '_file.tsx' it will never match
+by the expo router
+
+////////////////////////////////////////////////////////////////////////
+
+You need to figure out exactly what are the screens needed in the app design concept
+for the movie app:
+1- Home screen
+2- Search Results screen
+3- Movie Details
+4- Saved Movies screen
+5- Auth (personal screen)
+
+Group route folder:
+Lets you route inside without writing their names in the url
+/app/root/Home
+/app/(root)/Home === /app/Home
+
+////////////////////////////////////////////////////////////////////////
+
+Changing App icon:
+change path in app.json
+
