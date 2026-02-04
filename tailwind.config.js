@@ -25,6 +25,10 @@ module.exports = {
           100: '#221f3d',
           200: '#0f0d23',
         }
+      },
+      fontFamily: {
+        'amiri': ['Amiri-Regular'],
+        'amiri-bold': ['Amiri-Bold'],
       }
     },
   },
