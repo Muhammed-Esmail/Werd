@@ -2,6 +2,8 @@ import React, { useState } from 'react'
 import { FlatList, Text, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import SearchBar from "@/components/SearchBar";
+import { router } from 'expo-router';
+import { SessionType, ReaderParams } from '@/types/reader_data';
 
 // Sample surah data
 const SURAH_DATA = [
@@ -14,7 +16,6 @@ const SURAH_DATA = [
   { id: 7, nameEn: "Al-A'raf", nameAr: 'الأعراف', ayahs: 206, type: 'Meccan' },
   { id: 8, nameEn: 'Al-Anfal', nameAr: 'الأنفال', ayahs: 75, type: 'Medinan' },
 ]
-
 
 const SurahCard = ({id, nameEn, nameAr, ayahs, type, onPress} : any) => {
   let id_padded = `${id}`
@@ -64,8 +65,16 @@ const explore = () => {
   const [filter, setFilter] = useState('ALL');
 
   const handleSurahPress = (surah: any) => {
-    console.log('Selected surah:', surah)
-    // Add navigation here
+
+    const params : ReaderParams = {
+      surahId: surah,
+      sessionType: 'full_surah'
+    };
+
+    router.push({
+      pathname: '/reader',
+      params: params as any
+    })
   }
 
   return (
@@ -99,7 +108,7 @@ const explore = () => {
                 nameAr={item.nameAr}
                 ayahs={item.ayahs}
                 type={item.type}
-                onPress={() => handleSurahPress(item)}
+                onPress={() => handleSurahPress(item.id)}
               />
             )}
             contentContainerStyle={{paddingBottom: 120}}

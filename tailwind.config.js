@@ -30,6 +30,7 @@ module.exports = {
       fontFamily: {
         'amiri': ['Amiri-Regular'],
         'amiri-bold': ['Amiri-Bold'],
+        'quran': ['UthmanTN1-Ver10']
       }
     },
   },
