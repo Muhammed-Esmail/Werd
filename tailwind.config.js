@@ -13,8 +13,9 @@ module.exports = {
         goldGlow: 'rgba(212, 175, 55, 0.15)',
         matteBlack: '#0A0A0A',
         surfaceBlack: '#121212',
+        bgBlack: '#0c0c0c',
         borderDark: '#1F1F1F',
-        mutedWhite: 'rgba(255, 255, 255, 0.3)',
+        mutedWhite: 'rgba(255, 255, 255, 0.42)',
         successGreen: '#10B981',
         light: {
           100: '#D6C6FF',

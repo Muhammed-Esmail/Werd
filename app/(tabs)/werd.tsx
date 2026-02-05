@@ -35,13 +35,12 @@ const TodayCard = () => {
   }
 
   return (
-    <View className='bg-white border-[2px] border-light-300 rounded-[20px]'>
+    <View className='bg-surfaceBlack border-[1px] border-mutedWhite rounded-[20px]'>
       {/* Surah Name + Pages + Icon */}
-      
       <View className='flex-row justify-between mt-3 '>
         {/* Surah Name + Pages */}
         <View className='gap-2 mt-5 ml-5'>
-          <Text className='font-bold text-[25px]'>Al-Baqarah</Text>
+          <Text className='font-bold text-[25px] text-white'>Al-Baqarah</Text>
           <Text className='text-mutedWhite'>Pages 10-25</Text>
         </View>
         <View className='border-[2px] border-primaryGold rounded-[20px] bg-goldGlow p-4 justify-center items-center mr-5 mt-4' >
@@ -69,7 +68,7 @@ const TodayCard = () => {
       <TouchableOpacity
         onPress={onReadTodaysWerd}
         activeOpacity={0.7}
-        className='mt-5 h-20 p-4 bg-goldLight rounded-2xl w-[80%] items-center justify-center self-center'
+        className='mt-5 h-20 p-4 bg-primaryGold rounded-2xl w-[80%] items-center justify-center self-center'
       >
         <View className='items-center justify-center'>
           <Text className='font-bold tracking-wide text-[17px]'>Read Today's Werd</Text>
@@ -79,10 +78,10 @@ const TodayCard = () => {
       <TouchableOpacity
         onPress={onCompleteManually}
         activeOpacity={0.7}
-        className='mt-5 h-15 p-4 bg-mutedWhite border-[1px] border-light-300 rounded-2xl w-[80%] items-center justify-center self-center mb-7'
+        className='mt-5 h-15 p-4 bg-mutedBlack border-[1px] border-light-300 rounded-2xl w-[80%] items-center justify-center self-center mb-7'
       >
         <View className='items-center justify-center'>
-          <Text className='font-bold tracking-wide text-[15px]'>Mark as Completed Manually</Text>
+          <Text className='font-bold tracking-wide text-[15px] text-mutedWhite'>Mark as Completed Manually</Text>
         </View>
       </TouchableOpacity>
 
@@ -92,7 +91,7 @@ const TodayCard = () => {
 
 const werd = () => {
   return (
-    <SafeAreaView className="flex-1 bg-matteBlack">
+    <SafeAreaView className="flex-1 bg-bgBlack">
       
       {/* Header Container */}
       <View className='w-[100%] justify-center items-center'>
@@ -111,7 +110,7 @@ const werd = () => {
       <View className='mt-10 ml-4 mr-4'>
         <View className='flex-row justify-between mb-3'>
           
-          <Text className='font-bold tracking-widest'>TODAY'S GOAL</Text>
+          <Text className='font-bold tracking-widest text-mutedWhite'>TODAY'S GOAL</Text>
 
           <Text className='text-xs text-primaryGold font-bold'>WERD #04</Text>
 

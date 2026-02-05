@@ -3,7 +3,7 @@ import { View } from 'react-native'
 
 const streaks = () => {
   return (
-    <View className="flex-1 bg-matteBlack">
+    <View className="flex-1 bg-bgBlack">
     </View>
   )
 }
