@@ -27,9 +27,9 @@ const SurahCard = ({id, nameEn, nameAr, ayahs, type, onPress} : any) => {
     >
       {/* Left Number */}
       <View className='flex-row gap-5'>
-        <Text className='ml-5 mt-5 text-goldLight'>{id_padded}</Text>
+        <Text className='ml-5 mt-5 text-primaryGold opacity-50'>{id_padded}</Text>
         <View>
-          <Text>{nameEn}</Text>
+          <Text className='text-white font-bold text-[15px]'>{nameEn}</Text>
           <View className='flex-row justify-between w-40 mt-2'>
             <Text className='text-mutedWhite'>{ayahs} AYAHS</Text> 
             <Text className='text-mutedWhite'> {type}</Text>
@@ -38,7 +38,7 @@ const SurahCard = ({id, nameEn, nameAr, ayahs, type, onPress} : any) => {
       </View>
 
       {/* Arabic Name */}
-      <View>
+      <View className='justify-center'>
         <Text className='mr-5 text-primaryGold text-2xl font-amiri-bold'>{nameAr}</Text>
       </View>
     </TouchableOpacity>
@@ -69,7 +69,7 @@ const explore = () => {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-matteBlack">
+    <SafeAreaView className="flex-1 bg-bgBlack">
           {/* Header Container */}
           <View className='w-[100%] justify-center items-center'>
             <Text className='text-primaryGold mt-10 text-xl font-bold'> SURAH EXPLORER </Text>
