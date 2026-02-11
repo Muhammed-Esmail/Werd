@@ -24,13 +24,11 @@ export const SurahSection = ({ segment, isLastSegment } : Props) => {
             {showBismillah && <Bismillah/>}
             
             {/* Ayaht */}
-            <View className='mr-3 mr-3'>
-                <Text className=''>
+            <View className='mr-3 mb-5'>
+                <Text className='text-right text-white text-[24px] leading-[40px] mt-2 ml-3' style={{ fontFamily: 'U3', writingDirection: 'rtl', textAlign: 'justify' }}>
                     {segment.ayahs.map(({text, number}) => (
-
-                        <Ayah text={text} number={number}/>
-
-                    ))}
+                        <Ayah key={number} text={text} number={number}/>
+                    ))}                    
                 </Text>
             </View>
         </View>

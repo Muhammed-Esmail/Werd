@@ -9,15 +9,7 @@ return number
     .join('');
 }
 
-export const Ayah = ({text, number} : any) => {
-  return (
-    <>
-      <Text className="text-white text-[24px] font-quran leading-loose flex-1 text-right">
-        {text}{' '}
-        <Text className="text-primaryGold">
-          ﴿{formatAyahNumber(number)}﴾ { }
-        </Text>
-      </Text>
-    </>
-  );
+export const Ayah = ({text, number}: any) => {
+  // Return just the formatted string, not a Text component
+  return `${text} ﴿${formatAyahNumber(number)}﴾`;
 }

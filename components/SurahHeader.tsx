@@ -6,11 +6,11 @@ export const SurahHeader = ({ surahId }: { surahId: number }) => {
   const SurahPng = SURAH_NAMES[surahId];
 
   return (
-    <View className="h-[100px] w-full justify-center items-center overflow-hidden border-b border-t border-white/30">
+    <View className="h-[100px] w-full justify-center items-center overflow-hidden border-b border-t border-l border-r border-white/30">
         {SurahPng && (
             <Image
                 source={SurahPng}
-                className="w-full" 
+                className="w-full"
                 style={{ 
                     height: 150, // Large height to allow "cropping" via the parent View
                     position: 'absolute',

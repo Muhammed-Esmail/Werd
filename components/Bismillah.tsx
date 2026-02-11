@@ -4,7 +4,7 @@ const BismillahImg = require('@/assets/surah_names/bismillah.png');
 
 export const Bismillah = () => {
     return (
-        <View className="h-[80px] w-full mb-5 justify-center items-center overflow-hidden border-white/30">
+        <View className="h-[45px] w-full mb-2 mt-6 justify-center items-center border-white/30">
             <Image 
                 source={BismillahImg} 
                 className="w-full" 

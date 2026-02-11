@@ -1,47 +1,37 @@
-import { View, Text, FlatList, SafeAreaViewBase, ScrollView, TouchableOpacity } from 'react-native'
+import { Text, ScrollView } from 'react-native'
 import React from 'react'
 import { ReadingSession } from '@/types/quran_data'
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, useLocalSearchParams, useNavigation } from 'expo-router';
-import { getMockReadingData } from '@/types/mocks/mock_data';
-import { SurahSection } from '@/components/SurahSection';
+import { Stack } from 'expo-router';
+import { ReaderInfiniteScroll } from '@/components/ReaderInfiniteScroll';
+import { ReaderPages } from '@/components/ReaderPages';
 
 interface ReaderProps {
-  readingSession: ReadingSession;
+    readingSession: ReadingSession;
+}
+
+const ReaderMode = {
+    PAGES: 'pages',
+    INFINITE_SCROLL: 'infinite_scroll',
 }
 
 const Reader = () => {
 
-    const navigation = useNavigation();
+    const mode = ReaderMode.INFINITE_SCROLL;
 
-    const { surahId, sessionType } = useLocalSearchParams<{ 
-        surahId: string;
-        sessionType: string;
-    }>();
-
-    // Fetch text somehow using params
-    // ....
-
-    const segments = getMockReadingData('full');
-
+    if(mode === ReaderMode.PAGES) {
+        return <ReaderPages/>
+    }
+    else if(mode === ReaderMode.INFINITE_SCROLL) {
+        return <ReaderInfiniteScroll/>
+    }
+    
     return (
         <SafeAreaView className='bg-matteBlack h-full'>
-            
             <Stack.Screen options={{ headerShown: false }} />
-
-            {/* <TouchableOpacity
-                onPress={() => navigation.goBack()}
-            >
-                <Text>Go Back</Text>
-            
-            </TouchableOpacity> */}
-            
             <ScrollView>
-            
-            <SurahSection segment={segments.segments[0]} isLastSegment={false} />
-
+                <Text className='text-white'>Reader Mode Coming Soon...</Text>
             </ScrollView>
-
         </SafeAreaView>
     )
 }
