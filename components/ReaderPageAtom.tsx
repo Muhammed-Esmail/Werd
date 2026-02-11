@@ -2,13 +2,26 @@ import { View, Text } from "react-native";
 import { SurahHeader } from "./SurahHeader";
 import { Bismillah } from "./Bismillah";
 import { Ayah } from "./Ayah";
-import { PageItem } from "@/types/quran_data";
+import { PageAtom } from "@/types/quran_data";
 
 interface Props {
-  items: PageItem[];
+  items: PageAtom[];
 }
 
-export const ReaderPageItem = ({ items }: Props) => {
+const formatAyahNumber = (number: number): string => {
+    const arabicNumerals = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+    
+    let formattedNumber= number
+    .toString()
+    .split('')
+    .map(digit => arabicNumerals[parseInt(digit)])
+    .join('');
+
+    return `﴿${formattedNumber}﴾`;
+}
+
+
+export const ReaderPageAtom = ({ items }: Props) => {
   if (!items || items.length === 0) return null;
 
   // @ts-ignore
@@ -44,10 +57,15 @@ export const ReaderPageItem = ({ items }: Props) => {
           {item.surahId !== 9 && <Bismillah />}
         </View>
       );
-    } else if (item.type === 'ayah') {
+    } else if (item.type === 'word') {
       currentAyahBucket.push(
-        <Ayah key={item.data.number} text={item.data.text} number={item.data.number} />
+            `${item.text} `
       );
+    }
+    else if (item.type === 'ayahMarker') {
+        currentAyahBucket.push(
+            formatAyahNumber(item.number)
+        );
     }
   });
 

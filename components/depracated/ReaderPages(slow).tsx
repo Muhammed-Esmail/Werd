@@ -3,15 +3,15 @@ import { useRef, useState, useEffect } from "react";
 import { getMockReadingData } from "@/types/mocks/mock_data";
 import { FlatList, View, Text, useWindowDimensions, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { PageAtom } from "@/types/quran_data";
-import { ReaderPageAtom } from "@/components/ReaderPageAtom";
-import { segmentSessionIntoAtoms } from "@/utils/paginationMeasure";
+import { PageItem, SurahSegment } from "@/types/quran_data";
+import { ReaderPageItem } from "@/components/ReaderPageItem";
+import { segmentSessionIntoItems } from "@/utils/paginationMeasure";
 
 
 export const ReaderPages = () => {
   const flatListRef = useRef<FlatList>(null);
   const [currentPage, setCurrentPage] = useState(0);
-  const [pages, setPages] = useState<{items : PageAtom[]}[]>([]);
+  const [pages, setPages] = useState<{items : PageItem[]}[]>([]);
   const [isMeasuring, setIsMeasuring] = useState(true);
   const { height, width } = useWindowDimensions();
 
@@ -21,7 +21,7 @@ export const ReaderPages = () => {
   }>();        
 
   // Data
-  const segments = segmentSessionIntoAtoms(getMockReadingData('full').segments);
+  const segments = segmentSessionIntoItems(getMockReadingData('full').segments);
 
 
   // Scroll to specific page
@@ -41,10 +41,10 @@ export const ReaderPages = () => {
         itemVisiblePercentThreshold: 50,
     });
 
-    const renderPage = ({ item }: { item: { items: PageAtom[] } }) => {
+    const renderPage = ({ item }: { item: { items: PageItem[] } }) => {
     return (
             <View style={{ width, height: height * 0.85 }}>
-                <ReaderPageAtom items={item.items} />
+                <ReaderPageItem items={item.items} />
             </View>
         );
     };
@@ -55,10 +55,9 @@ export const ReaderPages = () => {
             <PaginatedMeasurer 
                 allItems={segments} // @ts-ignore
                 targetHeight={height * 0.85} 
-                onPageGenerated={(page: PageAtom[], last: boolean) => {
+                onPageGenerated={(page: PageItem[], last: boolean) => {
                     setPages(prev => [...prev, { items: page }]);
                     if (last) setIsMeasuring(false);
-                    console.log('Generated page with', page.length, 'atoms. Last?', last);
                 }} 
             />
             )
@@ -150,64 +149,74 @@ export const ReaderPages = () => {
 
 
 interface PaginatedMeasureProps {
-    allItems: PageAtom[];
+    allItems: PageItem[];
     targetHeight: number;
-    onPageGenerated: (page: PageAtom[], last: boolean) => void;
+    onPageGenerated: (page: PageItem[], last: boolean) => void;
 }
 
-export const PaginatedMeasurer = ({ allItems, targetHeight, onPageGenerated }: PaginatedMeasureProps) => {
-  const JUMP_SIZE = 90; // How many atoms to jump when we have plenty of space
-  
-  const [currentStart, setCurrentStart] = useState(0);
-  const [testEnd, setTestEnd] = useState(JUMP_SIZE); 
-  const [lastValidEnd, setLastValidEnd] = useState(0);
 
-  const handleLayout = (event: any) => {
+export const PaginatedMeasurer = ({ allItems, targetHeight, onPageGenerated } : PaginatedMeasureProps) => {
+  const { height } = useWindowDimensions();
+  const MAX_H = height * 0.82; // Your "current height" limit
+
+  // State mimicking your loop variables
+  const [currentIndex, setCurrentIndex] = useState(0); // This is your 'i'
+  const [currentItems, setCurrentItems] = useState([]); // Content of page currently being built
+  
+  // This is the "Try to render" state
+  const [measuringItems, setMeasuringItems] = useState([]);
+
+  // @ts-ignore
+  const handleLayout = (event) => {
     const measuredHeight = event.nativeEvent.layout.height;
-    const currentCount = testEnd - currentStart;
 
     if (measuredHeight > targetHeight) {
-      // --- OVERFLOW: We must find the exact last atom that fits ---
+      // --- LOGIC: "if cumulative height > limit" ---
+
+      onPageGenerated([...currentItems], false); // Send the completed page back to parent
       
-      if (testEnd === lastValidEnd + 1) {
-        // SUCCESS: We found the limit. lastValidEnd is the last index that fit.
-        const finalPageAtoms = allItems.slice(currentStart, lastValidEnd);
-        onPageGenerated(finalPageAtoms, false);
-        
-        // Setup for the next page
-        const nextStart = lastValidEnd;
-        setCurrentStart(nextStart);
-        setLastValidEnd(nextStart);
-        setTestEnd(Math.min(nextStart + JUMP_SIZE, allItems.length));
-      } else {
-        // NARROW DOWN: Backtrack to the middle of the last known good and current fail
-        const newTestEnd = lastValidEnd + Math.max(1, Math.floor((testEnd - lastValidEnd) / 2));
-        setTestEnd(newTestEnd);
-      }
+      // 1. "pop last render": We save currentItems (which was everything BEFORE the overflow)
+      // @ts-ignore
+      
+      // 2. "start a new page": Clear the currentItems
+      setCurrentItems([]);
+      
+      // 3. "i--": We DO NOT increment currentIndex. 
+      // The next render will try to put the item that failed onto the fresh empty page.
+      // @ts-ignore
+      setMeasuringItems([allItems[currentIndex]]);
     } else {
-      // --- UNDER LIMIT: We can fit more ---
+      // --- LOGIC: "else: add to current page" ---
       
-      if (testEnd >= allItems.length) {
-        // We reached the end of the Surah before filling the page
-        onPageGenerated(allItems.slice(currentStart, allItems.length), true);
-        return;
+      const nextItem = allItems[currentIndex];
+      
+      // Update our "committed" list
+      const updatedCurrent = [...currentItems, nextItem];
+      // @ts-ignore
+      setCurrentItems(updatedCurrent);
+
+      if (currentIndex + 1 < allItems.length) {
+        // Increment 'i' and try to add the next item to the existing pile
+        // @ts-ignore
+        setMeasuringItems([...updatedCurrent, allItems[currentIndex + 1]]);
+        setCurrentIndex(prev => prev + 1);
+      } else {
+        // WE ARE DONE: Save the final page
+        onPageGenerated([...updatedCurrent], true);   
       }
-
-      // Record this as the last known "Good" state
-      setLastValidEnd(testEnd);
-
-      // Determine next jump
-      setTestEnd(prev => Math.min(prev + JUMP_SIZE, allItems.length));
     }
   };
 
   return (
     <View 
-      style={{ position: 'absolute', opacity: 0, width: '100%', left: -1000 }}
+      style={{ position: 'absolute', opacity: 0, width: '100%', left: 0 }}
       onLayout={handleLayout}
-      key={`measure-${currentStart}-${testEnd}`}
+      key={`measure-step-${currentIndex}`}
     >
-      <ReaderPageAtom items={allItems.slice(currentStart, testEnd)} />
+      {/* "Try to render": We render the current page + the next item 
+         to see if they fit together 
+      */}
+      <ReaderPageItem items={measuringItems} />
     </View>
   );
 };

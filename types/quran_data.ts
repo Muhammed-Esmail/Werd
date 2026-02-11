@@ -23,7 +23,7 @@ export type PageItem =
   | { type: 'header'; surahId: number }
   | { type: 'ayah'; data: AyahData };
 
-export interface QuranPage {
-  pageIndex: number;
-  items: PageItem[];
-}
+export type PageAtom = 
+  | { type: 'header'; surahId: number }
+  | { type: 'word'; text: string }
+  | { type: 'ayahMarker'; number: number };
