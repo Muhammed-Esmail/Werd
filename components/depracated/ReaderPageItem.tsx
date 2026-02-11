@@ -1,7 +1,7 @@
 import { View, Text } from "react-native";
-import { SurahHeader } from "./SurahHeader";
-import { Bismillah } from "./Bismillah";
-import { Ayah } from "./Ayah";
+import { SurahHeader } from "@/components/SurahHeader";
+import { Bismillah } from "../Bismillah";
+import { Ayah } from "../Ayah";
 import { PageItem } from "@/types/quran_data";
 
 interface Props {

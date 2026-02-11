@@ -6,7 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { PageAtom } from "@/types/quran_data";
 import { ReaderPageAtom } from "@/components/ReaderPageAtom";
 import { segmentSessionIntoAtoms } from "@/utils/paginationMeasure";
-
+import { PaginatedMeasurer } from "@/components/PaginatedMeasurer";
 
 export const ReaderPages = () => {
   const flatListRef = useRef<FlatList>(null);
@@ -96,7 +96,7 @@ export const ReaderPages = () => {
         </TouchableOpacity>
 
         <Text className="text-white">
-          {currentPage + 1} / {pages.length}
+          {Math.min(currentPage + 1, pages.length)} / {pages.length}
         </Text>
 
         <TouchableOpacity
@@ -109,105 +109,5 @@ export const ReaderPages = () => {
         </TouchableOpacity>
       </View>
     </SafeAreaView>
-  );
-};
-
-//  Logic for pagination logic:
-//  For(int i = 0; i < segments.length; i++) :
-
-//     Try to render
-
-//     if cumulative height > current height:
-
-
-//         pop last render
-
-
-//         start a new page
-
-//         i--
-
-//         continue
-
-//     else:
-
-//         add to current page 
-
-
-//  Pseudocode for the "Try to render" step:
-//  
-//  Maintain: current page content + next item to add
-
-//  Render this combination in an invisible container
-
-//  Measure the height of this container
-
-//  If height > limit, we know the next item cannot fit on the current page.
-
-//       start a new page with the next item as the first content.
-
-//  Else, we add the next item to the current page and repeat with the following item.
-
-
-interface PaginatedMeasureProps {
-    allItems: PageAtom[];
-    targetHeight: number;
-    onPageGenerated: (page: PageAtom[], last: boolean) => void;
-}
-
-export const PaginatedMeasurer = ({ allItems, targetHeight, onPageGenerated }: PaginatedMeasureProps) => {
-  const JUMP_SIZE = 90; // How many atoms to jump when we have plenty of space
-  
-  const [currentStart, setCurrentStart] = useState(0);
-  const [testEnd, setTestEnd] = useState(JUMP_SIZE); 
-  const [lastValidEnd, setLastValidEnd] = useState(0);
-
-  const handleLayout = (event: any) => {
-    const measuredHeight = event.nativeEvent.layout.height;
-    const currentCount = testEnd - currentStart;
-
-    if (measuredHeight > targetHeight) {
-      // --- OVERFLOW: We must find the exact last atom that fits ---
-      
-      if (testEnd === lastValidEnd + 1) {
-        // SUCCESS: We found the limit. lastValidEnd is the last index that fit.
-        const finalPageAtoms = allItems.slice(currentStart, lastValidEnd);
-        onPageGenerated(finalPageAtoms, false);
-        
-        // Setup for the next page
-        const nextStart = lastValidEnd;
-        setCurrentStart(nextStart);
-        setLastValidEnd(nextStart);
-        setTestEnd(Math.min(nextStart + JUMP_SIZE, allItems.length));
-      } else {
-        // NARROW DOWN: Backtrack to the middle of the last known good and current fail
-        const newTestEnd = lastValidEnd + Math.max(1, Math.floor((testEnd - lastValidEnd) / 2));
-        setTestEnd(newTestEnd);
-      }
-    } else {
-      // --- UNDER LIMIT: We can fit more ---
-      
-      if (testEnd >= allItems.length) {
-        // We reached the end of the Surah before filling the page
-        onPageGenerated(allItems.slice(currentStart, allItems.length), true);
-        return;
-      }
-
-      // Record this as the last known "Good" state
-      setLastValidEnd(testEnd);
-
-      // Determine next jump
-      setTestEnd(prev => Math.min(prev + JUMP_SIZE, allItems.length));
-    }
-  };
-
-  return (
-    <View 
-      style={{ position: 'absolute', opacity: 0, width: '100%', left: -1000 }}
-      onLayout={handleLayout}
-      key={`measure-${currentStart}-${testEnd}`}
-    >
-      <ReaderPageAtom items={allItems.slice(currentStart, testEnd)} />
-    </View>
   );
 };

@@ -4,7 +4,7 @@ import { getMockReadingData } from "@/types/mocks/mock_data";
 import { FlatList, View, Text, useWindowDimensions, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { PageItem, SurahSegment } from "@/types/quran_data";
-import { ReaderPageItem } from "@/components/ReaderPageItem";
+import { ReaderPageItem } from "@/components/depracated/ReaderPageItem";
 import { segmentSessionIntoItems } from "@/utils/paginationMeasure";
 
 
