@@ -21,7 +21,7 @@ export const SurahSection = ({ segment, isLastSegment } : Props) => {
             <SurahHeader surahId={segment.surahId}/>
 
             {/* Bismillah */}
-            {showBismillah && <Bismillah/>}
+            {showBismillah && <Bismillah surahID={segment.surahId}/>}
             
             {/* Ayaht */}
             <View className='mr-3 mb-5'>

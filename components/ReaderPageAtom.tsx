@@ -54,7 +54,7 @@ export const ReaderPageAtom = ({ items }: Props) => {
         <View key={`header-${item.surahId}-${index}`} className="mb-4">
             {/* @ts-ignore */}
           <SurahHeader surahId={item.surahId} />
-          {item.surahId !== 9 && <Bismillah />}
+          <Bismillah surahID={item.surahId}/>
         </View>
       );
     } else if (item.type === 'word') {

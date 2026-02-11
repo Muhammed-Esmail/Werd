@@ -19,7 +19,6 @@ export const PaginatedMeasurer = ({ allItems, targetHeight, onPageGenerated }: P
 
   const handleLayout = (event: any) => {
     const measuredHeight = event.nativeEvent.layout.height;
-    const currentCount = testEnd - currentStart;
 
     if (measuredHeight > targetHeight) {
       // --- OVERFLOW: We must find the exact last atom that fits ---
