@@ -1,8 +1,9 @@
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import React from 'react'
+import React, { useEffect } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from "expo-router";
+import * as DB from '../../utils/DatabaseManager'
 
 const OPTIONS = [
 	{id: 1, text: "Werd Goal Setup", path: "goalSetup", icon: "book"},
@@ -31,6 +32,16 @@ const settings = () => {
 			</TouchableOpacity>
 	  );
 	};
+
+useEffect(() => {
+  const init = async () => {
+    console.log("Initializing database...");
+    await DB.initDB(1);
+	await DB.addQuranText();
+	await DB.test(1, 3);
+  };
+  init();
+}, []);
 
 	return (
 		<SafeAreaView className="flex-1 bg-matteBlack">
