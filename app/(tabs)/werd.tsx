@@ -1,5 +1,7 @@
+import { ReaderParams } from '@/types/reader_data';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -27,7 +29,15 @@ const Card = ({sideIcon, sideText, mainText, underText}: any) =>{
 const TodayCard = () => {
   
   const onReadTodaysWerd = () => {
+    const params : ReaderParams = {
+      surahId: 0, // This would be dynamic based on the werd assigned for the day
+      sessionType: 'daily_werd'
+    };
 
+    router.push({
+      pathname: '/reader',
+      params: params as any
+    })
   }
 
   const onCompleteManually = () => {
