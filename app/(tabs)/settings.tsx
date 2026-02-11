@@ -15,16 +15,20 @@ const settings = () => {
 	const renderOption = ({ item }: any) => {
 		return (
 			<TouchableOpacity onPress={() => {router.push(item.path)}}>
-			<View className="flex-row items-center justify-between p-4 mb-3 bg-[#1A1A1A] rounded-2xl border border-gray-800">
-			<View className="flex-row items-center">
-				<Ionicons name={item.icon} size={22} color="#D4AF37" />
-				<Text className="text-white text-base font-medium ml-4">
-				{item.text}
-				</Text>
-			</View>
-			<MaterialIcons name="chevron-right" size={20} color="rgba(255,255,255,0.3)" />
-			</View>
-		</TouchableOpacity>
+				<View 
+				
+					className="flex-row items-center justify-between p-4 mb-3 bg-surfaceBlack rounded-2xl border border-settingsGold/30"
+				
+				>
+					<View className="flex-row items-center">
+						<Ionicons name={item.icon} size={22} color="#D4AF37" />
+						<Text className="text-white text-base font-medium ml-4">
+							{item.text}
+						</Text>
+					</View>
+					<MaterialIcons name="chevron-right" size={20} color="rgba(255,255,255,0.3)" />
+				</View>
+			</TouchableOpacity>
 	  );
 	};
 
@@ -32,17 +36,20 @@ const settings = () => {
 		<SafeAreaView className="flex-1 bg-matteBlack">
 		<View>
 			<View className="mb-8 mt-2">
-				<Text className="text-3xl font-bold text-primaryGold tracking-tight text-center">
-					Settings
-				</Text>
-				<Text className="text-light-300 text-sm mt-1 text-center">
-					Customize your experience
-				</Text>
+				<View className='w-[100%] justify-center items-center'>
+					<Text className='text-primaryGold mt-8 text-xl font-bold'> SETTINGS </Text>
+				</View>
+				<View className='w-[100%] justify-center items-center'>
+					<Text className="text-light-300 text-sm mt-1 text-center">
+						Customize your experience
+					</Text>
+				</View>
         	</View>
-			<FlatList
+			<FlatList 
 				data = {OPTIONS}
 				renderItem = {renderOption}
 				keyExtractor={(item) => item.id.toString()}
+				className='mr-5 ml-5'
 			/>
 		</View>
     </SafeAreaView>

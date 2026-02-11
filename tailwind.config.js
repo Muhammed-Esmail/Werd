@@ -13,6 +13,7 @@ module.exports = {
         goldGlow: 'rgba(212, 175, 55, 0.15)',
         circleIndicator : '#FFD700',
         surahMarker: '#C5A059',
+        settingsGold: '#C5A059',
         juzStar: '#F3E5AB',
         matteBlack: '#0A0A0A',
         surfaceBlack: '#121212',
