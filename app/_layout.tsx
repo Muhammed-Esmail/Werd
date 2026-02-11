@@ -2,6 +2,7 @@ import { Stack } from "expo-router";
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
+import { SQLiteProvider } from 'expo-sqlite';
 import './globals.css';
 
 export default function RootLayout() {
@@ -20,10 +21,14 @@ export default function RootLayout() {
     return null;
   }
 
-  return <Stack>
-    <Stack.Screen 
-      name="(tabs)"
-      options={{headerShown:false}}
-    />
-  </Stack>;
+  return (
+    <SQLiteProvider databaseName="werd.db">
+      <Stack>
+        <Stack.Screen 
+          name="(tabs)"
+          options={{headerShown:false}}
+        />
+      </Stack>
+    </SQLiteProvider>
+  );
 }

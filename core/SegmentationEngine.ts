@@ -39,4 +39,57 @@ export class SegmentationEngine {
             VALUES ${values}
         `);
     }
+
+    static async recalculatePlan(
+        db: SQLiteDatabase,
+        currentDay: number,
+        lastCompletedPage: number,
+        totalDays: number
+    ) {
+        const remainingPages = this.TOTAL_PAGES - lastCompletedPage;
+        const remainingDays = totalDays - currentDay;
+
+        if (remainingDays <= 0) {
+            console.log("Broski's cooked (no days left to finish)");
+            return;
+        }
+
+        const newPagesPerDay = remainingPages / remainingDays;
+
+        console.log(`[Amadoo] Recalculating... User is at pg ${lastCompletedPage}. Needs to read ${newPagesPerDay.toFixed(1)} pgs/day to finish.`);
+
+        const newPlan = [];
+        let currentFloatPage = lastCompletedPage + 1;
+
+        for(let i = 1; i <= remainingDays; i++) {
+            const day = currentDay + i;
+
+            const startPage = Math.floor(currentFloatPage);
+            let endPage = Math.floor(currentFloatPage + newPagesPerDay);
+
+            if(endPage > this.TOTAL_PAGES) endPage = this.TOTAL_PAGES;
+            if(i == remainingDays) endPage = this.TOTAL_PAGES; // Ensure last day ends at page 604
+
+            newPlan.push({
+                day: day,
+                startPage,
+                endPage: Math.max(startPage, endPage - 1)
+            });
+
+            currentFloatPage += newPagesPerDay;
+        }
+
+        await db.execAsync(`DELETE FROM daily_progress WHERE day_number > ${currentDay}`);
+
+        const values = newPlan
+            .map(p => `(${p.day}, ${p.startPage}, ${p.endPage}, 0)`)
+            .join(',');
+
+        if (values.length > 0) {
+            await db.execAsync(`
+                INSERT INTO daily_progress (day_number, start_page, end_page, is_completed)
+                VALUES ${values};
+            `);
+        }
+    }
 }
