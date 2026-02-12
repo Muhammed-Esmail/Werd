@@ -63,8 +63,14 @@ const settings = () => {
 					if (item.id === 3) {
 						setFontModalVisible(true)
 					}
+					else if (item.id === 4) {
+						
+					}
 					else if (item.id === 5) {
 						setReadingModalVisible(true)
+					}
+					else if (item.id === 6) {
+						
 					}
 					else {
 						router.push(item.path)
