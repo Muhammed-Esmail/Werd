@@ -3,7 +3,6 @@ const DB_NAME = "werd_db"
 let database: SQLite.SQLiteDatabase | null = null;
 
 interface UserSettings {
-    id: number;
     font: string;
     font_size: number;
     reading_mode: number;
@@ -11,6 +10,17 @@ interface UserSettings {
     starting_date: string;
     ending_date: string;
     theme: number;
+}
+
+interface UserProgress {
+	first_verse: number;
+	last_verse: number;
+	date: string;
+}
+
+interface Bookmark {
+	id: number;
+	verse: number;
 }
 
 const isEmpty = async (db: SQLite.SQLiteDatabase, table: string) => {
@@ -37,13 +47,13 @@ export async function initDB(clear: number = 0) {
 			  PRAGMA foreign_keys = OFF;
 			  
 			  --DROP TABLE IF EXISTS bookmarks;
-			  --DROP TABLE IF EXISTS werd_segments;
+			  DROP TABLE IF EXISTS werd_segments;
 			  --DROP TABLE IF EXISTS pages;
 			  --DROP TABLE IF EXISTS juz;
 			  --DROP TABLE IF EXISTS surahs;
 			  --DROP TABLE IF EXISTS verses;
 			  --DROP TABLE IF EXISTS streaks;
-			  DROP TABLE IF EXISTS user_settings;
+			  --DROP TABLE IF EXISTS user_settings;
 			  
 			  PRAGMA foreign_keys = ON;
 			`);
@@ -100,8 +110,6 @@ export async function initDB(clear: number = 0) {
 				first_verse_id INTEGER NOT NULL,
 				last_verse_id INTEGER NOT NULL,
 				date TEXT NOT NULL,
-				is_completed INTEGER DEFAULT 0,
-				completed_at TEXT,
 				FOREIGN KEY (first_verse_id) REFERENCES verses(id),
 				FOREIGN KEY (last_verse_id) REFERENCES verses(id)
 			);
@@ -328,6 +336,76 @@ export const getSettings = async (id: number = 1) => {
         return []
     }
 }
+
+export const addProgress = async (first_verse: number, last_verse: number, date: string) => {
+	try {
+		const db = await getDB()
+		await db.runAsync(`INSERT INTO werd_segments (first_verse_id, last_verse_id, date) VALUES (?, ?, ?)`, [first_verse, last_verse, date])
+		console.log("Added user progress")
+	}
+	catch (error) {
+		console.log(error)
+	}
+}
+
+export const getUserProgress = async () => {
+	try {
+		const db = await getDB()
+		const data = await db.getAllAsync(`SELECT * FROM werd_segments`) as UserProgress[]
+		if (data) {
+			console.log("Fetched user progress")
+			return data
+		}
+		else return []
+	}
+	catch (error) {
+		console.log(error)
+		return []
+	}
+}
+
+export const updateStreak = async (updates: Partial<UserProgress>, id: number = 1) => {
+	try {
+		const db = await getDB()
+		const fields = Object.keys(updates)
+		const values = Object.values(updates)
+		values.push(id)
+		const query = fields.map(field => `${field} = ?`).join(", ")
+		await db.runAsync(`UPDATE streaks SET ${query} WHERE id = ?`, values)
+		console.log("Updated user streak")
+	}
+	catch (error) {
+		console.log(error)
+	}
+}
+
+export const addBookMark = async (verse: number) => {
+	try {
+		const db = await getDB()
+		await db.runAsync(`INSERT INTO bookmarks (verse_id) VALUES (?)`, [verse])
+		console.log("Added user progress")
+	}
+	catch (error) {
+		console.log(error)
+	}
+}
+
+export const getBookMarks = async () => {
+	try {
+		const db = await getDB()
+		const data = await db.getAllAsync(`SELECT * FROM bookmarks`) as Bookmark[]
+		if (data) {
+			console.log("Added user progress")
+			return data
+		}
+		else return []
+	}
+	catch (error) {
+		console.log(error)
+		return []
+	}
+}
+
 
 
 export const test = async (start: number, end: number) => {

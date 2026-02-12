@@ -21,7 +21,8 @@ const OPTIONS = [
 	{id: 2, text: "Notification Settings", path: "notifications", icon: "notifications"},
 	{id: 3, text: "Fonts", path: null, icon: "pencil"},
 	{id: 4, text: "Dark Mode", path: null, icon: "contrast"},
-	{id: 5, text: "Reading Mode", path: null, icon: "book"}
+	{id: 5, text: "Reading Mode", path: null, icon: "book"},
+	{id: 6, text: "Language", path: null, icon: "language"}
 ]
 
 const FONT_OPTIONS = [
@@ -101,20 +102,20 @@ const settings = () => {
 	  );
 	};
 
-// useEffect(() => {
-//   const init = async () => {
-//     console.log("Initializing database...");
-//     await DB.initDB(0);
-// 	// await DB.addQuranText();
-// 	await DB.test(4, 5);
-// 	const current_settings = await DB.getSettings() as UserSettings[]
-// 	setIsEnabled(current_settings[0].theme === 0)
-// 	setReadingMode(current_settings[0].reading_mode === 1)
+useEffect(() => {
+  const init = async () => {
+    console.log("Initializing database...");
+    await DB.initDB(0);
+	// await DB.addQuranText();
+	await DB.test(4, 5);
+	const current_settings = await DB.getSettings() as UserSettings[]
+	setIsEnabled(current_settings[0].theme === 0)
+	setReadingMode(current_settings[0].reading_mode === 1)
 
-// 	console.log("Done")
-//   };
-//   init();
-// }, []);
+	console.log("Done")
+  };
+  init();
+}, []);
 
 	return (
 		<SafeAreaView className="flex-1 bg-matteBlack">
