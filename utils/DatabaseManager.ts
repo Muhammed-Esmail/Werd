@@ -346,5 +346,6 @@ export const test = async (start: number, end: number) => {
 	if (settings && settings.length > 0) {
     	console.log(`${settings[0].font}`);
 		console.log(`${settings[0].theme}`);
+		console.log(`${settings[0].reading_mode}`);
 	}
 }
