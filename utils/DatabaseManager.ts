@@ -10,6 +10,7 @@ interface UserSettings {
     starting_date: string;
     ending_date: string;
     theme: number;
+	language: string;
 }
 
 interface UserProgress {
@@ -47,13 +48,13 @@ export async function initDB(clear: number = 0) {
 			  PRAGMA foreign_keys = OFF;
 			  
 			  --DROP TABLE IF EXISTS bookmarks;
-			  DROP TABLE IF EXISTS werd_segments;
+			  --DROP TABLE IF EXISTS werd_segments;
 			  --DROP TABLE IF EXISTS pages;
 			  --DROP TABLE IF EXISTS juz;
 			  --DROP TABLE IF EXISTS surahs;
 			  --DROP TABLE IF EXISTS verses;
 			  --DROP TABLE IF EXISTS streaks;
-			  --DROP TABLE IF EXISTS user_settings;
+			  DROP TABLE IF EXISTS user_settings;
 			  
 			  PRAGMA foreign_keys = ON;
 			`);
@@ -69,7 +70,8 @@ export async function initDB(clear: number = 0) {
 				partition_type INTEGER DEFAULT 0,
 				starting_date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
 				ending_date TEXT NOT NULL,
-                theme INT NOT NULL DEFAULT 0
+                theme INT NOT NULL DEFAULT 0,
+				language TEXT NOT NULL DEFAULT "en"
 			);
 
 			CREATE TABLE IF NOT EXISTS verses (
@@ -281,31 +283,35 @@ export const setSettings = async (
     partition_type: number = 0,
     starting_date: string = "6/6/2006",
     ending_date: string = "7/7/2007",
-    theme: number = 0) => {
-		try {
-			const db = await getDB()
-			let query: string
-			if (await isEmpty(db, "user_settings")) {
-				await db.runAsync(`
-					INSERT INTO user_settings VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, 
-					[id, font, font_size, reading_mode, partition_type, starting_date, ending_date, theme])
-			}
-			else {
-				await db.runAsync(`
-					UPDATE user_settings
-					SET font = ?,
-					font_size = ?,
-					reading_mode = ?,
-					partition_type = ?,
-					starting_date = ?,
-					ending_date = ?,
-					theme = ?`,
-					[font, font_size, reading_mode, partition_type, starting_date, ending_date, theme])
-			}
-				console.log("Settings Modified")
+    theme: number = 0,
+    language: string = "en"
+) => {
+    try {
+        const db = await getDB();
+        if (await isEmpty(db, "user_settings")) {
+            await db.runAsync(`
+                INSERT INTO user_settings (id, font, font_size, reading_mode, partition_type, starting_date, ending_date, theme, language) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+                [id, font, font_size, reading_mode, partition_type, starting_date, ending_date, theme, language]);
+        }
+        else {
+            await db.runAsync(`
+                UPDATE user_settings
+                SET font = ?,
+                font_size = ?,
+                reading_mode = ?,
+                partition_type = ?,
+                starting_date = ?,
+                ending_date = ?,
+                theme = ?,
+                language = ?
+                WHERE id = ?`,
+                [font, font_size, reading_mode, partition_type, starting_date, ending_date, theme, language, id]); // Added language and id
+        }
+        console.log("Settings Modified");
     }
     catch (error) {
-        console.log(error)
+        console.log("Error updating settings:", error);
     }
 }
 
@@ -425,5 +431,6 @@ export const test = async (start: number, end: number) => {
     	console.log(`${settings[0].font}`);
 		console.log(`${settings[0].theme}`);
 		console.log(`${settings[0].reading_mode}`);
+		console.log(`${settings[0].language}`);
 	}
 }

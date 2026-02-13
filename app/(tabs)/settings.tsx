@@ -1,10 +1,15 @@
-import { FlatList, Modal, ScrollView, StyleSheet, Image, Switch, Text, TouchableOpacity, View, Pressable } from 'react-native'
+import { FlatList, Modal, ScrollView, StyleSheet, Image, Switch, Text, TouchableOpacity, View, Pressable, I18nManager } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from "expo-router";
 import * as DB from '../../utils/DatabaseManager'
 import { useColorScheme } from "nativewind";
+import { useTranslation } from 'react-i18next';
+import * as Updates from 'expo-updates';
+import '../../i18n';
+import i18n from '../../i18n';
+import { SelectList } from 'react-native-dropdown-select-list'
 
 interface UserSettings {
     id: number;
@@ -15,32 +20,39 @@ interface UserSettings {
     starting_date: string;
     ending_date: string;
     theme: number;
+	language: string;
 }
 
 const OPTIONS = [
-	{id: 1, text: "Werd Goal Setup", path: "goalSetup", icon: "book"},
-	{id: 2, text: "Notification Settings", path: "notifications", icon: "notifications"},
-	{id: 3, text: "Fonts", path: null, icon: "pencil"},
-	{id: 4, text: "Dark Mode", path: null, icon: "contrast"},
-	{id: 5, text: "Reading Mode", path: null, icon: "book"},
-	{id: 6, text: "Language", path: null, icon: "language"}
+    {id: 1, text: 'goal', path: "goalSetup", icon: "book"},
+    {id: 2, text: "notifications", path: "notifications", icon: "notifications"},
+    {id: 3, text: "fonts", path: null, icon: "pencil"},
+    {id: 4, text: "darkMode", path: null, icon: "contrast"},
+    {id: 5, text: "readingMode", path: null, icon: "book"},
+    {id: 6, text: "language", path: null, icon: "language"}
 ]
 
 const FONT_OPTIONS = [
-'Amiri-Bold',
-'Amiri-BoldItalic',
-'Amiri-Italic',
-'Amiri-Regular',
-'D1',
-'D2',
-'HAFS',
-'J1',
-'J2',
-'Q1',
-'U3',
-'UthmanTN1-Ver10',
-'UthmanTN_v2-0'
+	'Amiri-Bold',
+	'Amiri-BoldItalic',
+	'Amiri-Italic',
+	'Amiri-Regular',
+	'D1',
+	'D2',
+	'HAFS',
+	'J1',
+	'J2',
+	'Q1',
+	'U3',
+	'UthmanTN1-Ver10',
+	'UthmanTN_v2-0'
 ]
+
+const LANGUAGE_CHOICES = [
+    {key: 'en', value: 'english'},
+    {key: 'ar', value: 'arabic'}
+]
+
 
 /*
 Notes:
@@ -53,11 +65,13 @@ Notes:
 
 const settings = () => {
 	const { colorScheme, setColorScheme } = useColorScheme();
+	const { t } = useTranslation();
 	const router = useRouter();
 	const [fontModalVisible, setFontModalVisible] = useState<boolean>(false)
 	const [readingModalVisible, setReadingModalVisible] = useState<boolean>(false)
 	const [readingMode, setReadingMode] = useState<boolean>(false)
 	const [isEnabled, setIsEnabled] = useState(false);
+	const [selectedLang, setSelectedLang] = React.useState("");
 	const toggleSwitch = () => setIsEnabled(previousState => !previousState);
 	const renderOption = ({ item }: any) => {
         return (
@@ -85,7 +99,7 @@ const settings = () => {
                     <View className="flex-row items-center">
                         <Ionicons name={item.icon} size={22} color="#D4AF37" />
                         <Text className="text-black dark:text-white text-base font-medium ml-4">
-                            {item.text}
+                            {t(item.text)}
                         </Text>
                     </View>
                     {item.id === 4 && 
@@ -103,11 +117,74 @@ const settings = () => {
                             value={isEnabled}
                         />
                     }
-                    {item.id !== 4 && <MaterialIcons name="chevron-right" size={20} color={colorScheme === 'dark' ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.3)"} />}
+					{item.id === 6 && 
+					<SelectList 
+							setSelected={async (val: string) => {
+									if (val !== selectedLang) {
+										setSelectedLang(val)
+										let lang = "en"
+										if (val === "arabic") lang = "ar"
+										await changeLang(lang)
+									}
+								}
+							} 
+							data={LANGUAGE_CHOICES} 
+							save="value"
+							boxStyles={{
+								backgroundColor: colorScheme === 'dark' ? '#121212' : '#F3F4F6',
+								borderColor: colorScheme === 'dark' ? 'rgba(197, 160, 89, 0.3)' : 'rgba(197, 160, 89, 0.2)',
+								borderRadius: 16,
+								paddingVertical: 14,
+							}}
+							inputStyles={{
+								color: colorScheme === 'dark' ? '#FFFFFF' : '#000000',
+								fontWeight: '500',
+							}}
+							dropdownStyles={{
+								backgroundColor: colorScheme === 'dark' ? '#121212' : '#F3F4F6',
+								borderColor: colorScheme === 'dark' ? 'rgba(197, 160, 89, 0.3)' : 'rgba(197, 160, 89, 0.2)',
+								borderRadius: 16,
+								marginTop: 8,
+							}}
+							dropdownTextStyles={{
+								color: colorScheme === 'dark' ? '#FFFFFF' : '#000000',
+							}}
+							dropdownItemStyles={{
+								borderBottomWidth: 1,
+								borderBottomColor: colorScheme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+								paddingVertical: 12,
+							}}
+							arrowicon={
+								<Ionicons name="chevron-down" size={18} color="#C5A059" />
+							}
+							searchicon={
+								<Ionicons name="search" size={16} color="#C5A059" style={{marginRight: 8}} />
+							}
+							placeholder={t('selectLanguage')}
+						/>
+					}
+                    {item.id !== 4 && item.id !==6 && <MaterialIcons name="chevron-right" size={20} color={colorScheme === 'dark' ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.3)"} />}
                 </View>
             </TouchableOpacity>
       );
     };
+
+const changeLang = async (lang: string = "en", startup: boolean = false) => {
+	console.log(`changing to ${lang}`)
+	await i18n.changeLanguage(lang)
+	if (startup) {
+		I18nManager.allowRTL(lang === "ar");
+		I18nManager.forceRTL(lang === "ar");
+	}
+	else {
+		await DB.updateSettings({language: lang})
+		I18nManager.allowRTL(lang === "ar");
+		I18nManager.forceRTL(lang === "ar");
+		await (async () => {
+			return await Updates.reloadAsync();
+		})();
+	}
+}
 
 useEffect(() => {
   const init = async () => {
@@ -120,6 +197,8 @@ useEffect(() => {
 	setColorScheme(current_settings[0].theme === 0 ? "dark" : "light")
 	setReadingMode(current_settings[0].reading_mode === 1)
 
+	changeLang(current_settings[0].language, true)
+
 	console.log("Done")
   };
   init();
@@ -130,11 +209,11 @@ useEffect(() => {
         <View className="flex-1">
             <View className="mb-8 mt-2">
                 <View className='w-[100%] justify-center items-center'>
-                    <Text className='text-primaryGold mt-8 text-xl font-bold'> SETTINGS </Text>
+                    <Text className='text-primaryGold mt-8 text-xl font-bold'> {t("settings")} </Text>
                 </View>
                 <View className='w-[100%] justify-center items-center'>
                     <Text className="text-gray-500 dark:text-light-300 text-sm mt-1 text-center">
-                        Customize your experience
+                        {t('customize')}
                     </Text>
                 </View>
             </View>
@@ -214,7 +293,7 @@ useEffect(() => {
                                     />
                                 </View>
                                 <Text className={`mt-3 font-bold ${readingMode === false ? 'text-settingsGold' : 'text-gray-400 dark:text-white/50'}`}>
-                                    Scroll
+                                    {t('scroll')}
                                 </Text>
                             </TouchableOpacity>
 
@@ -232,7 +311,7 @@ useEffect(() => {
                                     />
                                 </View>
                                 <Text className={`mt-3 font-bold ${readingMode === true ? 'text-settingsGold' : 'text-gray-400 dark:text-white/50'}`}>
-                                    Pages
+                                    {t('pages')}
                                 </Text>
                             </TouchableOpacity>
                         </View>
@@ -246,7 +325,7 @@ useEffect(() => {
                             }}
                             className="mt-10 bg-settingsGold py-4 rounded-2xl items-center"
                         >
-                            <Text className="text-matteBlack font-bold text-base">Confirm</Text>
+                            <Text className="text-matteBlack font-bold text-base">{t('confirm')}</Text>
                         </TouchableOpacity>
                     </View>
                 </Pressable>
