@@ -232,7 +232,7 @@ useEffect(() => {
                 onRequestClose={() => setFontModalVisible(false)}
             >
                 <View className="flex-1 justify-end bg-black/60"> 
-                    <View className="bg-white dark:bg-surfaceBlack rounded-t-3xl p-6 border-t border-settingsGold/50">
+                    <View className="bg-bgWhite dark:bg-surfaceBlack rounded-t-3xl p-6 border-t border-settingsGold/50">
                         <View className="flex-row justify-between items-center mb-6">
                             <Text className="text-primaryGold text-xl font-bold">Select Font</Text>
                             <TouchableOpacity onPress={() => setFontModalVisible(false)}>

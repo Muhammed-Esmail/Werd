@@ -22,15 +22,14 @@ module.exports = {
         borderDark: '#1F1F1F',
         mutedWhite: 'rgba(255, 255, 255, 0.42)',
         successGreen: '#10B981',
-        light: {
-          100: '#D6C6FF',
-          200: '#A8B5DB',
-          300: '#9CA4AB'
-        },
-        dark: {
-          100: '#221f3d',
-          200: '#0f0d23',
-        }
+
+        // --- NEW LIGHT THEME COLORS ---
+        bgWhite: '#FDFBF7',      // Warm Ivory background
+        surfaceWhite: '#FFFFFF', // Pure white for cards/inputs
+        textDeep: '#1A1A1A',     // Near-black for readability
+        textSoft: '#666666',     // Muted text for sub-labels
+        borderGold: '#E5D1B0',   // Champagne/Soft gold for borders
+        goldMuted: '#FAF3E0',
       },
       fontFamily: {
         'amiri': ['Amiri-Regular'],

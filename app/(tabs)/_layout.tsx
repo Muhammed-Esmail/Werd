@@ -2,6 +2,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Tabs } from "expo-router";
 import React from 'react';
 import { Text, View } from "react-native";
+import { getSettings } from '@/utils/DatabaseManager';
 
 const TabIcon = ({focused, iconName, title}: any) =>{
     const val = 30;
@@ -30,8 +31,33 @@ const TabIcon = ({focused, iconName, title}: any) =>{
 
 }
 
+const getColor = async () => {
+
+    // @ts-ignore
+    const settings = await getSettings() as UserSettings[];
+
+    const theme = settings[0].theme;
+
+    try{
+        
+        if(theme === undefined)
+            throw ("theme undefined");
+
+        if(theme === 0){
+            return '#0A0A0A';
+        }
+        return '#FAF3E0';
+    }
+    catch(error){
+        throw("Cannot get the theme: " + error);
+    }
+
+}
+
 const _layout = () => {
-  let color = '#0A0A0A';
+
+  // @ts-ignore
+  let color = toString(getColor());
   return (
     <Tabs
         screenOptions={{
@@ -46,7 +72,7 @@ const _layout = () => {
                 backgroundColor: color,
                 borderRadius: 50,
                 marginHorizontal: 10,
-                marginBottom: 40,
+                marginBottom: 50,
                 height: 70,
                 position:'absolute',
                 overflow: 'hidden',

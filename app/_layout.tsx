@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import './globals.css';
 import * as DB from "@/utils/DatabaseManager"
 import * as rd from '@/types/reader_data';
+import React from "react";
 
 export default function RootLayout() {
   
