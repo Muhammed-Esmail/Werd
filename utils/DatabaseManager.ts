@@ -42,11 +42,35 @@ const isEmpty = async (db: SQLite.SQLiteDatabase, table: string) => {
     return result!.count === 0;
 }
 
+let dbInitPromise: Promise<SQLite.SQLiteDatabase> | null = null;
+
 export async function getDB() {
-	if (!database) {
-	database = await SQLite.openDatabaseAsync(DB_NAME);
-	}
-	return database;
+    // 1. If database is already ready, return it immediately
+    if (database) {
+        return database;
+    }
+
+    // 2. If initialization is ALREADY happening, return the existing promise
+    // instead of starting a new one.
+    if (dbInitPromise) {
+        return dbInitPromise;
+    }
+
+    // 3. Start the initialization and save the promise
+    dbInitPromise = (async () => {
+        try {
+            const db = await SQLite.openDatabaseAsync(DB_NAME);
+            database = db; // Save to the global variable
+            return db;
+        } catch (error) {
+            console.error("Failed to open DB:", error);
+            throw error;
+        } finally {
+            dbInitPromise = null; // Clean up the promise
+        }
+    })();
+
+    return dbInitPromise;
 }
 
 export async function initDB(clear: number = 0) {
@@ -534,8 +558,8 @@ export const getBookMarks = async () => {
 
 export const setWerdSegments = async (
     id: number = 1,
-	first_verse: number = 1,
-	last_verse: number = 10,
+	first_verse: number = 10,
+	last_verse: number = 100,
 	date: string = "8/8/2008"
 ) => {
     try {
@@ -602,12 +626,4 @@ export const test = async (start: number, end: number) => {
 	} else {
 		console.log("No verses found");
 	}
-	// console.log("testing...")
-	// const settings = await getSettings() as UserSettings[]
-	// if (settings && settings.length > 0) {
-    // 	console.log(`${settings[0].font}`);
-	// 	console.log(`${settings[0].theme}`);
-	// 	console.log(`${settings[0].reading_mode}`);
-	// 	console.log(`${settings[0].language}`);
-	// }
 }
