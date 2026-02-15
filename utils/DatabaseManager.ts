@@ -1,6 +1,7 @@
 import * as SQLite from "expo-sqlite"
 const DB_NAME = "werd_db"
 import * as rp from "@/types/reader_data"
+import * as qd from "@/types/quran_data"
 let database: SQLite.SQLiteDatabase | null = null;
 
 interface UserSettings {
@@ -88,6 +89,7 @@ export async function initDB(clear: number = 0) {
 			CREATE TABLE IF NOT EXISTS verses (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
 				relative_id INTEGER NOT NULL,
+				surah_id INTEGER NOT NULL,
 				text TEXT NOT NULL,
 				page INTEGER NOT NULL
 			);
@@ -254,33 +256,60 @@ export const addQuranText = async () => {
 	}
 }
 
-export const fetchQuranText = async(params: rp.ReaderParams) => {
-	try {
-		if (params.sessionType === "daily_werd") {
-			// console.log("Daily Werd")
-			
-			const settings = await getSettings() as UserSettings[];
 
-			// @ts-ignore
-			const segment_data = getWerdSegment(1) as WerdSegment[];
+export const fetchQuranText = async (params: rp.ReaderParams): Promise<qd.ReadingSession> => {
+    try {
+        const db = await getDB();
+        let verses: any[] = [];
 
-			console.log(segment_data[0]);
-			
-			
+        if (params.sessionType === "daily_werd") {
+            const settings = await getSettings() as UserSettings[];
+            const currentWerdId = settings[0].currentWerd;
 
-			// console.log(segment_data[0].first_verse);
-			
-			return fetchVerses(segment_data[0].first_verse, segment_data[0].last_verse, 'verse')
-		}
+			const segment = await getWerdSegment(currentWerdId) as WerdSegment[]
+			verses = await fetchVerses(segment[0].first_verse, segment[0].last_verse, 'verse');
+
+        } 
 		else {
-			console.log("Normal Reading")
 			// @ts-ignore
-			return fetchVerses(params.surahId, params.surahId, 1)
-		}
-	}
-	catch (error) {
-		console.log("Error fetching Quran Text")
-	}
+            verses = await fetchVerses(params.surahId, params.surahId, 'surah');
+        }
+
+        const segments: qd.SurahSegment[] = [];
+        
+        for (const verse of verses) {
+            let currentSegment = segments.find(s => s.surahId === verse.surah_id);
+
+			currentSegment = {
+				surahId: verse.surah_id,
+				surahNameEnglish: "-1",
+				surahNameArabic: "-1",
+				surahType: 'Meccan',
+				ayahs: []
+			};
+			
+            currentSegment.ayahs.push({
+				number: verse.relative_id,
+                text: verse.text
+            });
+
+			segments.push(currentSegment);
+        }
+
+        return {
+            sessionId: "-1",
+            sessionType: params.sessionType,
+            segments: segments
+        };
+
+    } catch (error) {
+        console.error("Error fetching Quran Text:", error);
+		return {
+            sessionId: "-1",
+            sessionType: params.sessionType,
+            segments: []
+        };
+    }
 }
 
 export type PartitionType = 'verse' | 'surah' | 'juz' | 'page';
