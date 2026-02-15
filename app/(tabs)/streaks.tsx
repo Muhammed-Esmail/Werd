@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
-import { useStreak } from '/home/lashin/Desktop/Projects/Werd/services/StreakManager';
+import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useStreak } from '@/services/StreakManager';
 
 const StreakPage = () => {
   const { streak, incrementStreak, loading } = useStreak();
