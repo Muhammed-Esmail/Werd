@@ -58,11 +58,11 @@ export async function initDB(clear: number = 0) {
 			  PRAGMA foreign_keys = OFF;
 			  
 			  --DROP TABLE IF EXISTS bookmarks;
-			  --DROP TABLE IF EXISTS werd_segments;
+			  DROP TABLE IF EXISTS werd_segments;
 			  --DROP TABLE IF EXISTS pages;
 			  --DROP TABLE IF EXISTS juz;
 			  --DROP TABLE IF EXISTS surahs;
-			  --DROP TABLE IF EXISTS verses;
+			  DROP TABLE IF EXISTS verses;
 			  --DROP TABLE IF EXISTS streaks;
 			  DROP TABLE IF EXISTS user_settings;
 			  
@@ -145,6 +145,11 @@ export async function initDB(clear: number = 0) {
 		if (await isEmpty(db, "user_settings")) {
 			console.log("empty settings")
 			await setSettings()
+		}
+
+		if (await isEmpty(db, "werd_segment")) {
+			console.log("empty werd_segments")
+			await setWerdSegments()
 		}
 	}
 	catch (error) {
@@ -473,14 +478,49 @@ export const getBookMarks = async () => {
 }
 
 
-export const setWerdSegments = async () => {
-	const db = await getDB()
-	const data = await db.getAllAsync(`SELECT * FROM werd_segments`) as WerdSegment[]
-	if (data) {
-		console.log("Fetched werd segments")
-		return data
+export const setWerdSegments = async (
+    id: number = 1,
+	first_verse: number = 1,
+	last_verse: number = 10,
+	date: string = "8/8/2008"
+) => {
+    try {
+        const db = await getDB();
+        if (await isEmpty(db, "werd_segments")) {
+            await db.runAsync(`
+                INSERT INTO werd_segments (id, first_verse, last_verse, date) 
+                VALUES (?, ?, ?, ?)`, 
+                [id, first_verse, last_verse, date]);
+        }
+        else {
+            await db.runAsync(`
+                UPDATE werd_segments
+                SET first_verse = ?,
+                last_verse = ?,
+                date = ?,
+                WHERE id = ?`,
+                [first_verse, last_verse, date, id]);
+        }
+        console.log("Settings Modified");
+    }
+    catch (error) {
+        console.log("Error updating settings:", error);
+    }
+}
+
+export const updateWerdSegments = async (updates: Partial<WerdSegment>, id: number = 1) => {
+	try {
+		const db = await getDB()
+		const fields = Object.keys(updates)
+		const values = Object.values(updates)
+		values.push(id)
+		const query = fields.map(field => `${field} = ?`).join(", ")
+		await db.runAsync(`UPDATE werd_segments SET ${query} WHERE id = ?`, values)
+		console.log("Updated werd segments")
 	}
-	else return []
+	catch (error) {
+		console.log(error)
+	}
 }
 
 export const getWerdSegment = async (id: number) => {
