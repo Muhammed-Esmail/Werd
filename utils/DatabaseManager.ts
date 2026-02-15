@@ -12,6 +12,7 @@ interface UserSettings {
     ending_date: string;
     theme: number;
 	language: string;
+	currentWerd: number;
 }
 
 interface UserProgress {
@@ -61,9 +62,9 @@ export async function initDB(clear: number = 0) {
 			  --DROP TABLE IF EXISTS pages;
 			  --DROP TABLE IF EXISTS juz;
 			  --DROP TABLE IF EXISTS surahs;
-			  DROP TABLE IF EXISTS verses;
+			  --DROP TABLE IF EXISTS verses;
 			  --DROP TABLE IF EXISTS streaks;
-			  --DROP TABLE IF EXISTS user_settings;
+			  DROP TABLE IF EXISTS user_settings;
 			  
 			  PRAGMA foreign_keys = ON;
 			`);
@@ -80,7 +81,8 @@ export async function initDB(clear: number = 0) {
 				starting_date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
 				ending_date TEXT NOT NULL,
                 theme INT NOT NULL DEFAULT 0,
-				language TEXT NOT NULL DEFAULT "en"
+				language TEXT NOT NULL DEFAULT "en",
+				currentWerd INT NOT NULL DEFAULT 0
 			);
 
 			CREATE TABLE IF NOT EXISTS verses (
@@ -224,8 +226,12 @@ export const addQuranText = async () => {
 			for (let i = 0; i < response.data.juzs.count; i++) {
 				let first_verse = await globalId(db, response.data.juzs.references[i].surah, response.data.juzs.references[i].ayah)
 				let last_verse: number
-				if (i === response.data.juzs.count-1) last_verse = 6236
+				
+				if (i === response.data.juzs.count-1) 
+					last_verse = 6236
+
 				else last_verse = await globalId(db, response.data.juzs.references[i+1].surah, response.data.juzs.references[i+1].ayah)-1
+				
 				await db!.runAsync(`INSERT INTO juz (id, first_verse_id, last_verse_id) VALUES (?, ?, ?)`,
 					[
 						i+1,
@@ -246,10 +252,20 @@ export const addQuranText = async () => {
 export const fetchQuranText = async(params: rp.ReaderParams) => {
 	try {
 		if (params.sessionType === "daily_werd") {
-			console.log("Daily Werd")
+			// console.log("Daily Werd")
+			
+			const settings = await getSettings() as UserSettings[];
+
 			// @ts-ignore
-			const segment_data = getWerdSegment(params.day) as WerdSegment
-			return fetchVerses(segment_data.first_verse, segment_data.last_verse, 'verse')
+			const segment_data = getWerdSegment(1) as WerdSegment[];
+
+			console.log(segment_data[0]);
+			
+			
+
+			// console.log(segment_data[0].first_verse);
+			
+			return fetchVerses(segment_data[0].first_verse, segment_data[0].last_verse, 'verse')
 		}
 		else {
 			console.log("Normal Reading")
@@ -317,15 +333,16 @@ export const setSettings = async (
     starting_date: string = "6/6/2006",
     ending_date: string = "7/7/2007",
     theme: number = 0,
-    language: string = "en"
+    language: string = "en",
+	currentWerd: number = 0
 ) => {
     try {
         const db = await getDB();
         if (await isEmpty(db, "user_settings")) {
             await db.runAsync(`
-                INSERT INTO user_settings (id, font, font_size, reading_mode, partition_type, starting_date, ending_date, theme, language) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
-                [id, font, font_size, reading_mode, partition_type, starting_date, ending_date, theme, language]);
+                INSERT INTO user_settings (id, font, font_size, reading_mode, partition_type, starting_date, ending_date, theme, language, currentWerd) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+                [id, font, font_size, reading_mode, partition_type, starting_date, ending_date, theme, language, currentWerd]);
         }
         else {
             await db.runAsync(`
@@ -337,9 +354,10 @@ export const setSettings = async (
                 starting_date = ?,
                 ending_date = ?,
                 theme = ?,
-                language = ?
+                language = ?,
+                currentWerd = ?
                 WHERE id = ?`,
-                [font, font_size, reading_mode, partition_type, starting_date, ending_date, theme, language, id]); // Added language and id
+                [font, font_size, reading_mode, partition_type, starting_date, ending_date, theme, language, currentWerd, id]); // Added language and id
         }
         console.log("Settings Modified");
     }

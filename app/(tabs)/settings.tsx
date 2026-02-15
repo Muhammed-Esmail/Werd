@@ -189,7 +189,7 @@ const changeLang = async (lang: string = "en", startup: boolean = false) => {
 useEffect(() => {
   const init = async () => {
     console.log("Initializing database...");
-    await DB.initDB(0);
+    // await DB.initDB(0);
 	// await DB.addQuranText();
 	await DB.test(5, 6);
 	const current_settings = await DB.getSettings() as UserSettings[]
