@@ -56,11 +56,10 @@ const DB_NAME = "werd_db.db";
 let database: SQLite.SQLiteDatabase | null = null;
 let dbInitPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
-// @ts-ignore
 export async function getDB() {
     if (database) return database;
     if (dbInitPromise) return dbInitPromise;
-    // @ts-ignore
+
     dbInitPromise = (async () => {
         try {
             const dbPath = `${FileSystem.documentDirectory}SQLite/${DB_NAME}`;
@@ -112,31 +111,23 @@ export async function getDB() {
 
 export async function initDB(clear: number = 0) {
     try {
-        const db = await getDB()
-
+        const dbPath = `${FileSystem.documentDirectory}SQLite/${DB_NAME}`;
+        
         if (clear) {
-            console.log("Clearing Database")
-            await db.execAsync(`
-              PRAGMA foreign_keys = OFF;
-              
-              DROP TABLE IF EXISTS bookmarks;
-              DROP TABLE IF EXISTS werd_segments;
-              DROP TABLE IF EXISTS pages;
-              DROP TABLE IF EXISTS juz;
-              DROP TABLE IF EXISTS surahs;
-              DROP TABLE IF EXISTS verses;
-              DROP TABLE IF EXISTS streaks;
-              DROP TABLE IF EXISTS user_settings;
-              
-              PRAGMA foreign_keys = ON;
-            `);
+            console.log("clearing database");
+            const db = await getDB();
+            await db.closeAsync();
+            
+            await FileSystem.deleteAsync(dbPath, { idempotent: true });
+            
+            database = null;
+            dbInitPromise = null;
+            await getDB();
         }
-
-        console.log("Database initialized");
+        console.log("Database initialized successfully");
     }
     catch (error) {
-        console.log("Error Initializing Database");
-        console.log(error);
+        console.error(error);
     }
 }
 
@@ -192,14 +183,14 @@ export const fetchQuranText = async (params: rp.ReaderParams): Promise<qd.Readin
         }
 
 		if (ayahs.length > 0) {
-            segments.push({
-                surahId: curSurah,
-                surahNameEnglish: "-1",
-                surahNameArabic: "-1",
-                surahType: 'Meccan',
-                ayahs: ayahs
-            });
-        }
+			segments.push({
+				surahId: curSurah,
+				surahNameEnglish: "-1",
+				surahNameArabic: "-1",
+				surahType: 'Meccan',
+				ayahs: ayahs
+			});
+		}
 		
         return {
             sessionId: "-1",
@@ -225,25 +216,19 @@ export const fetchVerses = async (l: number, r: number, partitionType: Partition
 
     try {
         if (partitionType === 'surah') { // surahs
-            // @ts-ignore
             const resL = await db.getFirstAsync<{first_verse: number}>(`SELECT first_verse FROM surahs WHERE id = ?`, [l]);
-            // @ts-ignore
             const resR = await db.getFirstAsync<{last_verse: number}>(`SELECT last_verse FROM surahs WHERE id = ?`, [r]);
             if (resL) first_verse = resL.first_verse;
             if (resR) last_verse = resR.last_verse;
         }
         else if (partitionType === 'juz') { // juz
-            // @ts-ignore
             const resL = await db.getFirstAsync<{first_verse: number}>(`SELECT first_verse FROM juz WHERE id = ?`, [l]);
-            // @ts-ignore
             const resR = await db.getFirstAsync<{last_verse: number}>(`SELECT last_verse FROM juz WHERE id = ?`, [r]);
             if (resL) first_verse = resL.first_verse;
             if (resR) last_verse = resR.last_verse;
         }
         else if (partitionType === 'page') { // pages
-            // @ts-ignore
             const resL = await db.getFirstAsync<{first_verse: number}>(`SELECT first_verse FROM pages WHERE id = ?`, [l]);
-            // @ts-ignore
             const resR = await db.getFirstAsync<{last_verse: number}>(`SELECT last_verse FROM pages WHERE id = ?`, [r]);
             if (resL) first_verse = resL.first_verse;
             if (resR) last_verse = resR.last_verse;
@@ -494,7 +479,7 @@ export const test = async (start: number, end: number) => {
 	if (verses && verses.length) {
 		console.log("------------------------------------------");
 		verses.forEach((v: any, index: number) => {
-			// console.log(`[Verse ${v.id}] ${v.text}`);
+			console.log(`[Verse ${v.id}] ${v.text}`);
 		});
 		console.log("------------------------------------------");
 	} else {
