@@ -1,9 +1,10 @@
 import * as SQLite from "expo-sqlite"
 const DB_NAME = "werd_db"
+import * as rp from "@/types/reader_data"
 let database: SQLite.SQLiteDatabase | null = null;
 
 interface UserSettings {
-    font: string;
+    font?: string;
     font_size: number;
     reading_mode: number;
     partition_type: number;
@@ -14,6 +15,14 @@ interface UserSettings {
 }
 
 interface UserProgress {
+	first_verse: number;
+	last_verse: number;
+	date: string;
+}
+
+
+interface WerdSegment {
+	id: number;
 	first_verse: number;
 	last_verse: number;
 	date: string;
@@ -52,9 +61,9 @@ export async function initDB(clear: number = 0) {
 			  --DROP TABLE IF EXISTS pages;
 			  --DROP TABLE IF EXISTS juz;
 			  --DROP TABLE IF EXISTS surahs;
-			  --DROP TABLE IF EXISTS verses;
+			  DROP TABLE IF EXISTS verses;
 			  --DROP TABLE IF EXISTS streaks;
-			  DROP TABLE IF EXISTS user_settings;
+			  --DROP TABLE IF EXISTS user_settings;
 			  
 			  PRAGMA foreign_keys = ON;
 			`);
@@ -76,6 +85,7 @@ export async function initDB(clear: number = 0) {
 
 			CREATE TABLE IF NOT EXISTS verses (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				relative_id INTEGER NOT NULL,
 				text TEXT NOT NULL,
 				page INTEGER NOT NULL
 			);
@@ -164,15 +174,18 @@ export const addQuranText = async () => {
 		if (request.ok) {
 			const response = await request.json();
 			for (const surah of response.data.surahs) {
+				let cnt = 1
 				for (const verse of surah.ayahs) {
 					await db!.runAsync(`
-						INSERT INTO VERSES (id, text, page) VALUES (?, ?, ?)`,
+						INSERT INTO VERSES (id, relative_id, text, page) VALUES (?, ?, ?, ?)`,
                         [
                             verse.number,
+							cnt,
 							verse.text,
 							verse.page
                         ]		
 					)
+					++cnt
 				}
 			}
 
@@ -230,25 +243,45 @@ export const addQuranText = async () => {
 	}
 }
 
+export const fetchQuranText = async(params: rp.ReaderParams) => {
+	try {
+		if (params.sessionType === "daily_werd") {
+			console.log("Daily Werd")
+			// @ts-ignore
+			const segment_data = getWerdSegment(params.day) as WerdSegment
+			return fetchVerses(segment_data.first_verse, segment_data.last_verse, 'verse')
+		}
+		else {
+			console.log("Normal Reading")
+			// @ts-ignore
+			return fetchVerses(params.surahId, params.surahId, 1)
+		}
+	}
+	catch (error) {
+		console.log("Error fetching Quran Text")
+	}
+}
 
-export const fetchVerses = async (l: number, r: number, partitionType: number) => {
+export type PartitionType = 'verse' | 'surah' | 'juz' | 'page';
+
+export const fetchVerses = async (l: number, r: number, partitionType: PartitionType) => {
     const db = await getDB();
     let first_verse = l, last_verse = r; // verses by default
 
     try {
-        if (partitionType === 1) { // surahs
+        if (partitionType === 'surah') { // surahs
             const resL = await db.getFirstAsync<{first_verse_id: number}>(`SELECT first_verse_id FROM surahs WHERE id = ?`, [l]);
             const resR = await db.getFirstAsync<{last_verse_id: number}>(`SELECT last_verse_id FROM surahs WHERE id = ?`, [r]);
             if (resL) first_verse = resL.first_verse_id;
             if (resR) last_verse = resR.last_verse_id;
         }
-        else if (partitionType === 2) { // juz
+        else if (partitionType === 'juz') { // juz
             const resL = await db.getFirstAsync<{first_verse_id: number}>(`SELECT first_verse_id FROM juz WHERE id = ?`, [l]);
             const resR = await db.getFirstAsync<{last_verse_id: number}>(`SELECT last_verse_id FROM juz WHERE id = ?`, [r]);
             if (resL) first_verse = resL.first_verse_id;
             if (resR) last_verse = resR.last_verse_id;
         }
-        else if (partitionType === 3) { // pages
+        else if (partitionType === 'page') { // pages
             const resL = await db.getFirstAsync<{first_verse_id: number}>(`SELECT first_verse_id FROM pages WHERE id = ?`, [l]);
             const resR = await db.getFirstAsync<{last_verse_id: number}>(`SELECT last_verse_id FROM pages WHERE id = ?`, [r]);
             if (resL) first_verse = resL.first_verse_id;
@@ -370,6 +403,15 @@ export const getUserProgress = async () => {
 	}
 }
 
+export const getStreak = async() => {
+	try {
+		
+	}
+	catch (error) {
+		console.log(error)
+	}
+}
+
 export const updateStreak = async (updates: Partial<UserProgress>, id: number = 1) => {
 	try {
 		const db = await getDB()
@@ -401,7 +443,7 @@ export const getBookMarks = async () => {
 		const db = await getDB()
 		const data = await db.getAllAsync(`SELECT * FROM bookmarks`) as Bookmark[]
 		if (data) {
-			console.log("Added user progress")
+			console.log("Fetched user progress")
 			return data
 		}
 		else return []
@@ -413,24 +455,47 @@ export const getBookMarks = async () => {
 }
 
 
+export const setWerdSegments = async () => {
+	const db = await getDB()
+	const data = await db.getAllAsync(`SELECT * FROM werd_segments`) as WerdSegment[]
+	if (data) {
+		console.log("Fetched werd segments")
+		return data
+	}
+	else return []
+}
+
+export const getWerdSegment = async (id: number) => {
+	try {
+		const db = await getDB();
+		const data = await db.getFirstAsync(`SELECT * FROM werd_segments WHERE id = ?`, [id]) as WerdSegment[]
+		if (data) return data
+		else return []
+	}
+	catch (error) {
+		console.log("Error reading werd segment")
+		return []
+	}
+}
+
 
 export const test = async (start: number, end: number) => {
-	// const verses = await fetchVerses(start, end, 2); 
-	// if (verses && verses.length) {
-	// 	console.log("------------------------------------------");
-	// 	verses.forEach((v: any, index: number) => {
-	// 		console.log(`[Verse ${v.id}] ${v.text}`);
-	// 	});
-	// 	console.log("------------------------------------------");
-	// } else {
-	// 	console.log("No verses found");
-	// }
-	console.log("testing...")
-	const settings = await getSettings() as UserSettings[]
-	if (settings && settings.length > 0) {
-    	console.log(`${settings[0].font}`);
-		console.log(`${settings[0].theme}`);
-		console.log(`${settings[0].reading_mode}`);
-		console.log(`${settings[0].language}`);
+	const verses = await fetchVerses(start, end, 'surah'); 
+	if (verses && verses.length) {
+		console.log("------------------------------------------");
+		verses.forEach((v: any, index: number) => {
+			console.log(`[Verse ${v.id}] ${v.text}`);
+		});
+		console.log("------------------------------------------");
+	} else {
+		console.log("No verses found");
 	}
+	// console.log("testing...")
+	// const settings = await getSettings() as UserSettings[]
+	// if (settings && settings.length > 0) {
+    // 	console.log(`${settings[0].font}`);
+	// 	console.log(`${settings[0].theme}`);
+	// 	console.log(`${settings[0].reading_mode}`);
+	// 	console.log(`${settings[0].language}`);
+	// }
 }

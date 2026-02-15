@@ -191,7 +191,7 @@ useEffect(() => {
     console.log("Initializing database...");
     await DB.initDB(0);
 	// await DB.addQuranText();
-	await DB.test(4, 5);
+	await DB.test(5, 6);
 	const current_settings = await DB.getSettings() as UserSettings[]
 	setIsEnabled(current_settings[0].theme === 0)
 	setColorScheme(current_settings[0].theme === 0 ? "dark" : "light")
