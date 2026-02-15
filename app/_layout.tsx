@@ -3,6 +3,8 @@ import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import './globals.css';
+import * as DB from "@/utils/DatabaseManager"
+import * as rd from '@/types/reader_data';
 
 export default function RootLayout() {
   
@@ -19,6 +21,27 @@ export default function RootLayout() {
     'J1': require('../assets/fonts/J1.ttf'),
     'J2': require('../assets/fonts/J2.ttf'),
   });
+
+  useEffect(() => {
+    const init = async () => {
+      console.log("Initializing database...");
+      
+      await DB.initDB(1);
+      await DB.addQuranText();
+      await DB.setSettings()
+      await DB.setWerdSegments()
+      await DB.test(5, 6);
+
+      const surahs = await DB.getSurahs();
+      if (surahs) {
+        rd.SURAH_DATA.length = 0;
+        rd.SURAH_DATA.push(...surahs as any);
+      }
+  
+    console.log("Done")
+    };
+    init();
+  }, []);
 
   useEffect(() => {
     if (loaded || error) {

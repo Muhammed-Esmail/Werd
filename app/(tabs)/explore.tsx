@@ -78,14 +78,14 @@ const explore = () => {
 
       // Fuzzy-ish logic: matches English name, Arabic name, or ID
       return (
-        surah.nameEn.toLowerCase().includes(cleanQuery) ||
-        surah.nameAr.includes(cleanQuery) ||
+        surah.englishName.toLowerCase().includes(cleanQuery) ||
+        surah.arabicName.includes(cleanQuery) ||
         surah.id.toString() === cleanQuery
       );
     }).sort((a, b) => {
         // Boost exact starts to the top for "closest" feel
-        const aStarts = a.nameEn.toLowerCase().startsWith(cleanQuery) ? 1 : 0;
-        const bStarts = b.nameEn.toLowerCase().startsWith(cleanQuery) ? 1 : 0;
+        const aStarts = a.englishName.toLowerCase().startsWith(cleanQuery) ? 1 : 0;
+        const bStarts = b.englishName.toLowerCase().startsWith(cleanQuery) ? 1 : 0;
         return bStarts - aStarts;
     });
   }, [filter, searchQuery]);
@@ -133,8 +133,8 @@ const explore = () => {
             renderItem={({item}) => (
               <SurahCard 
                 id={item.id} 
-                nameEn={item.nameEn}
-                nameAr={item.nameAr}
+                nameEn={item.englishName}
+                nameAr={item.arabicName}
                 ayahs={item.ayahs}
                 type={item.type}
                 onPress={() => handleSurahPress(item.id)}
