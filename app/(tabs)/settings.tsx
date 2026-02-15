@@ -191,8 +191,10 @@ useEffect(() => {
   const init = async () => {
     console.log("Initializing database...");
     
-    await DB.initDB(0);
-	await DB.addQuranText();
+    await DB.initDB(1);
+	// await DB.addQuranText();
+    await DB.setSettings()
+    await DB.setWerdSegments()
 	await DB.test(5, 6);
 
 	const current_settings = await DB.getSettings() as UserSettings[]

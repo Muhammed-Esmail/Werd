@@ -58,14 +58,14 @@ export async function initDB(clear: number = 0) {
 			await db.execAsync(`
 			  PRAGMA foreign_keys = OFF;
 			  
-			  DROP TABLE IF EXISTS bookmarks;
+			  --DROP TABLE IF EXISTS bookmarks;
 			  DROP TABLE IF EXISTS werd_segments;
-			  DROP TABLE IF EXISTS pages;
-			  DROP TABLE IF EXISTS juz;
-			  DROP TABLE IF EXISTS surahs;
-			  DROP TABLE IF EXISTS verses;
-			  DROP TABLE IF EXISTS streaks;
-			  DROP TABLE IF EXISTS user_settings;
+			  --DROP TABLE IF EXISTS pages;
+			  --DROP TABLE IF EXISTS juz;
+			  --DROP TABLE IF EXISTS surahs;
+			  --DROP TABLE IF EXISTS verses;
+			  --DROP TABLE IF EXISTS streaks;
+			  --DROP TABLE IF EXISTS user_settings;
 			  
 			  PRAGMA foreign_keys = ON;
 			`);
@@ -272,7 +272,7 @@ export const fetchQuranText = async (params: rp.ReaderParams): Promise<qd.Readin
 
             const currentWerdId = settings[0].currentWerd;
 			const segment = await getWerdSegment(currentWerdId) as WerdSegment
-			console.log("segment")
+			console.log("werd segment")
 			console.log(segment)
 
 			verses = await fetchVerses(segment.first_verse, segment.last_verse, 'verse');
@@ -393,7 +393,7 @@ export const setSettings = async (
     ending_date: string = "7/7/2007",
     theme: number = 0,
     language: string = "en",
-	currentWerd: number = 0
+	currentWerd: number = 1
 ) => {
     try {
         const db = await getDB();
