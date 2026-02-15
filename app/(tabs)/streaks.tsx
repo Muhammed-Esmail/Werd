@@ -1,80 +1,209 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, FlatList, Dimensions, ViewToken, ListRenderItem } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useStreak } from '@/services/StreakManager';
 
-const StreakPage = () => {
-  const { streak, incrementStreak, loading } = useStreak();
+// --- Types ---
+interface DayData {
+  intensity: number;
+}
 
-  // If the hook is still reading from AsyncStorage, show a loader
+interface MonthData {
+  id: string;
+  label: string;
+  days: DayData[];
+}
+
+// --- Constants ---
+const { width } = Dimensions.get('window');
+
+const MAX_GRID_WIDTH = 360; 
+const LIST_WIDTH = Math.min(width - 88, MAX_GRID_WIDTH);
+
+const MONTH_NAMES = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
+// --- Helpers ---
+const generateMockMonths = (): MonthData[] => {
+  const months: MonthData[] = [];
+  const today = new Date();
+  
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    const monthName = MONTH_NAMES[d.getMonth()];
+    const year = d.getFullYear();
+    const daysInMonth = new Date(year, d.getMonth() + 1, 0).getDate();
+    
+    const days: DayData[] = Array.from({ length: daysInMonth }, () => ({
+      intensity: Math.random() > 0.4 ?  1 : 0, 
+    }));
+
+    months.push({ id: `${monthName}-${year}`, label: `${monthName} ${year}`, days });
+  }
+  return months.reverse(); 
+};
+
+const MOCK_MONTHS = generateMockMonths();
+
+const StreakPage = () => {
+  const { streak, loading } = useStreak(); 
+  const longestStreak = 45; 
+  const [currentMonthIndex, setCurrentMonthIndex] = useState(MOCK_MONTHS.length - 1);
+  const flatListRef = useRef<FlatList>(null);
+
+  // --- Handlers ---
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+    if (viewableItems.length > 0 && viewableItems[0].index !== null) {
+      setCurrentMonthIndex(viewableItems[0].index);
+    }
+  }).current;
+
+  const scrollToIndex = (index: number) => {
+    if (index >= 0 && index < MOCK_MONTHS.length) {
+      flatListRef.current?.scrollToIndex({ index, animated: true });
+    }
+  };
+
+  // --- Render Item (Consolidated) ---
+  const renderMonth: ListRenderItem<MonthData> = ({ item }) => (
+    <View style={{ width: LIST_WIDTH }} className="items-center">
+      <Text className="text-zinc-500 text-[10px] font-bold mb-4 tracking-widest uppercase">
+        {item.label}
+      </Text>
+
+      {/* Grid Container */}
+      <View className="flex-row flex-wrap justify-between w-full">
+        {item.days.map((day: DayData, index: number) => (
+          <View 
+            key={index} 
+            className="w-[13.5%] aspect-square mb-1.5"
+          >
+            <View 
+              className="flex-1 rounded-md border border-white/5"
+              style={{ 
+                backgroundColor: day.intensity === 0 ? '#18181b' : '#eab308' 
+              }}
+            />
+          </View>
+        ))}
+        {/* Filler views to align the last row left when using justify-between */}
+        {[...Array(7)].map((_, i) => <View key={`filler-${i}`} className="w-[13.5%]" />)}
+      </View>
+    </View>
+  );
+
   if (loading) {
     return (
-      <View className="flex-1 bg-slate-50 justify-center items-center">
-        <ActivityIndicator size="large" color="#f97316" />
+      <View className="flex-1 bg-[#0a0a0a] justify-center items-center">
+        <ActivityIndicator size="large" color="#eab308" />
       </View>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
-      <View className="flex-1 justify-center items-center px-6">
+    <SafeAreaView className="flex-1 bg-[#0a0a0a]">
+      <ScrollView className="flex-1 px-5">
         
-        {/* Streak Display Card */}
-        <View className="bg-white w-full max-w-sm p-8 rounded-[40px] items-center shadow-2xl shadow-slate-200 border border-slate-100">
-          
-          <Text className="text-slate-400 font-bold uppercase tracking-widest text-xs mb-2">
-            Current Progress
-          </Text>
-
-          {/* The "Flame" Container */}
-          <View className="relative mb-6">
-             {/* Simple decorative ring */}
-            <View className="w-44 h-44 rounded-full border-4 border-orange-50 border-t-orange-500 rotate-45 justify-center items-center">
-               <View className="-rotate-45 items-center">
-                  <Text className="text-7xl font-black text-slate-800">
-                    {streak}
-                  </Text>
-                  <Text className="text-orange-500 font-bold text-sm">
-                    {streak === 1 ? 'DAY' : 'DAYS'}
-                  </Text>
-               </View>
-            </View>
-            
-            {/* Small Floating Icon */}
-            <View className="absolute -top-2 -right-2 bg-orange-500 w-12 h-12 rounded-full items-center justify-center border-4 border-white">
-              <Text className="text-xl">🔥</Text>
-            </View>
+        {/* Header */}
+        <View className="flex-row justify-between items-center py-6">
+          <Text className="text-xl font-bold text-yellow-500">Gold Stats & Heatmap</Text>
+          <View className="w-8 h-8 rounded-full bg-zinc-800 items-center justify-center">
+             <Text className="text-white text-xs">👤</Text>
           </View>
-
-          <View className="items-center mb-8">
-            <Text className="text-slate-800 text-2xl font-bold text-center">
-              {streak > 0 ? "You're on fire!" : "Start your journey!"}
-            </Text>
-            <Text className="text-slate-400 text-center mt-2 px-4">
-              {streak > 0 
-                ? "Don't let the flame go out. Complete your task today!" 
-                : "Log your first activity to start a new streak."}
-            </Text>
-          </View>
-
-          {/* Action Button */}
-          <TouchableOpacity 
-            onPress={incrementStreak}
-            activeOpacity={0.8}
-            className="w-full bg-orange-500 py-5 rounded-3xl shadow-lg shadow-orange-300 active:bg-orange-600"
-          >
-            <Text className="text-white text-center text-lg font-heavy tracking-wide">
-               COMPLETE TASK
-            </Text>
-          </TouchableOpacity>
-
         </View>
 
-        {/* Footer Info */}
-        <Text className="mt-10 text-slate-400 font-medium italic">
-          "Consistency is the key to success."
+        {/* Stats Row */}
+        <View className="flex-row gap-4 mb-6">
+          <View className="flex-1 bg-zinc-900 p-5 rounded-3xl border border-zinc-800 items-center justify-center">
+            <Text className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-1 text-center">Current Streak</Text>
+            <View className="flex-row items-center justify-center">
+              <Text className="text-4xl font-bold text-yellow-500 mr-2">{streak}</Text>
+              <Text className="text-xl">🔥</Text>
+            </View>
+            <Text className="text-zinc-400 text-[10px] mt-1 text-center">DAYS CONSISTENT</Text>
+          </View>
+
+          <View className="flex-1 bg-zinc-900 p-5 rounded-3xl border border-zinc-800 items-center justify-center">
+            <Text className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-1 text-center">Longest Streak</Text>
+            <Text className="text-4xl font-bold text-zinc-200 text-center">{longestStreak}</Text>
+            <Text className="text-yellow-600/70 text-[10px] font-medium mt-1 text-center">DAYS</Text>
+          </View>
+        </View>
+
+        {/* Swipeable Heatmap Section */}
+        <View className="bg-zinc-900/50 pt-6 pb-6 rounded-[32px] border border-zinc-800/50 mb-8 items-center w-full">
+          
+          {/* Arrows Header */}
+          {/* UPDATE: Added explicit width to match LIST_WIDTH so arrows stay close to grid on tablets */}
+          <View 
+            style={{ width: LIST_WIDTH + 10 }} // +10 gives the arrows a little breathing room
+            className="flex-row justify-between items-center mb-2"
+          >
+            <TouchableOpacity 
+              onPress={() => scrollToIndex(currentMonthIndex - 1)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Text className={`text-2xl ${currentMonthIndex === 0 ? 'text-zinc-700' : 'text-yellow-500'}`}>‹</Text>
+            </TouchableOpacity>
+            
+            <Text className="text-zinc-100 font-bold text-lg">Activity History</Text>
+            
+            <TouchableOpacity 
+              onPress={() => scrollToIndex(currentMonthIndex + 1)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Text className={`text-2xl ${currentMonthIndex === MOCK_MONTHS.length - 1 ? 'text-zinc-700' : 'text-yellow-500'}`}>›</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <FlatList
+            ref={flatListRef}
+            data={MOCK_MONTHS}
+            keyExtractor={(item) => item.id}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            
+            // Constrain width here
+            style={{ width: LIST_WIDTH, flexGrow: 0 }}
+            
+            snapToInterval={LIST_WIDTH}
+            decelerationRate="fast"
+            getItemLayout={(data, index) => ({
+              length: LIST_WIDTH,
+              offset: LIST_WIDTH * index,
+              index,
+            })}
+            onViewableItemsChanged={onViewableItemsChanged}
+            viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
+            initialScrollIndex={MOCK_MONTHS.length - 1}
+            onScrollToIndexFailed={(info) => {
+              const wait = new Promise(resolve => setTimeout(resolve, 500));
+              wait.then(() => {
+                flatListRef.current?.scrollToIndex({ index: info.index, animated: true });
+              });
+            }}
+            renderItem={renderMonth}
+          />
+        </View>
+
+        {/* Quote Section */}
+        <View className="bg-zinc-900/30 border border-zinc-800/50 p-8 rounded-[40px] items-center relative overflow-hidden">
+          <Text className="text-yellow-500 text-4xl mb-2">“</Text>
+          <Text className="text-zinc-200 text-center text-lg leading-7 font-medium italic px-2">
+            "The most beloved of deeds to Allah are those that are most consistent, even if they are small."
+          </Text>
+          <View className="flex-row items-center mt-6">
+            <View className="h-[1px] w-8 bg-zinc-700" />
+            <Text className="text-yellow-500 font-bold tracking-widest text-[10px] mx-3">PROPHET MUHAMMAD (ﷺ)</Text>
+            <View className="h-[1px] w-8 bg-zinc-700" />
+          </View>
+        </View>
+
+        <Text className="text-zinc-600 text-center mt-8 mb-10 tracking-[4px] text-[10px] font-bold">
+          MASHAALLAH • KEEP GOING
         </Text>
-      </View>
+
+      </ScrollView>
     </SafeAreaView>
   );
 };

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback} from 'react';
 import { AppState, AppStateStatus } from 'react-native';
+import * as DB from '../utils/DatabaseManager'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface StreakData {
@@ -7,7 +8,7 @@ interface StreakData {
     date: string | null;
 }
 
-export const useStreak = (storageKey = '@user_streak') => {
+export const useStreak = () => {
     const [streak, setStreak] = useState<number>(0);
     const [lastCompleted, setLastCompleted] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
@@ -17,9 +18,11 @@ export const useStreak = (storageKey = '@user_streak') => {
         
         return new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes()).getTime();
     };
+
+    
     const oneDayInMs = 60 * 1000;
     const ResetStreak = useCallback(async () => {
-        const savedData = await AsyncStorage.getItem(storageKey);
+        const savedData = await DB.getStreak();
         if(!savedData) return;
         const parsed = JSON.parse(savedData) as StreakData;
         const today = getTimeStamp();
@@ -28,7 +31,7 @@ export const useStreak = (storageKey = '@user_streak') => {
         if(diffInMs > oneDayInMs)setStreak(0);
         else setStreak(parsed.count);
         setLastCompleted(parsed.date);
-    }, [storageKey]);
+    }, []);
 
     useEffect(() => {
         const init = async() => {
@@ -49,7 +52,7 @@ export const useStreak = (storageKey = '@user_streak') => {
             clearInterval(interval);
             subscription.remove();
         };
-    }, [storageKey]);
+    }, [ResetStreak]);
 
     const incrementStreak = useCallback(async () => {
         const now = new Date();
@@ -75,11 +78,12 @@ export const useStreak = (storageKey = '@user_streak') => {
                 date: now.toISOString() 
             };
             
-            AsyncStorage.setItem(storageKey, JSON.stringify(updatedData));
+            
+            // AsyncStorage.setItem(storageKey, JSON.stringify(updatedData));
             setLastCompleted(updatedData.date);
             
             return newStreak;
         });
-    }, [streak, lastCompleted, storageKey]);
+    }, [streak, lastCompleted]);
     return { streak, incrementStreak, loading };
 }
