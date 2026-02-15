@@ -5,7 +5,6 @@ import { useEffect } from 'react';
 import './globals.css';
 import * as DB from "@/utils/DatabaseManager"
 import * as rd from '@/types/reader_data';
-import React from "react";
 
 export default function RootLayout() {
   
@@ -28,14 +27,15 @@ export default function RootLayout() {
       console.log("Initializing database...");
       
       // await DB.initDB(1);
-      await DB.setSettings()
-      await DB.setWerdSegments()
-      await DB.test(5, 6);
+      // await DB.setSettings()
+      // await DB.setWerdSegments()
+      await DB.test(114,114);
 
       const surahs = await DB.getSurahs();
       if (surahs) {
         rd.SURAH_DATA.length = 0;
         rd.SURAH_DATA.push(...surahs as any);
+        console.log(`surahs size = ${rd.SURAH_DATA.length}`)
       }
   
     console.log("Done")
