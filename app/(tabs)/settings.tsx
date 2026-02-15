@@ -192,7 +192,7 @@ useEffect(() => {
     console.log("Initializing database...");
     
     await DB.initDB(1);
-	// await DB.addQuranText();
+	await DB.addQuranText();
     await DB.setSettings()
     await DB.setWerdSegments()
 	await DB.test(5, 6);

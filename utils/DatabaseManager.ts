@@ -4,7 +4,7 @@ import * as rp from "@/types/reader_data"
 import * as qd from "@/types/quran_data"
 let database: SQLite.SQLiteDatabase | null = null;
 
-interface UserSettings {
+export interface UserSettings {
     font?: string;
     font_size: number;
     reading_mode: number;
@@ -16,23 +16,34 @@ interface UserSettings {
 	currentWerd: number;
 }
 
-interface UserProgress {
+export interface UserProgress {
 	first_verse: number;
 	last_verse: number;
 	date: string;
 }
 
 
-interface WerdSegment {
+export interface WerdSegment {
 	id: number;
 	first_verse: number;
 	last_verse: number;
 	date: string;
 }
 
-interface Bookmark {
+export interface Bookmark {
 	id: number;
 	verse: number;
+}
+
+export interface Surah {
+	id: number;
+	first_verse: number;
+	last_verse: number;
+	starting_page_id: number;
+	ayahs: number,
+	arabicName: string;
+	englishName: string;
+	type: string;
 }
 
 const isEmpty = async (db: SQLite.SQLiteDatabase, table: string) => {
@@ -82,14 +93,14 @@ export async function initDB(clear: number = 0) {
 			await db.execAsync(`
 			  PRAGMA foreign_keys = OFF;
 			  
-			  --DROP TABLE IF EXISTS bookmarks;
+			  DROP TABLE IF EXISTS bookmarks;
 			  DROP TABLE IF EXISTS werd_segments;
-			  --DROP TABLE IF EXISTS pages;
-			  --DROP TABLE IF EXISTS juz;
-			  --DROP TABLE IF EXISTS surahs;
-			  --DROP TABLE IF EXISTS verses;
-			  --DROP TABLE IF EXISTS streaks;
-			  --DROP TABLE IF EXISTS user_settings;
+			  DROP TABLE IF EXISTS pages;
+			  DROP TABLE IF EXISTS juz;
+			  DROP TABLE IF EXISTS surahs;
+			  DROP TABLE IF EXISTS verses;
+			  DROP TABLE IF EXISTS streaks;
+			  DROP TABLE IF EXISTS user_settings;
 			  
 			  PRAGMA foreign_keys = ON;
 			`);
@@ -123,7 +134,8 @@ export async function initDB(clear: number = 0) {
 				first_verse INTEGER NOT NULL,
 				last_verse INTEGER NOT NULL,
 				starting_page_id INTEGER NOT NULL,
-				name TEXT NOT NULL,
+				arabicName TEXT NOT NULL,
+				englishName TEXT NOT NULL,
 				type TEXT NOT NULL,
 				FOREIGN KEY (first_verse) REFERENCES verses(id),
 				FOREIGN KEY (last_verse) REFERENCES verses(id)
@@ -222,12 +234,13 @@ export const addQuranText = async () => {
 
             for (const surah of response.data.surahs) {
                 await db!.runAsync(`
-					INSERT INTO surahs (id, first_verse, last_verse, starting_page_id, name, type) VALUES (?, ?, ?, ?, ?, ?)`,
+					INSERT INTO surahs (id, first_verse, last_verse, starting_page_id, arabicName, englishName, type) VALUES (?, ?, ?, ?, ?, ?, ?)`,
                     [
 						surah.number,
 						surah.ayahs[0].number,
 						surah.ayahs[surah.ayahs.length-1].number,
 						surah.ayahs[0].page,
+						surah.name,
 						surah.englishName,
 					    surah.revelationType
                     ]
@@ -393,6 +406,18 @@ export const fetchVerses = async (l: number, r: number, partitionType: Partition
     } catch (error) {
         console.error("Fetch Verses Error:", error);
         return [];
+    }
+}
+
+export const getSurahs = async () => {
+    try {
+        const db = await getDB()
+        const data = await db.getAllAsync(`SELECT * FROM surahs`) as Surah[]
+        if (data) return data
+    }
+    catch (error) {
+        console.log(error)
+        return []
     }
 }
 

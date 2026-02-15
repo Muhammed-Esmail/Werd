@@ -1,21 +1,12 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { FlatList, Text, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import SearchBar from "@/components/SearchBar";
 import { router } from 'expo-router';
 import { SessionType, ReaderParams } from '@/types/reader_data';
+import * as DB from "@/utils/DatabaseManager"
 
-// Sample surah data
-const SURAH_DATA = [
-  { id: 1, nameEn: 'Al-Fatihah', nameAr: 'الفاتحة', ayahs: 7, type: 'Meccan' },
-  { id: 2, nameEn: 'Al-Baqarah', nameAr: 'البقرة', ayahs: 286, type: 'Medinan' },
-  { id: 3, nameEn: "Ali 'Imran", nameAr: 'آل عمران', ayahs: 200, type: 'Medinan' },
-  { id: 4, nameEn: 'An-Nisa', nameAr: 'النساء', ayahs: 176, type: 'Medinan' },
-  { id: 5, nameEn: "Al-Ma'idah", nameAr: 'المائدة', ayahs: 120, type: 'Medinan' },
-  { id: 6, nameEn: "Al-An'am", nameAr: 'الأنعام', ayahs: 165, type: 'Meccan' },
-  { id: 7, nameEn: "Al-A'raf", nameAr: 'الأعراف', ayahs: 206, type: 'Meccan' },
-  { id: 8, nameEn: 'Al-Anfal', nameAr: 'الأنفال', ayahs: 75, type: 'Medinan' },
-]
+// const SURAH_DATA = await DB.getSurahs();
 
 const SurahCard = ({id, nameEn, nameAr, ayahs, type, onPress} : any) => {
   let id_padded = `${id}`
@@ -62,6 +53,7 @@ const FilterButton = ({label, active, onPress} : any) => {
 
 const explore = () => {
 
+  const [SURAH_DATA, setSurahData] = useState<DB.Surah[]>()  
   const [filter, setFilter] = useState('ALL');
 
   const handleSurahPress = (surah: any) => {
@@ -76,6 +68,15 @@ const explore = () => {
       params: params as any
     })
   }
+
+  useEffect(() => {
+    const init = async () => {
+      const surhas = await DB.getSurahs() as DB.Surah[]
+      setSurahData(surhas)
+    };
+    init();
+  }, []);
+  
 
   return (
     <SafeAreaView className="flex-1 bg-bgBlack">
@@ -104,8 +105,8 @@ const explore = () => {
             renderItem={({item}) => (
               <SurahCard 
                 id={item.id} 
-                nameEn={item.nameEn}
-                nameAr={item.nameAr}
+                nameEn={item.englishName}
+                nameAr={item.arabicName}
                 ayahs={item.ayahs}
                 type={item.type}
                 onPress={() => handleSurahPress(item.id)}
