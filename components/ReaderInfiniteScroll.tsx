@@ -32,6 +32,7 @@ export const ReaderInfiniteScroll = () => {
         sessionType: raw_params.sessionType as SessionType || 'daily_werd'
     } as ReaderParams;
 
+    console.log("params")
     console.log(params);
     
 
@@ -39,7 +40,9 @@ export const ReaderInfiniteScroll = () => {
         const fetchData = async () => {
             try{
                 const data = await DB.fetchQuranText(params) as ReadingSession;
-                setQuranData(data);
+                console.log("reading session data")
+                console.log(data)
+                // setQuranData(data);
             } catch (error) {
                 console.error("Error fetching Quran text:", error);
             }

@@ -267,9 +267,14 @@ export const fetchQuranText = async (params: rp.ReaderParams): Promise<qd.Readin
 
         if (params.sessionType === "daily_werd") {
             const settings = await getSettings() as UserSettings[];
-            const currentWerdId = settings[0].currentWerd;
+			console.log("settings")
+			console.log(settings)
 
+            const currentWerdId = settings[0].currentWerd;
 			const segment = await getWerdSegment(currentWerdId) as WerdSegment
+			console.log("segment")
+			console.log(segment)
+
 			verses = await fetchVerses(segment.first_verse, segment.last_verse, 'verse');
         } 
 		else if(params.sessionType === "full_surah") {
@@ -280,7 +285,7 @@ export const fetchQuranText = async (params: rp.ReaderParams): Promise<qd.Readin
         const segments: qd.SurahSegment[] = [];
         
 		let curSurah = verses[0].surah_id
-		let ayahs = []
+		let ayahs: qd.AyahData[] = []
         for (let i = 0; i < verses.length; i++) {
 		
 			if (verses[i].surah_id === curSurah) {
@@ -298,9 +303,22 @@ export const fetchQuranText = async (params: rp.ReaderParams): Promise<qd.Readin
 						ayahs: ayahs
 					}
 				);
-				ayahs = []
+				ayahs = [{
+                    number: verses[i].relative_id,
+                    text: verses[i].text
+                }]
 				++curSurah
 			}
+        }
+
+		if (ayahs.length > 0) {
+            segments.push({
+                surahId: curSurah,
+                surahNameEnglish: "-1",
+                surahNameArabic: "-1",
+                surahType: 'Meccan',
+                ayahs: ayahs
+            });
         }
 		
         return {
