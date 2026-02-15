@@ -26,8 +26,7 @@ export default function RootLayout() {
     const init = async () => {
       console.log("Initializing database...");
       
-      await DB.initDB(1);
-      await DB.addQuranText();
+      // await DB.initDB(1);
       await DB.setSettings()
       await DB.setWerdSegments()
       await DB.test(5, 6);

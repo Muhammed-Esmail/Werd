@@ -1,8 +1,8 @@
-import * as SQLite from "expo-sqlite"
-const DB_NAME = "werd_db"
+import * as SQLite from "expo-sqlite";
+import * as FileSystem from 'expo-file-system/legacy'; // FORCE LEGACY
+import { Asset } from 'expo-asset';
 import * as rp from "@/types/reader_data"
 import * as qd from "@/types/quran_data"
-let database: SQLite.SQLiteDatabase | null = null;
 
 export interface UserSettings {
     font?: string;
@@ -21,7 +21,6 @@ export interface UserProgress {
 	last_verse: number;
 	date: string;
 }
-
 
 export interface WerdSegment {
 	id: number;
@@ -53,31 +52,57 @@ const isEmpty = async (db: SQLite.SQLiteDatabase, table: string) => {
     return result!.count === 0;
 }
 
+const DB_NAME = "werd_db.db";
+let database: SQLite.SQLiteDatabase | null = null;
 let dbInitPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
 export async function getDB() {
-    // 1. If database is already ready, return it immediately
-    if (database) {
-        return database;
-    }
+    if (database) return database;
+    if (dbInitPromise) return dbInitPromise;
 
-    // 2. If initialization is ALREADY happening, return the existing promise
-    // instead of starting a new one.
-    if (dbInitPromise) {
-        return dbInitPromise;
-    }
-
-    // 3. Start the initialization and save the promise
     dbInitPromise = (async () => {
         try {
+            const dbPath = `${FileSystem.documentDirectory}SQLite/${DB_NAME}`;
+            const dbDir = `${FileSystem.documentDirectory}SQLite/`;
+
+            const fileInfo = await FileSystem.getInfoAsync(dbPath);
+            
+            if (!fileInfo.exists || fileInfo.size === 0) {
+                console.log("Database missing or empty. Copying from assets...");
+                const dirInfo = await FileSystem.getInfoAsync(dbDir);
+                if (!dirInfo.exists) {
+                    await FileSystem.makeDirectoryAsync(dbDir, { intermediates: true });
+                }
+
+                const asset = Asset.fromModule(require('@/assets/database/werd_db.db'));
+                await asset.downloadAsync();
+
+                if (asset.localUri) {
+                    await FileSystem.copyAsync({ from: asset.localUri, to: dbPath });
+                    console.log("Database copied successfully!");
+                }
+            }
+
             const db = await SQLite.openDatabaseAsync(DB_NAME);
-            database = db; // Save to the global variable
+
+            const tableCheck = await db.getFirstAsync<{ name: string }>(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='surahs'"
+            );
+
+            if (!tableCheck) {
+                console.error("Opened database is EMPTY. Deleting and forcing re-copy...");
+                database = null;
+                await db.closeAsync();
+                await FileSystem.deleteAsync(dbPath, { idempotent: true });
+                return getDB();
+            }
+
+            database = db;
             return db;
         } catch (error) {
             console.error("Failed to open DB:", error);
+            dbInitPromise = null;
             throw error;
-        } finally {
-            dbInitPromise = null; // Clean up the promise
         }
     })();
 
@@ -85,217 +110,34 @@ export async function getDB() {
 }
 
 export async function initDB(clear: number = 0) {
-	try {
-		const db = await getDB()
+    try {
+        const db = await getDB()
 
-		if (clear) {
-			console.log("Clearing Database")
-			await db.execAsync(`
-			  PRAGMA foreign_keys = OFF;
-			  
-			  DROP TABLE IF EXISTS bookmarks;
-			  DROP TABLE IF EXISTS werd_segments;
-			  DROP TABLE IF EXISTS pages;
-			  DROP TABLE IF EXISTS juz;
-			  DROP TABLE IF EXISTS surahs;
-			  DROP TABLE IF EXISTS verses;
-			  DROP TABLE IF EXISTS streaks;
-			  DROP TABLE IF EXISTS user_settings;
-			  
-			  PRAGMA foreign_keys = ON;
-			`);
-		}
-
-
-		await db?.execAsync(`
-			CREATE TABLE IF NOT EXISTS user_settings (
-				id INTEGER PRIMARY KEY AUTOINCREMENT,
-                font TEXT NOT NULL,
-				font_size INTEGER DEFAULT 1,
-				reading_mode INTEGER DEFAULT 0,
-				partition_type INTEGER DEFAULT 0,
-				starting_date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-				ending_date TEXT NOT NULL,
-                theme INT NOT NULL DEFAULT 0,
-				language TEXT NOT NULL DEFAULT "en",
-				currentWerd INT NOT NULL DEFAULT 0
-			);
-
-			CREATE TABLE IF NOT EXISTS verses (
-				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				relative_id INTEGER NOT NULL,
-				surah_id INTEGER NOT NULL,
-				text TEXT NOT NULL,
-				page INTEGER NOT NULL
-			);
-
-			CREATE TABLE IF NOT EXISTS surahs (
-				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				first_verse INTEGER NOT NULL,
-				last_verse INTEGER NOT NULL,
-				starting_page_id INTEGER NOT NULL,
-				arabicName TEXT NOT NULL,
-				englishName TEXT NOT NULL,
-				type TEXT NOT NULL,
-				FOREIGN KEY (first_verse) REFERENCES verses(id),
-				FOREIGN KEY (last_verse) REFERENCES verses(id)
-			);
-
-			CREATE TABLE IF NOT EXISTS juz (
-				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				first_verse INTEGER NOT NULL,
-				last_verse INTEGER NOT NULL,
-				FOREIGN KEY (first_verse) REFERENCES verses(id),
-				FOREIGN KEY (last_verse) REFERENCES verses(id)
-			);
-
-			CREATE TABLE IF NOT EXISTS pages (
-				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				first_verse INTEGER NOT NULL,
-				last_verse INTEGER NOT NULL,
-				FOREIGN KEY (first_verse) REFERENCES verses(id),
-				FOREIGN KEY (last_verse) REFERENCES verses(id)
-			);
-
-			CREATE TABLE IF NOT EXISTS werd_segments (
-				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				first_verse INTEGER NOT NULL,
-				last_verse INTEGER NOT NULL,
-				date TEXT NOT NULL,
-				FOREIGN KEY (first_verse) REFERENCES verses(id),
-				FOREIGN KEY (last_verse) REFERENCES verses(id)
-			);
-
-			CREATE TABLE IF NOT EXISTS streaks (
-				id INTEGER PRIMARY KEY,
-				longest_streak INTEGER DEFAULT 0,
-				current_streak INTEGER DEFAULT 0,
-				last_date TEXT
-			);
-
-			CREATE TABLE IF NOT EXISTS bookmarks (
-				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				verse_id INTEGER NOT NULL,
-				FOREIGN KEY (verse_id) REFERENCES verses(id)
-			);
-		`)
-
-		if (await isEmpty(db, "user_settings")) {
-			console.log("empty settings")
-			await setSettings()
-		}
-	}
-	catch (error) {
-		console.log("Error Intializing Database");
-		console.log(error);
-	}
-}
-
-// convert relative surah id to global verse id
-const globalId = async (db: SQLite.SQLiteDatabase, surah: number, verse: number) => {
-	const res = await db!.getFirstAsync<{ first_verse: number }>(`SELECT first_verse FROM surahs WHERE id = ?`, [surah])
-	return res!.first_verse+verse-1;
-}
-
-export const addQuranText = async () => {
-	try {
-		const db = await getDB();
-		const countResult = await db.getFirstAsync<{ count: number }>(
-            "SELECT COUNT(*) as count FROM verses"
-        );
-
-        if (countResult && countResult.count > 0) {
-            console.log("Quran text already exists");
-            return;
+        if (clear) {
+            console.log("Clearing Database")
+            await db.execAsync(`
+              PRAGMA foreign_keys = OFF;
+              
+              DROP TABLE IF EXISTS bookmarks;
+              DROP TABLE IF EXISTS werd_segments;
+              DROP TABLE IF EXISTS pages;
+              DROP TABLE IF EXISTS juz;
+              DROP TABLE IF EXISTS surahs;
+              DROP TABLE IF EXISTS verses;
+              DROP TABLE IF EXISTS streaks;
+              DROP TABLE IF EXISTS user_settings;
+              
+              PRAGMA foreign_keys = ON;
+            `);
         }
 
-		console.log("Fetching Quran Text from API")
-		const request = await fetch("https://api.alquran.cloud/v1/quran/quran-uthmani");
-		if (request.ok) {
-			const response = await request.json();
-			let sur = 1
-			for (const surah of response.data.surahs) {
-				let cnt = 1
-				for (const verse of surah.ayahs) {
-					await db!.runAsync(`
-						INSERT INTO VERSES (id, relative_id, surah_id, text, page) VALUES (?, ?, ?, ?, ?)`,
-                        [
-                            verse.number,
-							cnt,
-							sur,
-							verse.text,
-							verse.page
-                        ]		
-					)
-					++cnt
-				}
-				++sur
-			}
-
-            for (const surah of response.data.surahs) {
-                await db!.runAsync(`
-					INSERT INTO surahs (id, first_verse, last_verse, starting_page_id, arabicName, englishName, type) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                    [
-						surah.number,
-						surah.ayahs[0].number,
-						surah.ayahs[surah.ayahs.length-1].number,
-						surah.ayahs[0].page,
-						surah.name,
-						surah.englishName,
-					    surah.revelationType
-                    ]
-				)
-            }
-		}
-
-		const metaData = await fetch("https://api.alquran.cloud/v1/meta")
-		if (metaData.ok) {
-			const response = await metaData.json()
-			for (let i = 0; i < response.data.pages.count; i++) {
-				let first_verse = await globalId(db, response.data.pages.references[i].surah, response.data.pages.references[i].ayah)
-				let last_verse: number
-				if (i === response.data.pages.count-1) last_verse = 6236
-				else last_verse = await globalId(db, response.data.pages.references[i+1].surah, response.data.pages.references[i+1].ayah)-1
-				await db!.runAsync(`INSERT INTO pages (id, first_verse, last_verse) VALUES (?, ?, ?)`,
-					[
-						i+1,
-						first_verse,
-						last_verse,
-					]					
-				)
-			}
-
-			for (let i = 0; i < response.data.juzs.count; i++) {
-				let first_verse = await globalId(db, response.data.juzs.references[i].surah, response.data.juzs.references[i].ayah)
-				let last_verse: number
-				
-				if (i === response.data.juzs.count-1) 
-					last_verse = 6236
-
-				else last_verse = await globalId(db, response.data.juzs.references[i+1].surah, response.data.juzs.references[i+1].ayah)-1
-				
-				await db!.runAsync(`INSERT INTO juz (id, first_verse, last_verse) VALUES (?, ?, ?)`,
-					[
-						i+1,
-						first_verse,
-						last_verse,
-					]					
-				)
-			}
-		}
-		console.log("Added Quran Text")
-		if (await isEmpty(db, "werd_segments")) {
-			console.log("empty werd_segments")
-			await setWerdSegments()
-			console.log("werd segments set!!!")
-		}
-	}
-	catch (error) {
-		console.log("Error Adding Quran Text");
-		console.log(error)
-	}
+        console.log("Database initialized");
+    }
+    catch (error) {
+        console.log("Error Initializing Database");
+        console.log(error);
+    }
 }
-
 
 export const fetchQuranText = async (params: rp.ReaderParams): Promise<qd.ReadingSession> => {
     try {
