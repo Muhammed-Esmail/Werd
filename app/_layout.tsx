@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import './globals.css';
 
 export default function RootLayout() {
+  
   const [loaded, error] = useFonts({
     'Amiri-Regular': require('../assets/fonts/Amiri-Regular.ttf'),
     'Amiri-Bold': require('../assets/fonts/Amiri-Bold.ttf'),
