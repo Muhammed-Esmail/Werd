@@ -268,7 +268,6 @@ export const fetchQuranText = async (params: rp.ReaderParams): Promise<qd.Readin
 
 			const segment = await getWerdSegment(currentWerdId) as WerdSegment[]
 			verses = await fetchVerses(segment[0].first_verse, segment[0].last_verse, 'verse');
-
         } 
 		else {
 			// @ts-ignore
@@ -277,23 +276,28 @@ export const fetchQuranText = async (params: rp.ReaderParams): Promise<qd.Readin
 
         const segments: qd.SurahSegment[] = [];
         
-        for (const verse of verses) {
-            let currentSegment = segments.find(s => s.surahId === verse.surah_id);
-
-			currentSegment = {
-				surahId: verse.surah_id,
-				surahNameEnglish: "-1",
-				surahNameArabic: "-1",
-				surahType: 'Meccan',
-				ayahs: []
-			};
-			
-            currentSegment.ayahs.push({
-				number: verse.relative_id,
-                text: verse.text
-            });
-
-			segments.push(currentSegment);
+		let curSurah = verses[0].surah_id
+        for (let i = 0; i < verses.length; i++) {
+			let ayahs = []
+		
+			if (verses[i].surah_id === curSurah) {
+				ayahs.push({
+					number: verses[i].relative_id,
+					text: verses[i].text
+				});
+			}
+			else {
+				segments.push({
+						surahId: curSurah,
+						surahNameEnglish: "-1",
+						surahNameArabic: "-1",
+						surahType: 'Meccan',
+						ayahs: []
+					}
+				);
+				ayahs = []
+				++curSurah
+			}
         }
 
         return {
