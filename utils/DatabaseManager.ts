@@ -58,13 +58,13 @@ export async function initDB(clear: number = 0) {
 			await db.execAsync(`
 			  PRAGMA foreign_keys = OFF;
 			  
-			  --DROP TABLE IF EXISTS bookmarks;
+			  DROP TABLE IF EXISTS bookmarks;
 			  DROP TABLE IF EXISTS werd_segments;
-			  --DROP TABLE IF EXISTS pages;
-			  --DROP TABLE IF EXISTS juz;
-			  --DROP TABLE IF EXISTS surahs;
+			  DROP TABLE IF EXISTS pages;
+			  DROP TABLE IF EXISTS juz;
+			  DROP TABLE IF EXISTS surahs;
 			  DROP TABLE IF EXISTS verses;
-			  --DROP TABLE IF EXISTS streaks;
+			  DROP TABLE IF EXISTS streaks;
 			  DROP TABLE IF EXISTS user_settings;
 			  
 			  PRAGMA foreign_keys = ON;
@@ -96,38 +96,38 @@ export async function initDB(clear: number = 0) {
 
 			CREATE TABLE IF NOT EXISTS surahs (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				first_verse_id INTEGER NOT NULL,
-				last_verse_id INTEGER NOT NULL,
+				first_verse INTEGER NOT NULL,
+				last_verse INTEGER NOT NULL,
 				starting_page_id INTEGER NOT NULL,
 				name TEXT NOT NULL,
 				type TEXT NOT NULL,
-				FOREIGN KEY (first_verse_id) REFERENCES verses(id),
-				FOREIGN KEY (last_verse_id) REFERENCES verses(id)
+				FOREIGN KEY (first_verse) REFERENCES verses(id),
+				FOREIGN KEY (last_verse) REFERENCES verses(id)
 			);
 
 			CREATE TABLE IF NOT EXISTS juz (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				first_verse_id INTEGER NOT NULL,
-				last_verse_id INTEGER NOT NULL,
-				FOREIGN KEY (first_verse_id) REFERENCES verses(id),
-				FOREIGN KEY (last_verse_id) REFERENCES verses(id)
+				first_verse INTEGER NOT NULL,
+				last_verse INTEGER NOT NULL,
+				FOREIGN KEY (first_verse) REFERENCES verses(id),
+				FOREIGN KEY (last_verse) REFERENCES verses(id)
 			);
 
 			CREATE TABLE IF NOT EXISTS pages (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				first_verse_id INTEGER NOT NULL,
-				last_verse_id INTEGER NOT NULL,
-				FOREIGN KEY (first_verse_id) REFERENCES verses(id),
-				FOREIGN KEY (last_verse_id) REFERENCES verses(id)
+				first_verse INTEGER NOT NULL,
+				last_verse INTEGER NOT NULL,
+				FOREIGN KEY (first_verse) REFERENCES verses(id),
+				FOREIGN KEY (last_verse) REFERENCES verses(id)
 			);
 
 			CREATE TABLE IF NOT EXISTS werd_segments (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				first_verse_id INTEGER NOT NULL,
-				last_verse_id INTEGER NOT NULL,
+				first_verse INTEGER NOT NULL,
+				last_verse INTEGER NOT NULL,
 				date TEXT NOT NULL,
-				FOREIGN KEY (first_verse_id) REFERENCES verses(id),
-				FOREIGN KEY (last_verse_id) REFERENCES verses(id)
+				FOREIGN KEY (first_verse) REFERENCES verses(id),
+				FOREIGN KEY (last_verse) REFERENCES verses(id)
 			);
 
 			CREATE TABLE IF NOT EXISTS streaks (
@@ -148,11 +148,6 @@ export async function initDB(clear: number = 0) {
 			console.log("empty settings")
 			await setSettings()
 		}
-
-		if (await isEmpty(db, "werd_segment")) {
-			console.log("empty werd_segments")
-			await setWerdSegments()
-		}
 	}
 	catch (error) {
 		console.log("Error Intializing Database");
@@ -162,8 +157,8 @@ export async function initDB(clear: number = 0) {
 
 // convert relative surah id to global verse id
 const globalId = async (db: SQLite.SQLiteDatabase, surah: number, verse: number) => {
-	const res = await db!.getFirstAsync<{ first_verse_id: number }>(`SELECT first_verse_id FROM surahs WHERE id = ?`, [surah])
-	return res!.first_verse_id+verse-1;
+	const res = await db!.getFirstAsync<{ first_verse: number }>(`SELECT first_verse FROM surahs WHERE id = ?`, [surah])
+	return res!.first_verse+verse-1;
 }
 
 export const addQuranText = async () => {
@@ -182,25 +177,28 @@ export const addQuranText = async () => {
 		const request = await fetch("https://api.alquran.cloud/v1/quran/quran-uthmani");
 		if (request.ok) {
 			const response = await request.json();
+			let sur = 1
 			for (const surah of response.data.surahs) {
 				let cnt = 1
 				for (const verse of surah.ayahs) {
 					await db!.runAsync(`
-						INSERT INTO VERSES (id, relative_id, text, page) VALUES (?, ?, ?, ?)`,
+						INSERT INTO VERSES (id, relative_id, surah_id, text, page) VALUES (?, ?, ?, ?, ?)`,
                         [
                             verse.number,
 							cnt,
+							sur,
 							verse.text,
 							verse.page
                         ]		
 					)
 					++cnt
 				}
+				++sur
 			}
 
             for (const surah of response.data.surahs) {
                 await db!.runAsync(`
-					INSERT INTO surahs (id, first_verse_id, last_verse_id, starting_page_id, name, type) VALUES (?, ?, ?, ?, ?, ?)`,
+					INSERT INTO surahs (id, first_verse, last_verse, starting_page_id, name, type) VALUES (?, ?, ?, ?, ?, ?)`,
                     [
 						surah.number,
 						surah.ayahs[0].number,
@@ -221,7 +219,7 @@ export const addQuranText = async () => {
 				let last_verse: number
 				if (i === response.data.pages.count-1) last_verse = 6236
 				else last_verse = await globalId(db, response.data.pages.references[i+1].surah, response.data.pages.references[i+1].ayah)-1
-				await db!.runAsync(`INSERT INTO pages (id, first_verse_id, last_verse_id) VALUES (?, ?, ?)`,
+				await db!.runAsync(`INSERT INTO pages (id, first_verse, last_verse) VALUES (?, ?, ?)`,
 					[
 						i+1,
 						first_verse,
@@ -239,7 +237,7 @@ export const addQuranText = async () => {
 
 				else last_verse = await globalId(db, response.data.juzs.references[i+1].surah, response.data.juzs.references[i+1].ayah)-1
 				
-				await db!.runAsync(`INSERT INTO juz (id, first_verse_id, last_verse_id) VALUES (?, ?, ?)`,
+				await db!.runAsync(`INSERT INTO juz (id, first_verse, last_verse) VALUES (?, ?, ?)`,
 					[
 						i+1,
 						first_verse,
@@ -249,6 +247,11 @@ export const addQuranText = async () => {
 			}
 		}
 		console.log("Added Quran Text")
+		if (await isEmpty(db, "werd_segments")) {
+			console.log("empty werd_segments")
+			await setWerdSegments()
+			console.log("werd segments set!!!")
+		}
 	}
 	catch (error) {
 		console.log("Error Adding Quran Text");
@@ -266,8 +269,8 @@ export const fetchQuranText = async (params: rp.ReaderParams): Promise<qd.Readin
             const settings = await getSettings() as UserSettings[];
             const currentWerdId = settings[0].currentWerd;
 
-			const segment = await getWerdSegment(currentWerdId) as WerdSegment[]
-			verses = await fetchVerses(segment[0].first_verse, segment[0].last_verse, 'verse');
+			const segment = await getWerdSegment(currentWerdId) as WerdSegment
+			verses = await fetchVerses(segment.first_verse, segment.last_verse, 'verse');
         } 
 		else {
 			// @ts-ignore
@@ -277,8 +280,8 @@ export const fetchQuranText = async (params: rp.ReaderParams): Promise<qd.Readin
         const segments: qd.SurahSegment[] = [];
         
 		let curSurah = verses[0].surah_id
+		let ayahs = []
         for (let i = 0; i < verses.length; i++) {
-			let ayahs = []
 		
 			if (verses[i].surah_id === curSurah) {
 				ayahs.push({
@@ -324,22 +327,22 @@ export const fetchVerses = async (l: number, r: number, partitionType: Partition
 
     try {
         if (partitionType === 'surah') { // surahs
-            const resL = await db.getFirstAsync<{first_verse_id: number}>(`SELECT first_verse_id FROM surahs WHERE id = ?`, [l]);
-            const resR = await db.getFirstAsync<{last_verse_id: number}>(`SELECT last_verse_id FROM surahs WHERE id = ?`, [r]);
-            if (resL) first_verse = resL.first_verse_id;
-            if (resR) last_verse = resR.last_verse_id;
+            const resL = await db.getFirstAsync<{first_verse: number}>(`SELECT first_verse FROM surahs WHERE id = ?`, [l]);
+            const resR = await db.getFirstAsync<{last_verse: number}>(`SELECT last_verse FROM surahs WHERE id = ?`, [r]);
+            if (resL) first_verse = resL.first_verse;
+            if (resR) last_verse = resR.last_verse;
         }
         else if (partitionType === 'juz') { // juz
-            const resL = await db.getFirstAsync<{first_verse_id: number}>(`SELECT first_verse_id FROM juz WHERE id = ?`, [l]);
-            const resR = await db.getFirstAsync<{last_verse_id: number}>(`SELECT last_verse_id FROM juz WHERE id = ?`, [r]);
-            if (resL) first_verse = resL.first_verse_id;
-            if (resR) last_verse = resR.last_verse_id;
+            const resL = await db.getFirstAsync<{first_verse: number}>(`SELECT first_verse FROM juz WHERE id = ?`, [l]);
+            const resR = await db.getFirstAsync<{last_verse: number}>(`SELECT last_verse FROM juz WHERE id = ?`, [r]);
+            if (resL) first_verse = resL.first_verse;
+            if (resR) last_verse = resR.last_verse;
         }
         else if (partitionType === 'page') { // pages
-            const resL = await db.getFirstAsync<{first_verse_id: number}>(`SELECT first_verse_id FROM pages WHERE id = ?`, [l]);
-            const resR = await db.getFirstAsync<{last_verse_id: number}>(`SELECT last_verse_id FROM pages WHERE id = ?`, [r]);
-            if (resL) first_verse = resL.first_verse_id;
-            if (resR) last_verse = resR.last_verse_id;
+            const resL = await db.getFirstAsync<{first_verse: number}>(`SELECT first_verse FROM pages WHERE id = ?`, [l]);
+            const resR = await db.getFirstAsync<{last_verse: number}>(`SELECT last_verse FROM pages WHERE id = ?`, [r]);
+            if (resL) first_verse = resL.first_verse;
+            if (resR) last_verse = resR.last_verse;
         }
 
         const data = await db.getAllAsync(`SELECT * FROM verses WHERE id >= ? AND id <= ?`, [first_verse, last_verse]);
@@ -435,7 +438,7 @@ export const getSettings = async (id: number = 1) => {
 export const addProgress = async (first_verse: number, last_verse: number, date: string) => {
 	try {
 		const db = await getDB()
-		await db.runAsync(`INSERT INTO werd_segments (first_verse_id, last_verse_id, date) VALUES (?, ?, ?)`, [first_verse, last_verse, date])
+		await db.runAsync(`INSERT INTO werd_segments (first_verse, last_verse, date) VALUES (?, ?, ?)`, [first_verse, last_verse, date])
 		console.log("Added user progress")
 	}
 	catch (error) {
@@ -530,14 +533,14 @@ export const setWerdSegments = async (
                 UPDATE werd_segments
                 SET first_verse = ?,
                 last_verse = ?,
-                date = ?,
+                date = ?
                 WHERE id = ?`,
                 [first_verse, last_verse, date, id]);
         }
-        console.log("Settings Modified");
+        console.log("Werd Segments Modified");
     }
     catch (error) {
-        console.log("Error updating settings:", error);
+        console.log("Error updating werd segments:", error);
     }
 }
 
@@ -559,13 +562,13 @@ export const updateWerdSegments = async (updates: Partial<WerdSegment>, id: numb
 export const getWerdSegment = async (id: number) => {
 	try {
 		const db = await getDB();
-		const data = await db.getFirstAsync(`SELECT * FROM werd_segments WHERE id = ?`, [id]) as WerdSegment[]
+		const data = await db.getFirstAsync(`SELECT * FROM werd_segments WHERE id = ?`, [id]) as WerdSegment
 		if (data) return data
-		else return []
+		else return null;
 	}
 	catch (error) {
 		console.log("Error reading werd segment")
-		return []
+		return null;
 	}
 }
 

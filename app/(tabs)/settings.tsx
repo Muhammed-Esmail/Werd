@@ -11,9 +11,9 @@ import '../../i18n';
 import i18n from '../../i18n';
 import { SelectList } from 'react-native-dropdown-select-list'
 
+
 interface UserSettings {
-    id: number;
-    font: string;
+    font?: string;
     font_size: number;
     reading_mode: number;
     partition_type: number;
@@ -21,6 +21,7 @@ interface UserSettings {
     ending_date: string;
     theme: number;
 	language: string;
+	currentWerd: number;
 }
 
 const OPTIONS = [
@@ -189,8 +190,8 @@ const changeLang = async (lang: string = "en", startup: boolean = false) => {
 useEffect(() => {
   const init = async () => {
     console.log("Initializing database...");
-    // await DB.initDB(0);
-	// await DB.addQuranText();
+    await DB.initDB(1);
+	await DB.addQuranText();
 	await DB.test(5, 6);
 	const current_settings = await DB.getSettings() as UserSettings[]
 	setIsEnabled(current_settings[0].theme === 0)
