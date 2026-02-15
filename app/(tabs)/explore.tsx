@@ -150,12 +150,13 @@ const explore = () => {
             )}
             initialNumToRender={10}
             maxToRenderPerBatch={20}
-            windowSize={5}
+            // windowSize={5}
             removeClippedSubviews={true}
             ItemSeparatorComponent={() => (
-              <View className='h-[1px] bg-white mx-5 mt-10' />
+              <View className='h-[1px] bg-white dark:bg-surfaceBlack mx-5 mt-10' />
             )}
             showsVerticalScrollIndicator={false}
+            ListFooterComponent={() => <View className="h-48" />}
           >
           </FlatList>
     </SafeAreaView>
