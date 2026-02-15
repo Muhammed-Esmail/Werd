@@ -16,7 +16,7 @@ const ReaderMode = {
 }
 
 const Reader = () => {
-
+    
     const mode = ReaderMode.INFINITE_SCROLL; // Change this to switch modes
 
     if(mode === ReaderMode.PAGES) {

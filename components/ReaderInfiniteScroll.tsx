@@ -5,6 +5,8 @@ import { ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ReaderLandmark } from "./ReaderLandmark";
 import { SurahSection } from "./SurahSection";
+import * as DB from "@/utils/DatabaseManager";
+import { ReaderParams } from "@/types/reader_data";
 
 
 export const ReaderInfiniteScroll = () => {
@@ -22,18 +24,10 @@ export const ReaderInfiniteScroll = () => {
         }
     }, [contentHeight, scrollViewHeight]);
 
-    const { surahId, sessionType } = useLocalSearchParams<{ 
-        surahId: string;
-        sessionType: string;
-    }>();
+    const params = useLocalSearchParams();
 
-    if(sessionType === 'full_surah') {
-        console.log('Full Surah Session for Surah ID:', surahId);
-    }
-
-    if(sessionType === 'daily_werd') {
-        console.log('Daily Werd Session');
-    }
+    // @ts-ignore
+    DB.fetchQuranText(params);
 
     const segments = getMockReadingData('full');
 
