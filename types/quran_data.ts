@@ -1,8 +1,6 @@
-import { InteractionManager } from "react-native";
-
 export interface AyahData{
-    number: number;
-    text: string;
+  number: number;
+  text: string;
 }
 
 export interface SurahSegment {
@@ -14,7 +12,7 @@ export interface SurahSegment {
 }
 
 export interface ReadingSession {
-  sessionId: string;
+  sessionId?: string;
   sessionType: 'daily_werd' | 'full_surah' | 'custom_range';
   segments: SurahSegment[];
 }

@@ -272,7 +272,7 @@ export const fetchQuranText = async (params: rp.ReaderParams): Promise<qd.Readin
 			const segment = await getWerdSegment(currentWerdId) as WerdSegment
 			verses = await fetchVerses(segment.first_verse, segment.last_verse, 'verse');
         } 
-		else {
+		else if(params.sessionType === "full_surah") {
 			// @ts-ignore
             verses = await fetchVerses(params.surahId, params.surahId, 'surah');
         }
@@ -295,14 +295,14 @@ export const fetchQuranText = async (params: rp.ReaderParams): Promise<qd.Readin
 						surahNameEnglish: "-1",
 						surahNameArabic: "-1",
 						surahType: 'Meccan',
-						ayahs: []
+						ayahs: ayahs
 					}
 				);
 				ayahs = []
 				++curSurah
 			}
         }
-
+		
         return {
             sessionId: "-1",
             sessionType: params.sessionType,

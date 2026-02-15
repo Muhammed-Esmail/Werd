@@ -1,4 +1,3 @@
-import { getMockReadingData } from "@/types/mocks/mock_data";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { ScrollView } from "react-native";
@@ -6,12 +5,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ReaderLandmark } from "./ReaderLandmark";
 import { SurahSection } from "./SurahSection";
 import * as DB from "@/utils/DatabaseManager";
-import { ReaderParams } from "@/types/reader_data";
+import { ReaderParams, SessionType } from "@/types/reader_data";
+import { ReadingSession } from "@/types/quran_data";
+import React from "react";
 
 
 export const ReaderInfiniteScroll = () => {
     
-    
+    const [quranData, setQuranData] = useState<ReadingSession>();
     const [scrollProgress, setScrollProgress] = useState(0);
     const [contentHeight, setContentHeight] = useState(0);
     const [scrollViewHeight, setScrollViewHeight] = useState(0);
@@ -24,16 +25,33 @@ export const ReaderInfiniteScroll = () => {
         }
     }, [contentHeight, scrollViewHeight]);
 
-    const params = useLocalSearchParams();
+    const raw_params = useLocalSearchParams();
+    
+    const params = {
+        surahId: raw_params.surahId ? parseInt(raw_params.surahId as string, 10) : undefined,
+        sessionType: raw_params.sessionType as SessionType || 'daily_werd'
+    } as ReaderParams;
 
-    // @ts-ignore
-    DB.fetchQuranText(params);
+    console.log(params);
+    
 
-    const segments = getMockReadingData('full');
+    useEffect(() => {
+        const fetchData = async () => {
+            try{
+                const data = await DB.fetchQuranText(params) as ReadingSession;
+                setQuranData(data);
+            } catch (error) {
+                console.error("Error fetching Quran text:", error);
+            }
+        }
+        fetchData();
+    }, [params.surahId, params.sessionType]);
 
-    const markers = segments.segments.map((segment, index) => ({
+    const segments = quranData?.segments || [];
+
+    const markers = segments.map((segment, index) => ({
         type: 'surah' as const,
-        position: (index / segments.segments.length) * 100,
+        position: (index / segments.length) * 100,
         id: segment.surahId,
         name: `Surah ${segment.surahId}`
     }));
@@ -89,11 +107,11 @@ export const ReaderInfiniteScroll = () => {
                     setContentHeight(height);
                 }}
             >
-                {segments.segments.map((item, index) => (
+                {segments.map((item, index) => (
                     <SurahSection 
                     key={index}
                     segment={item} 
-                    isLastSegment={index === segments.segments.length - 1} 
+                    isLastSegment={index === segments.length - 1} 
                     />
                 ))}
             </ScrollView>
