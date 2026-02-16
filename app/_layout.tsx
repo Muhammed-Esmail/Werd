@@ -30,7 +30,6 @@ export default function RootLayout() {
       
       // await DB.initDB(1);
       await DB.ensureDailyProgressTable();
-      await DB.setSettings()
       await DB.test(114,114);
 
       const surahs = await DB.getSurahs();

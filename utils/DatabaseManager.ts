@@ -179,6 +179,10 @@ export const fetchQuranText = async (params: rp.ReaderParams): Promise<qd.Readin
 
         if (params.sessionType === "daily_werd") {
             const settings = await getSettings() as UserSettings[];
+            if (!settings || settings.length === 0) {
+                 console.log("No settings found");
+                 return { sessionId: "-1", sessionType: params.sessionType, segments: [] };
+            }
             const currentDay = settings[0].currentWerd;
 
             const segment = await db.getFirstAsync<{ start_verse: number, end_verse: number }>(
@@ -229,16 +233,17 @@ export const fetchQuranText = async (params: rp.ReaderParams): Promise<qd.Readin
                 }
             }
 
-		if (ayahs.length > 0) {
-			segments.push({
-				surahId: curSurah,
-				surahNameEnglish: "-1",
-				surahNameArabic: "-1",
-				surahType: 'Meccan',
-				ayahs: ayahs
-			});
-		}
-		
+            if (ayahs.length > 0) {
+                segments.push({
+                    surahId: curSurah,
+                    surahNameEnglish: "-1",
+                    surahNameArabic: "-1",
+                    surahType: 'Meccan',
+                    ayahs: ayahs
+                });
+            }
+        }
+
         return {
             sessionId: "-1",
             sessionType: params.sessionType,
