@@ -17,6 +17,7 @@ export const useStreak = () => {
     const oneDayInMs = 60 * 1000;
     const ResetStreak = useCallback(async () => {
         const savedData = await DB.getStreak();
+        console.log(`saved streak data = ${savedData?.count} , ${savedData?.longest} , ${savedData?.date}`)
         if(!savedData){
             setLoading(false);
             return;
