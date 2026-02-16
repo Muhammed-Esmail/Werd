@@ -41,7 +41,6 @@ export const useStreak = () => {
     useEffect(() => {
             const init = async() => {
                 await ResetStreak();
-                setLoading(false);
             };
             init();
             const interval = setInterval(() => {
