@@ -1,54 +1,32 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, FlatList, Dimensions, ViewToken, ListRenderItem } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useStreak } from '@/services/StreakManager';
-
-// --- Types ---
-interface DayData {
-  intensity: number;
-}
-
-interface MonthData {
-  id: string;
-  label: string;
-  days: DayData[];
-}
+import { useStreak, MonthData, DayData } from '@/services/StreakManager'; // Import types from hook
 
 // --- Constants ---
 const { width } = Dimensions.get('window');
-
 const MAX_GRID_WIDTH = 360; 
 const LIST_WIDTH = Math.min(width - 88, MAX_GRID_WIDTH);
 
-const MONTH_NAMES = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
-
-// --- Helpers ---
-const generateMockMonths = (): MonthData[] => {
-  const months: MonthData[] = [];
-  const today = new Date();
-  
-  for (let i = 0; i < 6; i++) {
-    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-    const monthName = MONTH_NAMES[d.getMonth()];
-    const year = d.getFullYear();
-    const daysInMonth = new Date(year, d.getMonth() + 1, 0).getDate();
-    
-    const days: DayData[] = Array.from({ length: daysInMonth }, () => ({
-      intensity: Math.random() > 0.4 ?  1 : 0, 
-    }));
-
-    months.push({ id: `${monthName}-${year}`, label: `${monthName} ${year}`, days });
-  }
-  return months.reverse(); 
-};
-
-const MOCK_MONTHS = generateMockMonths();
-
 const StreakPage = () => {
-  const { streak, incrementStreak, longest, loading } = useStreak(); 
-  const longestStreak = longest; 
-  const [currentMonthIndex, setCurrentMonthIndex] = useState(MOCK_MONTHS.length - 1);
+  // Destructure heatmapData from the hook
+  const { streak, incrementStreak, longest, loading, heatmapData } = useStreak(); 
+  
+  const [currentMonthIndex, setCurrentMonthIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
+
+  // Scroll to the last month (current month) once data is loaded
+  useEffect(() => {
+    if (heatmapData.length > 0) {
+        // Set initial index to the last item (current month)
+        setCurrentMonthIndex(heatmapData.length - 1);
+        
+        // Optional: slight delay to ensure layout is ready before scrolling
+        setTimeout(() => {
+             flatListRef.current?.scrollToIndex({ index: heatmapData.length - 1, animated: false });
+        }, 100);
+    }
+  }, [heatmapData.length]);
 
   // --- Handlers ---
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -58,12 +36,12 @@ const StreakPage = () => {
   }).current;
 
   const scrollToIndex = (index: number) => {
-    if (index >= 0 && index < MOCK_MONTHS.length) {
+    if (index >= 0 && index < heatmapData.length) {
       flatListRef.current?.scrollToIndex({ index, animated: true });
     }
   };
 
-  // --- Render Item (Consolidated) ---
+  // --- Render Item ---
   const renderMonth: ListRenderItem<MonthData> = ({ item }) => (
     <View style={{ width: LIST_WIDTH }} className="items-center">
       <Text className="text-zinc-500 text-[10px] font-bold mb-4 tracking-widest uppercase">
@@ -80,12 +58,17 @@ const StreakPage = () => {
             <View 
               className="flex-1 rounded-md border border-white/5"
               style={{ 
-                backgroundColor: day.intensity === 0 ? '#18181b' : '#eab308' 
+                // Using conditional logic based on intensity
+                backgroundColor: day.intensity > 0 ? '#eab308' : '#18181b',
+                // Optional: Add a subtle glow for active days
+                shadowColor: day.intensity > 0 ? '#eab308' : 'transparent',
+                shadowOpacity: day.intensity > 0 ? 0.2 : 0,
+                shadowRadius: 4
               }}
             />
           </View>
         ))}
-        {/* Filler views to align the last row left when using justify-between */}
+        {/* Filler views for alignment */}
         {[...Array(7)].map((_, i) => <View key={`filler-${i}`} className="w-[13.5%]" />)}
       </View>
     </View>
@@ -121,19 +104,19 @@ const StreakPage = () => {
 
           <View className="flex-1 bg-zinc-900 p-5 rounded-3xl border border-zinc-800 items-center justify-center">
             <Text className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-1 text-center">Longest Streak</Text>
-            <Text className="text-4xl font-bold text-zinc-200 text-center">{longestStreak}</Text>
+            <Text className="text-4xl font-bold text-zinc-200 text-center">{longest}</Text>
             <Text className="text-yellow-600/70 text-[10px] font-medium mt-1 text-center">DAYS</Text>
           </View>
         </View>
 
-        {/* --- TEST BUTTON --- */}
+        {/* --- ACTION BUTTON --- */}
         <TouchableOpacity 
           onPress={() => incrementStreak()}
           activeOpacity={0.3}
           className="bg-yellow-500 py-4 rounded-2xl mb-8 items-center justify-center shadow-lg shadow-yellow-500/20"
         >
           <View className="flex-row items-center">
-            <Text className="text-black font-bold text-base mr-2">Test: Increment Streak</Text>
+            <Text className="text-black font-bold text-base mr-2">I Did It Today</Text>
             <Text>⚡</Text>
           </View>
         </TouchableOpacity>
@@ -141,40 +124,39 @@ const StreakPage = () => {
         {/* Swipeable Heatmap Section */}
         <View className="bg-zinc-900/50 pt-6 pb-6 rounded-[32px] border border-zinc-800/50 mb-8 items-center w-full">
           
-          {/* Arrows Header */}
-          {/* UPDATE: Added explicit width to match LIST_WIDTH so arrows stay close to grid on tablets */}
+          {/* Navigation Arrows */}
           <View 
-            style={{ width: LIST_WIDTH + 10 }} // +10 gives the arrows a little breathing room
+            style={{ width: LIST_WIDTH + 10 }} 
             className="flex-row justify-between items-center mb-2"
           >
             <TouchableOpacity 
               onPress={() => scrollToIndex(currentMonthIndex - 1)}
+              disabled={currentMonthIndex === 0}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Text className={`text-2xl ${currentMonthIndex === 0 ? 'text-zinc-700' : 'text-yellow-500'}`}>‹</Text>
+              <Text className={`text-2xl ${currentMonthIndex === 0 ? 'text-zinc-800' : 'text-yellow-500'}`}>‹</Text>
             </TouchableOpacity>
             
             <Text className="text-zinc-100 font-bold text-lg">Activity History</Text>
             
             <TouchableOpacity 
               onPress={() => scrollToIndex(currentMonthIndex + 1)}
+              disabled={currentMonthIndex === heatmapData.length - 1}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Text className={`text-2xl ${currentMonthIndex === MOCK_MONTHS.length - 1 ? 'text-zinc-700' : 'text-yellow-500'}`}>›</Text>
+              <Text className={`text-2xl ${currentMonthIndex === heatmapData.length - 1 ? 'text-zinc-800' : 'text-yellow-500'}`}>›</Text>
             </TouchableOpacity>
           </View>
           
+          {/* Real Data FlatList */}
           <FlatList
             ref={flatListRef}
-            data={MOCK_MONTHS}
+            data={heatmapData} // Using real data
             keyExtractor={(item) => item.id}
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
-            
-            // Constrain width here
             style={{ width: LIST_WIDTH, flexGrow: 0 }}
-            
             snapToInterval={LIST_WIDTH}
             decelerationRate="fast"
             getItemLayout={(data, index) => ({
@@ -184,7 +166,7 @@ const StreakPage = () => {
             })}
             onViewableItemsChanged={onViewableItemsChanged}
             viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
-            initialScrollIndex={MOCK_MONTHS.length - 1}
+            // Initial scroll is handled by useEffect to avoid layout errors
             onScrollToIndexFailed={(info) => {
               const wait = new Promise(resolve => setTimeout(resolve, 500));
               wait.then(() => {
