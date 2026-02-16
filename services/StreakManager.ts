@@ -18,6 +18,7 @@ export const useStreak = () => {
 
     const ResetStreak = useCallback(async () => {
         const savedData = await DB.getStreak();
+        
         if (!savedData) {
             setLoading(false);
             return;
