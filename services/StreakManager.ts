@@ -64,9 +64,9 @@ export const useStreak = () => {
     };
 
 
-    const ResetStreak = useCallback(async () => {
+    const ResetStreak = useCallback(async (UpdateHeatmap = false) => {
         const savedData = await DB.getStreak();
-        await fetchHeatmapData();
+        if(UpdateHeatmap)await fetchHeatmapData();
 
         if (!savedData) {
             setLoading(false);
@@ -90,15 +90,15 @@ export const useStreak = () => {
 
     useEffect(() => {
             const init = async() => {
-                await ResetStreak();
+                await ResetStreak(true);
             };
             init();
             const interval = setInterval(() => {
-                ResetStreak();
+                ResetStreak(false);
             }, 5000);
             const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
                 if (nextAppState === 'active') {
-                    ResetStreak();
+                    ResetStreak(true);
                 }
             });
             
@@ -120,16 +120,16 @@ export const useStreak = () => {
         
         const diffInMs = lastDate !== null ? today - lastDate : null;
 
-        // @ts-ignore
-        if (diffInMs >= 0 && diffInMs < oneDayInMs)
+        if (diffInMs === 0) {
+            console.log("Already completed today");
             return;
+        }
 
         await DB.insertDate(now.getDate(), now.getMonth(), now.getFullYear(), 1);
 
         let newStreak: number;
 
-        // @ts-ignore
-        if (diffInMs >= oneDayInMs || currentLastCompleted === null) {
+        if (diffInMs === oneDayInMs || currentLastCompleted === null) {
             newStreak = currentStreak + 1;
         } else {
             newStreak = 1;
