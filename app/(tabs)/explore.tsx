@@ -3,11 +3,19 @@ import { FlatList, Text, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import SearchBar from "@/components/SearchBar";
 import { router } from 'expo-router';
-import { ReaderParams, SURAH_DATA } from '@/types/reader_data';
+import { SURAH_DATA, Surah } from '@/types/reader_data';
 import { useMemo } from 'react';
 
+interface FilterButtonProps {
+  id: number;
+  nameEn: string; 
+  nameAr: string;
+  ayahs: number;
+  type: string;
+  onPress : any;
+}
 
-const SurahCard = React.memo(({id, nameEn, nameAr, ayahs, type, onPress} : any) => {
+const SurahCard = React.memo(({id, nameEn, nameAr, ayahs, type, onPress} : FilterButtonProps) => {
   let id_padded = `${id}`
   if(id_padded.length === 1) id_padded = "0" + id_padded
   return (
@@ -30,7 +38,7 @@ const SurahCard = React.memo(({id, nameEn, nameAr, ayahs, type, onPress} : any) 
 
       {/* Arabic Name */}
       <View className='justify-center items-center'>
-        <Text className='py-2 mr-5 text-primaryGold text-2xl font-amiri-bold'>{nameAr}</Text>
+        <Text className='py-2 mr-5 text-primaryGold text-2xl font-amiri-bold'>{nameAr.slice(7)}</Text>
       </View>
     </TouchableOpacity>
   )
@@ -112,6 +120,7 @@ const explore = () => {
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
+          
           {/* Filters */}
           <View className='flex-row gap-3 px-4 mt-6 justify-center'>
             {['ALL', 'MECCAN', 'MEDINAN', 'FAVORITES'].map((cat) => (
@@ -142,12 +151,13 @@ const explore = () => {
             )}
             initialNumToRender={10}
             maxToRenderPerBatch={20}
-            windowSize={5}
+            // windowSize={5}
             removeClippedSubviews={true}
             ItemSeparatorComponent={() => (
-              <View className='h-[1px] bg-white mx-5 mt-10' />
+              <View className='h-[1px] bg-white dark:bg-surfaceBlack mx-5 mt-10' />
             )}
             showsVerticalScrollIndicator={false}
+            ListFooterComponent={() => <View className="h-48" />}
           >
           </FlatList>
     </SafeAreaView>

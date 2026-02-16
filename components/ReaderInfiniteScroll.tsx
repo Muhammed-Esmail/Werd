@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { ScrollView } from "react-native";
+import { ScrollView, View, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ReaderLandmark } from "./ReaderLandmark";
 import { SurahSection } from "./SurahSection";
@@ -13,6 +13,7 @@ import React from "react";
 export const ReaderInfiniteScroll = () => {
     
     const [quranData, setQuranData] = useState<ReadingSession>();
+    const [isLoading, setIsLoading] = useState(true);
     const [scrollProgress, setScrollProgress] = useState(0);
     const [contentHeight, setContentHeight] = useState(0);
     const [scrollViewHeight, setScrollViewHeight] = useState(0);
@@ -41,6 +42,8 @@ export const ReaderInfiniteScroll = () => {
                 setQuranData(data);
             } catch (error) {
                 console.error("Error fetching Quran text:", error);
+            } finally {
+                setIsLoading(false);
             }
         }
         fetchData();
@@ -89,31 +92,39 @@ export const ReaderInfiniteScroll = () => {
             <Stack.Screen options={{ headerShown: false }} />
 
 
-            <ReaderLandmark 
-                markers={allMarkers}
-                progress={scrollProgress}
-                totalHeight={contentHeight} // Fallback to scrollViewHeight or default
-            />
+            {!isLoading && (
+                <ReaderLandmark 
+                    markers={allMarkers}
+                    progress={scrollProgress}
+                    totalHeight={contentHeight}
+                />
+            )}
             
-            <ScrollView 
-                ref={scrollViewRef}
-                onScroll={handleScroll}
-                scrollEventThrottle={16}
-                onLayout={(event) => {
-                    setScrollViewHeight(event.nativeEvent.layout.height);
-                }}
-                onContentSizeChange={(width, height) => {
-                    setContentHeight(height);
-                }}
-            >
-                {segments.map((item, index) => (
-                    <SurahSection 
-                    key={index}
-                    segment={item} 
-                    isLastSegment={index === segments.length - 1} 
-                    />
-                ))}
-            </ScrollView>
+            {isLoading ? (
+                <View className="flex-1 justify-center items-center">
+                    <ActivityIndicator size={30} color="#D4AF37" />
+                </View>
+            ) : (
+                <ScrollView 
+                    ref={scrollViewRef}
+                    onScroll={handleScroll}
+                    scrollEventThrottle={16}
+                    onLayout={(event) => {
+                        setScrollViewHeight(event.nativeEvent.layout.height);
+                    }}
+                    onContentSizeChange={(width, height) => {
+                        setContentHeight(height);
+                    }}
+                >
+                    {segments.map((item, index) => (
+                        <SurahSection 
+                            key={index}
+                            segment={item} 
+                            isLastSegment={index === segments.length - 1} 
+                        />
+                    ))}
+                </ScrollView>
+            )}
 
         </SafeAreaView>
     )

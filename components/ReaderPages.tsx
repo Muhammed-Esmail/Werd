@@ -1,27 +1,49 @@
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useRef, useState, useEffect } from "react";
-import { getMockReadingData } from "@/types/mocks/mock_data";
 import { FlatList, View, Text, useWindowDimensions, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { PageAtom } from "@/types/quran_data";
+import { PageAtom, ReadingSession } from "@/types/quran_data";
 import { ReaderPageAtom } from "@/components/ReaderPageAtom";
 import { segmentSessionIntoAtoms } from "@/utils/paginationMeasure";
 import { PaginatedMeasurer } from "@/components/PaginatedMeasurer";
+import * as DB from "@/utils/DatabaseManager";
+import { ReaderParams, SessionType } from "@/types/reader_data";
+import { ActivityIndicator } from 'react-native';
+import React from "react";
+
 
 export const ReaderPages = () => {
   const flatListRef = useRef<FlatList>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [pages, setPages] = useState<{items : PageAtom[]}[]>([]);
   const [isMeasuring, setIsMeasuring] = useState(true);
+  const [quranData, setQuranData] = useState<PageAtom[]>([]);
   const { height, width } = useWindowDimensions();
 
-  const { surahId, sessionType } = useLocalSearchParams<{ 
-    surahId: string;
-    sessionType: string;
-  }>();        
-
   // Data
-  const segments = segmentSessionIntoAtoms(getMockReadingData('full').segments);
+  const raw_params = useLocalSearchParams();
+  
+  const surahId = raw_params.surahId ? parseInt(raw_params.surahId as string, 10) : undefined;
+  const sessionType = (raw_params.sessionType as SessionType) || 'daily_werd';
+
+
+
+  useEffect(() => {
+      const fetchData = async () => {
+          try{
+              const params = {
+                  surahId,
+                  sessionType
+              } as ReaderParams;
+              const data = await DB.fetchQuranText(params) as ReadingSession;
+              console.log("reading session data")
+              setQuranData(segmentSessionIntoAtoms(data.segments));
+          } catch (error) {
+              console.error("Error fetching Quran text:", error);
+          }
+      }
+      fetchData();
+  }, [surahId, sessionType]);
 
 
   // Scroll to specific page
@@ -51,9 +73,9 @@ export const ReaderPages = () => {
 
   return (
     <SafeAreaView className="bg-matteBlack h-full">
-        { isMeasuring && (
+        { isMeasuring && quranData.length > 0 && (
             <PaginatedMeasurer 
-                allItems={segments} // @ts-ignore
+                allItems={quranData || []} // @ts-ignore
                 targetHeight={height * 0.85} 
                 onPageGenerated={(page: PageAtom[], last: boolean) => {
                     setPages(prev => [...prev, { items: page }]);
@@ -88,20 +110,26 @@ export const ReaderPages = () => {
 
         <TouchableOpacity
           onPress={() => goToPage(currentPage + 1)}
-          className="bg-surfaceBlack px-6 py-3 rounded-lg w-[35%] items-center"
+          className="bg-surfaceBlack px-6 py-3 rounded-lg w-[37%] items-center"
           style={{ opacity: currentPage === pages.length - 1 ? 0.5 : 1 }}
           disabled={currentPage === pages.length - 1}
         >
           <Text className="text-white">Next</Text>
         </TouchableOpacity>
 
+        {isMeasuring && (
+          <View className="flex-row items-center gap-2">
+            <ActivityIndicator size="small" color="#FFD700" />
+          </View>
+        )}
+        
         <Text className="text-white">
           {Math.min(currentPage + 1, pages.length)} / {pages.length}
         </Text>
 
         <TouchableOpacity
           onPress={() => goToPage(currentPage - 1)}
-          className="bg-surfaceBlack px-6 py-3 rounded-lg w-[35%] items-center"
+          className="bg-surfaceBlack px-6 py-3 rounded-lg w-[37%] items-center"
           style={{ opacity: currentPage === 0 ? 0.5 : 1 }}
           disabled={currentPage === 0}
         >

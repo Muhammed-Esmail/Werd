@@ -5,7 +5,7 @@ export interface ReaderParams {
   sessionType: SessionType;
 }
 
-interface Surah {
+export interface Surah {
 	id: number;
 	first_verse: number;
 	last_verse: number;

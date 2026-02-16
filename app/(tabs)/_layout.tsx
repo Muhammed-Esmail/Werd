@@ -1,7 +1,8 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { Tabs } from "expo-router";
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Text, View } from "react-native";
+import * as DB from '@/utils/DatabaseManager';
 
 const TabIcon = ({focused, iconName, title}: any) =>{
     const val = 30;
@@ -31,7 +32,28 @@ const TabIcon = ({focused, iconName, title}: any) =>{
 }
 
 const _layout = () => {
-  let color = '#0A0A0A';
+    const [color, setColor] = useState<string>("#0A0A0A")
+    const [loading, setLoading] = useState(true);
+
+   useEffect(() => {
+        const init = async () => {
+            try {
+                const settingsData = await DB.getSettings() as DB.UserSettings;
+                
+                if (settingsData) {
+                    const theme = settingsData.theme;
+                    setColor(theme === 0 ? '#0A0A0A' : '#FAF3E0');
+                }
+            } catch (error) {
+                console.error("Layout Init Error:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        init();
+    }, []);
+
+    if (loading) return null;
   return (
     <Tabs
         screenOptions={{
@@ -46,7 +68,7 @@ const _layout = () => {
                 backgroundColor: color,
                 borderRadius: 50,
                 marginHorizontal: 10,
-                marginBottom: 40,
+                marginBottom: 50,
                 height: 70,
                 position:'absolute',
                 overflow: 'hidden',

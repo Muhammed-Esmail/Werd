@@ -6,6 +6,7 @@ import { SQLiteProvider } from 'expo-sqlite';
 import './globals.css';
 import * as DB from "@/utils/DatabaseManager"
 import * as rd from '@/types/reader_data';
+import React from "react";
 
 export default function RootLayout() {
   
@@ -30,12 +31,13 @@ export default function RootLayout() {
       // await DB.initDB(1);
       await DB.ensureDailyProgressTable();
       await DB.setSettings()
-      await DB.test(5, 6);
+      await DB.test(114,114);
 
       const surahs = await DB.getSurahs();
       if (surahs) {
         rd.SURAH_DATA.length = 0;
         rd.SURAH_DATA.push(...surahs as any);
+        console.log(`surahs size = ${rd.SURAH_DATA.length}`)
       }
   
     console.log("Done")
@@ -53,14 +55,10 @@ export default function RootLayout() {
     return null;
   }
 
-  return (
-    <SQLiteProvider databaseName="werd.db">
-      <Stack>
-        <Stack.Screen 
-          name="(tabs)"
-          options={{headerShown:false}}
-        />
-      </Stack>
-    </SQLiteProvider>
-  );
+  return <Stack>
+    <Stack.Screen 
+      name="(tabs)"
+      options={{headerShown:false}}
+    />
+  </Stack>;
 }

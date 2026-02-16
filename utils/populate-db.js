@@ -54,12 +54,13 @@ db.exec(`
         font TEXT NOT NULL,
         font_size INTEGER DEFAULT 1,
         reading_mode INTEGER DEFAULT 0,
-        partition_type INTEGER DEFAULT 0,
+        partition_type STRING DEFAULT "page",
         starting_date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
         ending_date TEXT NOT NULL,
         theme INT NOT NULL DEFAULT 0,
         language TEXT NOT NULL DEFAULT "en",
-        currentWerd INT NOT NULL DEFAULT 0
+        currentWerd INT NOT NULL DEFAULT 0,
+        werd_plan_days INT NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS werd_segments (
