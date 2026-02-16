@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 const Card = ({sideIcon, sideText, mainText, underText}: any) =>{
   return  (
@@ -24,6 +25,7 @@ const Card = ({sideIcon, sideText, mainText, underText}: any) =>{
 }
 
 const TodayCard = () => {
+  const { t } = useTranslation();
   
   const onReadTodaysWerd = () => {
     const params : ReaderParams = {
@@ -55,7 +57,7 @@ const TodayCard = () => {
       
       <View className='mt-6 ml-5 mr-5 mb-3'>
         <View className='flex-row justify-between items-center'>
-          <Text className='text-xs font-bold text-gray-900 dark:text-white'>CURRENT PROGRESS</Text>
+          <Text className='text-xs font-bold text-gray-900 dark:text-white'>{t('currentProgress')}</Text>
           <Text className='text-primaryGold font-semibold'>6/15 pages</Text>
         </View>     
         <View className='bg-gray-200 dark:bg-borderDark h-2.5 rounded-full overflow-hidden mt-2'>
@@ -73,7 +75,7 @@ const TodayCard = () => {
         className='mt-5 h-20 p-4 bg-primaryGold rounded-2xl w-[80%] items-center justify-center self-center'
       >
         <View className='items-center justify-center'>
-          <Text className='font-bold tracking-wide text-[17px]'>Read Today's Werd</Text>
+          <Text className='font-bold tracking-wide text-[17px]'>{t('readTodaysWerd')}</Text>
         </View>
       </TouchableOpacity>
       <TouchableOpacity
@@ -82,7 +84,7 @@ const TodayCard = () => {
         className='mt-5 h-15 p-4 bg-gray-100 dark:bg-mutedBlack border-[1px] border-gray-300 dark:border-light-300 rounded-2xl w-[80%] items-center justify-center self-center mb-7'
       >
         <View className='items-center justify-center'>
-          <Text className='font-bold tracking-wide text-[15px] text-gray-600 dark:text-mutedWhite'>Mark as Completed Manually</Text>
+          <Text className='font-bold tracking-wide text-[15px] text-gray-600 dark:text-mutedWhite'>{t('markCompleted')}</Text>
         </View>
       </TouchableOpacity>
 
@@ -91,26 +93,28 @@ const TodayCard = () => {
 }
 
 const werd = () => {
+  const { t } = useTranslation();
+  
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-bgBlack">
       
       <View className='w-[100%] justify-center items-center'>
-        <Text className='text-primaryGold mt-10 text-xl font-bold'> DAILY WERD </Text>
+        <Text className='text-primaryGold mt-10 text-xl font-bold'> {t('dailyWerd')} </Text>
       </View>
 
       <View className='w-[100%] mt-10 flex-row justify-center items-center'>
         
-        <Card sideIcon="local-fire-department" sideText="STREAK" mainText="15 Days" underText="Personal Best!"/>
-        <Card sideText="TOTAL PAGES" mainText="412" underText="THIS MONTH"/>
+        <Card sideIcon="local-fire-department" sideText={t('streak')} mainText="15 Days" underText={t('personalBest')}/>
+        <Card sideText={t('totalPages')} mainText="412" underText={t('thisMonth')}/>
 
       </View>
 
       <View className='mt-10 ml-4 mr-4'>
         <View className='flex-row justify-between mb-3'>
           
-          <Text className='font-bold tracking-widest text-gray-600 dark:text-mutedWhite'>TODAY'S GOAL</Text>
+          <Text className='font-bold tracking-widest text-gray-600 dark:text-mutedWhite'>{t('todaysGoal')}</Text>
 
-          <Text className='text-xs text-primaryGold font-bold'>WERD #04</Text>
+          <Text className='text-xs text-primaryGold font-bold'>{t('werd')} #04</Text>
 
         </View>
         <View>

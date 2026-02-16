@@ -6,6 +6,7 @@ import { StyleSheet, Text, View, Pressable, FlatList, ScrollView, TouchableOpaci
 	import Slider from '@react-native-community/slider';
 	import { SkipEnteringContext } from 'react-native-reanimated/lib/typescript/component/LayoutAnimationConfig';
 	import * as DB from "@/utils/DatabaseManager"
+	import { useTranslation } from 'react-i18next';
 
 	const RadioButton = ({text, selected, description, onSelected}: any) => {
 		return (
@@ -32,19 +33,8 @@ import { StyleSheet, Text, View, Pressable, FlatList, ScrollView, TouchableOpaci
 		);
 	}
 
-	const GOAL_OPTIONS = [
-		{ id: 1, text: 'Casual', description: '3 Months', days: 90 },
-		{ id: 2, text: 'Regular', description: '1 Month', days: 30 },
-		{ id: 3, text: 'Serious', description: '1 Week', days: 7 },
-	];
-
-	const PARTITION_OPTIONS = [
-		{id: 1, text: 'By Juz', description: 'Read one Juz per day', partitionType: 'juz'},
-		{id: 2, text: 'By Surah', description: 'Read a Surah per day', partitionType: 'surah'},
-		{id: 3, text: 'By Page', description: 'Read a number of pages per day', partitionType: 'page'}
-	]
-
 	const goalSetup = () => {
+		const { t } = useTranslation();
 		const [date, setDate] = useState(new Date())
 		const [show, setShow] = useState<boolean>(false)
 
@@ -53,6 +43,18 @@ import { StyleSheet, Text, View, Pressable, FlatList, ScrollView, TouchableOpaci
 		const [selectedPartition, setPartition] = useState<number>(1);
 		
 		const [sliderValue, setSliderValue] = useState<number>(3)
+
+		const GOAL_OPTIONS = [
+			{ id: 1, text: t('casual'), description: t('threeMonths'), days: 90 },
+			{ id: 2, text: t('regular'), description: t('oneMonth'), days: 30 },
+			{ id: 3, text: t('serious'), description: t('oneWeek'), days: 7 },
+		];
+
+		const PARTITION_OPTIONS = [
+			{id: 1, text: t('byJuz'), description: t('readJuzPerDay'), partitionType: 'juz'},
+			{id: 2, text: t('bySurah'), description: t('readSurahPerDay'), partitionType: 'surah'},
+			{id: 3, text: t('byPage'), description: t('readPagesPerDay'), partitionType: 'page'}
+		]
 
 		const setWerdSettings = async () => {
 			let goal = 0
@@ -86,10 +88,10 @@ import { StyleSheet, Text, View, Pressable, FlatList, ScrollView, TouchableOpaci
 					showsVerticalScrollIndicator={false}
 					contentContainerStyle={{ paddingBottom: 40 }}
 				>
-					<Text className="text-3xl font-bold text-primaryGold tracking-tight text-center">Werd Goal</Text>
-					<Text className="text-gray-500 dark:text-light-300 text-sm mt-1 text-center mb-10">Choose a plan that fits you</Text>
+					<Text className="text-3xl font-bold text-primaryGold tracking-tight text-center">{t('werdGoal')}</Text>
+					<Text className="text-gray-500 dark:text-light-300 text-sm mt-1 text-center mb-10">{t('choosePlan')}</Text>
 
-					<Text className="text-primaryGold mb-4 text-2xl font-bold">Finishing Period</Text>
+					<Text className="text-primaryGold mb-4 text-2xl font-bold">{t('finishingPeriod')}</Text>
 					<FlatList
 						data = {GOAL_OPTIONS}
 						renderItem={({item}) => renderOption(item, selectedGoal, setGoal)}
@@ -98,7 +100,7 @@ import { StyleSheet, Text, View, Pressable, FlatList, ScrollView, TouchableOpaci
 						scrollEnabled={false}
 					/>
 
-					<RadioButton text='Custom' description='Choose a custom period' selected={selectedGoal === 4} onSelected={() => {setPrevGoal(selectedGoal); setShow(true)}}></RadioButton>		
+					<RadioButton text={t('custom')} description={t('customPeriod')} selected={selectedGoal === 4} onSelected={() => {setPrevGoal(selectedGoal); setShow(true)}}></RadioButton>		
 					{show && (
 						<DateTimePicker
 							value={date}
@@ -121,7 +123,7 @@ import { StyleSheet, Text, View, Pressable, FlatList, ScrollView, TouchableOpaci
 					)}
 					<View className="h-[1px] bg-gray-300 dark:bg-gray-800 w-full my-8" />
 
-					<Text className="text-primaryGold mb-4 text-2xl font-bold">Partitioning</Text>
+					<Text className="text-primaryGold mb-4 text-2xl font-bold">{t('partitioning')}</Text>
 					<FlatList
 						data = {PARTITION_OPTIONS}
 						renderItem={({item}) => renderOption(item, selectedPartition, setPartition)}
@@ -133,7 +135,7 @@ import { StyleSheet, Text, View, Pressable, FlatList, ScrollView, TouchableOpaci
 					{selectedPartition === 3 && (
 					<View className="mt-4 mb-2 p-4 bg-gray-100 dark:bg-[#1A1A1A] rounded-2xl border-2 border-gray-300 dark:border-gray-800">
 						<Text className="text-primaryGold mb-3 text-center text-lg font-bold">
-							{sliderValue} pages per day
+							{sliderValue} {t('pagesPerDay')}
 						</Text>
 						<Slider
 							style={{ width: '100%', height: 40 }}
@@ -147,8 +149,8 @@ import { StyleSheet, Text, View, Pressable, FlatList, ScrollView, TouchableOpaci
 							thumbTintColor="#D4AF37"
 						/>
 						<View className="flex-row justify-between mt-1">
-							<Text className="text-gray-400 text-xs">1 page</Text>
-							<Text className="text-gray-400 text-xs">50 pages</Text>
+							<Text className="text-gray-400 text-xs">1 {t('page')}</Text>
+							<Text className="text-gray-400 text-xs">50 {t('page')}</Text>
 						</View>
 					</View>
 				)}
@@ -159,7 +161,7 @@ import { StyleSheet, Text, View, Pressable, FlatList, ScrollView, TouchableOpaci
 						onPress={setWerdSettings}
 						className="bg-gray-100 dark:bg-[#1A1A1A] border-2 border-primaryGold rounded-2xl py-4 px-8 mt-10 active:opacity-70"
 					>
-						<Text className="text-primaryGold text-base font-bold text-xl text-center">START MY WERD</Text>
+						<Text className="text-primaryGold text-base font-bold text-xl text-center">{t('startMyWerd')}</Text>
 					</TouchableOpacity>
 				</ScrollView>
 			</SafeAreaView>
