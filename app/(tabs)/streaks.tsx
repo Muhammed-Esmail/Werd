@@ -104,11 +104,8 @@ const StreakPage = () => {
       <ScrollView className="flex-1 px-5">
         
         {/* Header */}
-        <View className="flex-row justify-between items-center py-6">
-          <Text className="text-xl font-bold text-yellow-500">Gold Stats & Heatmap</Text>
-          <View className="w-8 h-8 rounded-full bg-zinc-800 items-center justify-center">
-             <Text className="text-white text-xs">👤</Text>
-          </View>
+        <View className='w-[100%] justify-center items-center mb-10'>
+          <Text className='text-primaryGold mt-10 text-xl font-bold'> STREAKS </Text>
         </View>
 
         {/* Stats Row */}
@@ -132,7 +129,7 @@ const StreakPage = () => {
         {/* --- TEST BUTTON --- */}
         <TouchableOpacity 
           onPress={() => incrementStreak()}
-          activeOpacity={0.7}
+          activeOpacity={0.3}
           className="bg-yellow-500 py-4 rounded-2xl mb-8 items-center justify-center shadow-lg shadow-yellow-500/20"
         >
           <View className="flex-row items-center">
