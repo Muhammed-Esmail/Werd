@@ -42,8 +42,15 @@ export interface Surah {
 
 export interface StreakData {
     count: number;
-    longest_count: number;
+    longest: number;
     date: string | null;
+}
+
+export interface DateData {
+    day: number;
+    month: number;
+    year: number;
+    is_done: number;
 }
 
 const isEmpty = async (db: SQLite.SQLiteDatabase, table: string) => {
@@ -413,6 +420,103 @@ export const getBookMarks = async () => {
 		return []
 	}
 }
+
+export const insertWerdSegment = async (id: number, first_verse: number, last_verse: number, date: string, done: number) => {
+    try {
+        const db = await getDB()
+        await db.runAsync(`INSERT INTO werd_segments (id, first_verse, last_verse, date, done) VALUES (?, ?, ?, ?, ?)`, [id, first_verse, last_verse, date, done])
+        console.log("Added new werd segment")
+    }
+    catch (error) {
+        console.log(error)
+    }
+}
+
+export const updateWerdSegments = async (updates: Partial<WerdSegment>, id: number = 1) => {
+	try {
+		const db = await getDB()
+		const fields = Object.keys(updates)
+		const values = Object.values(updates)
+		values.push(id)
+		const query = fields.map(field => `${field} = ?`).join(", ")
+		await db.runAsync(`UPDATE werd_segments SET ${query} WHERE id = ?`, values)
+		console.log("Updated werd segments")
+	}
+	catch (error) {
+		console.log(error)
+	}
+}
+
+export const getWerdSegment = async (id: number) => {
+	try {
+		const db = await getDB();
+		const data = await db.getFirstAsync(`SELECT * FROM werd_segments WHERE id = ?`, [id]) as WerdSegment
+		if (data) return data
+		else return null;
+	}
+	catch (error) {
+		console.log("Error reading werd segment")
+		return null;
+	}
+}
+
+export const getAllWerdSegments = async () => {
+    try {
+        const db = await getDB()
+        const data = await db.getAllAsync(`SELECT * FROM werd_segments`) as WerdSegment[]
+        if (data) return data
+        else return []
+    }
+    catch (error) {
+        console.log(error)
+        return []
+    }
+}
+
+// export const getDates = async (year?: number, month?: number) => {
+//     try {
+//         const parameters: number[] = []
+//         const query = "SELECT * FROM dates WHERE "
+//         if (year !== undefined) {
+//             query += "year = ?"
+//             parameters.push(year)
+//         }
+//         if (month !== undefined) parameters.push(month)
+//         const db = await getDB()
+//         const data = await db.getAllAsync(`SELECT * FROM dates WHERE year = ? AND month = ?`, [year, month]) as DateData[]
+//         if (data) return data
+//         else return []
+//     }
+//     catch (error) {
+//         console.log(error)
+//         return []
+//     }
+// }
+
+export const getDates = async (year: number, month: number) => {
+    try {
+        const db = await getDB()
+        const data = await db.getAllAsync(`SELECT * FROM dates WHERE year = ? AND month = ?`, [year, month]) as DateData[]
+        if (data) return data
+        else return []
+    }
+    catch (error) {
+        console.log(error)
+        return []
+    }
+}
+
+export const insertDate = async (day: number, month: number, year: number, is_done: number) => {
+    try {
+        const db = await getDB()
+        await db.runAsync(`INSERT INTO dates VALUES (?, ?, ?, ?)`, [day, month, year, is_done])
+        console.log("Inserted New Date")
+    }
+    catch (error) {
+        console.log(error)
+    }
+}
+
 
 export const test = async (start: number, end: number) => {
 	const verses = await fetchVerses(start, end, 'surah'); 
