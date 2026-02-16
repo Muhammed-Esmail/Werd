@@ -1,9 +1,11 @@
-import { StyleSheet, Text, View, Pressable, FlatList, ScrollView, TouchableOpacity } from 'react-native'
+import { StyleSheet, Text, View, Pressable, FlatList, ScrollView, TouchableOpacity, Alert } from 'react-native'
 import React, { useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Slider from '@react-native-community/slider';
+import { getDB, updateSettings } from '@/utils/DatabaseManager';
+import { SegmentationEngine, PartitionType } from '@/core/SegmentationEngine'; 
 
 const RadioButton = ({text, selected, description, onSelected}: any) => {
     return (
@@ -37,23 +39,54 @@ const GOAL_OPTIONS = [
 ];
 
 const PARTITION_OPTIONS = [
-	{id: 1, text: 'By Juz', description: 'Read one Juz per day'},
-	{id: 2, text: 'By Surah', description: 'Read a Surah per day'},
-	{id: 3, text: 'By Page', description: 'Read a number of pages per day'}
+	{id: PartitionType.JUZ, text: 'By Juz', description: 'Read one Juz per day'},
+	{id: PartitionType.SURAH, text: 'By Surah', description: 'Read a Surah per day'},
+	{id: PartitionType.PAGE, text: 'By Page', description: 'Read a number of pages per day'}
 ]
 
 const goalSetup = () => {
+    const router = useRouter();
 	const [date, setDate] = useState(new Date())
 	const [show, setShow] = useState<boolean>(false)
 
 	const [selectedGoal, setGoal] = useState<number>(1);
 	const [prevGoal, setPrevGoal] = useState<number>(1);
-	const [selectedPartition, setPartition] = useState<number>(1);
+	const [selectedPartition, setPartition] = useState<number>(PartitionType.JUZ);
 	
 	const [sliderValue, setSliderValue] = useState<number>(3)
 
-	const setWerdSettings = () => {
-		alert("Werd Settings Set!")
+	const setWerdSettings = async () => {
+        try {
+            const db = await getDB();
+            
+            let days = 30;
+            if (selectedGoal === 4) { // custom
+                const diff = Math.abs(date.getTime() - new Date().getTime());
+                days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+            } else {
+                if(selectedGoal === 1) days = 90;
+                if(selectedGoal === 2) days = 30;
+                if(selectedGoal === 3) days = 7;
+            }
+            if (days <= 0) days = 1;
+            const pType = selectedPartition as PartitionType; 
+
+            const plan = await SegmentationEngine.calculatePlan(db, days, pType);
+            await SegmentationEngine.savePlanToDB(db, plan);
+
+            await updateSettings({
+                partition_type: pType,
+                ending_date: date.toISOString(), 
+                currentWerd: 1 
+            });
+
+            Alert.alert("Success", "Werd Settings Set!", [
+                { text: "OK", onPress: () => router.push('/(tabs)/werd') }
+            ]);
+        } catch (e) {
+            console.error(e);
+            Alert.alert("Error", "Failed to save settings.");
+        }
 	}
 
 	const renderOption = (item: any, currentSelected: number, setter: (id: number) => void) => {
@@ -92,11 +125,11 @@ const goalSetup = () => {
 						onChange={(event: any, selectedDate: any) => {
 							if (event.type === 'set') {
 								if (selectedDate) setDate(selectedDate);
-								console.log(`user selected ${selectedDate}`)
+                                console.log(`user selected ${selectedDate}`)
 								setGoal(4)
 							}
 							else {
-								console.log("user cancelled")
+                                console.log("user cancelled")
 								setGoal(prevGoal)
 							}
 							setShow(false);

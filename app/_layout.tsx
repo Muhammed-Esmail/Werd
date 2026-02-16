@@ -28,8 +28,8 @@ export default function RootLayout() {
       console.log("Initializing database...");
       
       // await DB.initDB(1);
+      await DB.ensureDailyProgressTable();
       await DB.setSettings()
-      await DB.setWerdSegments()
       await DB.test(5, 6);
 
       const surahs = await DB.getSurahs();
