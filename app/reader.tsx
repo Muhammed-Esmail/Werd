@@ -1,9 +1,8 @@
-import React, { use, useEffect } from 'react'
+import React, { use, useEffect, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { ReaderInfiniteScroll } from '@/components/ReaderInfiniteScroll';
 import { ReaderPages } from '@/components/ReaderPages';
-import { getSettings, UserSettings } from '@/utils/DatabaseManager';
 import * as DB from "@/utils/DatabaseManager";
 
 const ReaderMode = {
@@ -14,12 +13,14 @@ const ReaderMode = {
 const Reader = () => {
 
     const [readerMode, setReaderMode] = React.useState<string>();
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const loadMode = async () => {
-            
-            const settings = await getSettings() as UserSettings[];
-            const readerMode = settings[0].reading_mode;
+            await DB.getDB()
+            const settings = await DB.getSettings() as DB.UserSettings;
+            const readerMode = settings.reading_mode;
+            console.log(`Reading Mode = ${readerMode}`)
             if(readerMode === undefined || readerMode === 0) {
                 setReaderMode(ReaderMode.INFINITE_SCROLL);
             } else {

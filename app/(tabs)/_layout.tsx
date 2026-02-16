@@ -1,8 +1,8 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { Tabs } from "expo-router";
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Text, View } from "react-native";
-import { getSettings } from '@/utils/DatabaseManager';
+import * as DB from '@/utils/DatabaseManager';
 
 const TabIcon = ({focused, iconName, title}: any) =>{
     const val = 30;
@@ -31,33 +31,29 @@ const TabIcon = ({focused, iconName, title}: any) =>{
 
 }
 
-const getColor = async () => {
-
-    // @ts-ignore
-    const settings = await getSettings() as UserSettings[];
-
-    const theme = settings[0].theme;
-
-    try{
-        
-        if(theme === undefined)
-            throw ("theme undefined");
-
-        if(theme === 0){
-            return '#0A0A0A';
-        }
-        return '#FAF3E0';
-    }
-    catch(error){
-        throw("Cannot get the theme: " + error);
-    }
-
-}
-
 const _layout = () => {
+    const [color, setColor] = useState<string>("#0A0A0A")
+    const [loading, setLoading] = useState(true);
 
-  // @ts-ignore
-  let color = toString(getColor());
+   useEffect(() => {
+        const init = async () => {
+            try {
+                const settingsData = await DB.getSettings() as DB.UserSettings;
+                
+                if (settingsData) {
+                    const theme = settingsData.theme;
+                    setColor(theme === 0 ? '#0A0A0A' : '#FAF3E0');
+                }
+            } catch (error) {
+                console.error("Layout Init Error:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        init();
+    }, []);
+
+    if (loading) return null;
   return (
     <Tabs
         screenOptions={{

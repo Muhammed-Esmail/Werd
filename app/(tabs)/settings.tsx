@@ -191,13 +191,13 @@ useEffect(() => {
   const init = async () => {
     console.log("Initializing Settings");
 
-	const current_settings = await DB.getSettings() as UserSettings[]
+	const current_settings = await DB.getSettings() as UserSettings
 
-	setIsEnabled(current_settings[0].theme === 0)
-	setColorScheme(current_settings[0].theme === 0 ? "dark" : "light")
-	setReadingMode(current_settings[0].reading_mode === 1)
+	setIsEnabled(current_settings.theme === 0)
+	setColorScheme(current_settings.theme === 0 ? "dark" : "light")
+	setReadingMode(current_settings.reading_mode === 1)
 
-	changeLang(current_settings[0].language, true)
+	changeLang(current_settings.language, true)
 
 	console.log("Done")
   };

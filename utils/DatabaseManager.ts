@@ -16,12 +16,6 @@ export interface UserSettings {
 	currentWerd: number;
 }
 
-export interface UserProgress {
-	first_verse: number;
-	last_verse: number;
-	date: string;
-}
-
 export interface WerdSegment {
 	id: number;
 	first_verse: number;
@@ -43,6 +37,12 @@ export interface Surah {
 	arabicName: string;
 	englishName: string;
 	type: string;
+}
+
+export interface StreakData {
+    count: number;
+    longest_count: number;
+    date: string | null;
 }
 
 const isEmpty = async (db: SQLite.SQLiteDatabase, table: string) => {
@@ -111,23 +111,41 @@ export async function getDB() {
 
 export async function initDB(clear: number = 0) {
     try {
-        const dbPath = `${FileSystem.documentDirectory}SQLite/${DB_NAME}`;
+        let db = await getDB(); // Use 'let' so we can reassign
         
         if (clear) {
             console.log("clearing database");
-            const db = await getDB();
-            await db.closeAsync();
+            await db.closeAsync(); // Close existing
             
+            const dbPath = `${FileSystem.documentDirectory}SQLite/${DB_NAME}`;
             await FileSystem.deleteAsync(dbPath, { idempotent: true });
             
             database = null;
             dbInitPromise = null;
-            await getDB();
+            
+            // RE-ASSIGN the local db variable with a fresh handle
+            db = await getDB(); 
         }
+
+        // Now 'db' is guaranteed to be an open resource
+        if (await isEmpty(db, "streaks")) {
+            await db.runAsync(`INSERT INTO streaks VALUES (?, ?, ?, ?)`, [1, 0, 0, '9/9/2009'])
+        }
+
+        if (await isEmpty(db, "user_settings")) {
+            await db.runAsync(`
+                INSERT INTO user_settings (id, font, font_size, reading_mode, partition_type, starting_date, ending_date, theme, language, currentWerd) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+                [1, "D1", 14, 0, 0, "6/6/2006", "7/7/2007", 0, "en", 1]);
+        }
+
+        // Use the exported helper function, not 'db.getSettings' (which doesn't exist on the SQLite object)
+        const settings = await getSettings(); 
+        console.log("SETTINGS GOT WHEN CREATING THE FIRST ROW =", settings);
         console.log("Database initialized successfully");
     }
     catch (error) {
-        console.error(error);
+        console.error("Initialization Failed:", error);
     }
 }
 
@@ -326,13 +344,12 @@ export const updateSettings = async(updates: Partial<UserSettings>, id: number =
 
 export const getSettings = async (id: number = 1) => {
     try {
-        const db = await getDB()
-        const data = await db.getAllAsync(`SELECT * FROM user_settings WHERE id = ?`, [id])
-        if (data) return data
-    }
-    catch (error) {
-        console.log(error)
-        return []
+        const db = await getDB();
+        const data = await db.getFirstAsync(`SELECT * FROM user_settings WHERE id = ?`, [id]);
+        return data || [];
+    } catch (error) {
+        console.error("getSettings error:", error);
+        return [];
     }
 }
 
@@ -362,24 +379,28 @@ export const getUserProgress = async () => {
 		return []
 	}
 }
+// init streak table
 
 export const getStreak = async() => {
 	try {
-		
+		const db = await getDB()
+        const data = await db.getFirstAsync(`SELECT * FROM streaks WHERE id = 1`) as StreakData
+        if (data) return data
+        else return null
 	}
 	catch (error) {
 		console.log(error)
+        return null
 	}
 }
 
-export const updateStreak = async (updates: Partial<UserProgress>, id: number = 1) => {
+export const updateStreak = async (updates: Partial<StreakData>) => {
 	try {
 		const db = await getDB()
 		const fields = Object.keys(updates)
 		const values = Object.values(updates)
-		values.push(id)
 		const query = fields.map(field => `${field} = ?`).join(", ")
-		await db.runAsync(`UPDATE streaks SET ${query} WHERE id = ?`, values)
+		await db.runAsync(`UPDATE streaks SET ${query} WHERE id = 1`, values)
 		console.log("Updated user streak")
 	}
 	catch (error) {
