@@ -1,4 +1,4 @@
-	import { StyleSheet, Text, View, Pressable, FlatList, ScrollView, TouchableOpacity } from 'react-native'
+import { StyleSheet, Text, View, Pressable, FlatList, ScrollView, TouchableOpacity } from 'react-native'
 	import React, { useState } from 'react'
 	import { SafeAreaView } from 'react-native-safe-area-context'
 	import { Stack } from 'expo-router';
@@ -12,19 +12,19 @@
 			<Pressable 
 				onPress={onSelected}
 				className={`flex-row items-center justify-between p-4 mb-3 rounded-2xl border-2 ${
-					selected ? "border-primaryGold bg-[#1A1A1A]" : "border-gray-800 bg-transparent"
+					selected ? "border-primaryGold bg-gray-100 dark:bg-[#1A1A1A]" : "border-gray-300 dark:border-gray-800 bg-transparent"
 				}`}
 			>
 				<View>
-					<Text className={`${selected ? "text-successGreen font-bold" : "text-gray-400"}`}>
+					<Text className={`${selected ? "text-green-600 dark:text-successGreen font-bold" : "text-gray-500 dark:text-gray-400"}`}>
 						{text}
 					</Text>
-					<Text className={`${selected ? "text-successGreen" : "text-gray-300"}`}>
+					<Text className={`${selected ? "text-green-600 dark:text-successGreen" : "text-gray-600 dark:text-gray-300"}`}>
 						{description}
 					</Text>
 				</View>
 				<View className={`h-5 w-5 rounded-full border-2 items-center justify-center ${
-					selected ? 'border-primaryGold' : 'border-gray-600'
+					selected ? 'border-primaryGold' : 'border-gray-400 dark:border-gray-600'
 				}`}>
 					{selected && <View className="h-2.5 w-2.5 rounded-full bg-primaryGold" />}
 				</View>
@@ -80,14 +80,14 @@
 		return (
 			<>
 			<Stack.Screen options={{ headerShown: false }} />
-			<SafeAreaView className="flex-1 bg-matteBlack">
+			<SafeAreaView className="flex-1 bg-gray-50 dark:bg-matteBlack">
 				<ScrollView 
 					className="flex-1 px-6" 
 					showsVerticalScrollIndicator={false}
 					contentContainerStyle={{ paddingBottom: 40 }}
 				>
 					<Text className="text-3xl font-bold text-primaryGold tracking-tight text-center">Werd Goal</Text>
-					<Text className="text-light-300 text-sm mt-1 text-center mb-10">Choose a plan that fits you</Text>
+					<Text className="text-gray-500 dark:text-light-300 text-sm mt-1 text-center mb-10">Choose a plan that fits you</Text>
 
 					<Text className="text-primaryGold mb-4 text-2xl font-bold">Finishing Period</Text>
 					<FlatList
@@ -119,7 +119,7 @@
 							minimumDate={new Date()}
 						/>
 					)}
-					<View className="h-[1px] bg-gray-800 w-full my-8" />
+					<View className="h-[1px] bg-gray-300 dark:bg-gray-800 w-full my-8" />
 
 					<Text className="text-primaryGold mb-4 text-2xl font-bold">Partitioning</Text>
 					<FlatList
@@ -131,7 +131,7 @@
 					/>
 
 					{selectedPartition === 3 && (
-					<View className="mt-4 mb-2 p-4 bg-[#1A1A1A] rounded-2xl border-2 border-gray-800">
+					<View className="mt-4 mb-2 p-4 bg-gray-100 dark:bg-[#1A1A1A] rounded-2xl border-2 border-gray-300 dark:border-gray-800">
 						<Text className="text-primaryGold mb-3 text-center text-lg font-bold">
 							{sliderValue} pages per day
 						</Text>
@@ -153,11 +153,11 @@
 					</View>
 				)}
 
-					<View className="h-[1px] bg-gray-800 w-full my-8" />
+					<View className="h-[1px] bg-gray-300 dark:bg-gray-800 w-full my-8" />
 
 					<TouchableOpacity 
 						onPress={setWerdSettings}
-						className="bg-[#1A1A1A] border-2 border-primaryGold rounded-2xl py-4 px-8 mt-10 active:opacity-70"
+						className="bg-gray-100 dark:bg-[#1A1A1A] border-2 border-primaryGold rounded-2xl py-4 px-8 mt-10 active:opacity-70"
 					>
 						<Text className="text-primaryGold text-base font-bold text-xl text-center">START MY WERD</Text>
 					</TouchableOpacity>
