@@ -167,11 +167,11 @@ export const fetchQuranText = async (params: rp.ReaderParams): Promise<qd.Readin
         let verses: any[] = [];
 
         if (params.sessionType === "daily_werd") {
-            const settings = await getSettings() as UserSettings[];
+            const settings = await getSettings() as UserSettings;
 			console.log("settings")
 			console.log(settings)
 
-            const currentWerdId = settings[0].currentWerd;
+            const currentWerdId = settings.currentWerd;
 			const segment = await getWerdSegment(currentWerdId) as WerdSegment
 			console.log("werd segment")
 			console.log(segment)
@@ -315,11 +315,11 @@ export const updateSettings = async(updates: Partial<UserSettings>, id: number =
 export const getSettings = async (id: number = 1) => {
     try {
         const db = await getDB();
-        const data = await db.getFirstAsync(`SELECT * FROM user_settings WHERE id = ?`, [id]);
-        return data || [];
+        const data = await db.getFirstAsync(`SELECT * FROM user_settings WHERE id = ?`, [id]) as UserSettings
+        return data || null;
     } catch (error) {
         console.error("getSettings error:", error);
-        return [];
+        return null;
     }
 }
 

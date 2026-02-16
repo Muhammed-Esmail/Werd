@@ -27,7 +27,7 @@ export default function RootLayout() {
     const init = async () => {
       console.log("Initializing database...");
       
-      await DB.initDB(0);
+      await DB.initDB(1);
       await DB.test(114,114);
 
       const surahs = await DB.getSurahs();
