@@ -70,11 +70,14 @@ export const useStreak = () => {
         
         const diffInMs = lastDate !== null ? today - lastDate : null;
 
-        if (diffInMs === 0) return;
+        // @ts-ignore
+        if (diffInMs >= 0 && diffInMs < oneDayInMs)
+            return;
 
         let newStreak: number;
 
-        if (diffInMs === oneDayInMs || currentLastCompleted === null) {
+        // @ts-ignore
+        if (diffInMs >= oneDayInMs || currentLastCompleted === null) {
             newStreak = currentStreak + 1;
         } else {
             newStreak = 1;

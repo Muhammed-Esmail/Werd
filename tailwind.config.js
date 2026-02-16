@@ -34,7 +34,11 @@ module.exports = {
       fontFamily: {
         'amiri': ['Amiri-Regular'],
         'amiri-bold': ['Amiri-Bold'],
-        'quran': ['Hafs'], // Using Amiri as a placeholder for the Quranic font
+        'amiri': ['Amiri-Regular'],
+        'amiri-bold': ['Amiri-Bold'],
+        'amiri': ['Amiri-Regular'],
+        'amiri-bold': ['Amiri-Bold'],
+        'quran': ['Hafs']
       },
     },
   },
