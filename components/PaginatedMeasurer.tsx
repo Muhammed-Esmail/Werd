@@ -1,57 +1,79 @@
-
 import { PageAtom } from "@/types/quran_data";
 import { useState } from "react";
 import { View } from "react-native";
 import { ReaderPageAtom } from "./ReaderPageAtom";
+import React from "react";
 
 interface PaginatedMeasureProps {
-    allItems: PageAtom[];
-    targetHeight: number;
-    onPageGenerated: (page: PageAtom[], last: boolean) => void;
+  allItems: PageAtom[];
+  targetHeight: number;
+  onPageGenerated: (page: PageAtom[], last: boolean) => void;
+}
+
+// Configuration
+const CHARS_PER_PAGE = 120;      // Target characters per page
+const BUFFER_SIZE = 30;           // Extra atoms added to initial estimate
+const MIN_JUMP = 5;               // Minimum atoms to jump when searching
+const MAX_JUMP = 15;              // Maximum atoms to jump when searching
+
+function estimatePageEnd(atoms: PageAtom[], start: number): number {
+  let charCount = 0;
+  
+  for (let i = start; i < atoms.length; i++) {
+    if (atoms[i].type === 'word') {
+      // @ts-ignore
+      charCount += atoms[i].text.length;
+    }
+    if (charCount > CHARS_PER_PAGE) {
+      return Math.min(i + BUFFER_SIZE, atoms.length);
+    }
+  }
+  
+  return atoms.length;
 }
 
 export const PaginatedMeasurer = ({ allItems, targetHeight, onPageGenerated }: PaginatedMeasureProps) => {
-  const JUMP_SIZE = 150; // How many atoms to jump when we have plenty of space
-  
   const [currentStart, setCurrentStart] = useState(0);
-  const [testEnd, setTestEnd] = useState(JUMP_SIZE); 
+  const [testEnd, setTestEnd] = useState(() => estimatePageEnd(allItems, 0));
   const [lastValidEnd, setLastValidEnd] = useState(0);
+  const [measureCount, setMeasureCount] = useState(0);
 
   const handleLayout = (event: any) => {
     const measuredHeight = event.nativeEvent.layout.height;
+    setMeasureCount(prev => prev + 1);
 
     if (measuredHeight > targetHeight) {
-      // --- OVERFLOW: We must find the exact last atom that fits ---
-      
+      // Content overflows - need to reduce
       if (testEnd === lastValidEnd + 1) {
-        // SUCCESS: We found the limit. lastValidEnd is the last index that fit.
-        const finalPageAtoms = allItems.slice(currentStart, lastValidEnd);
-        onPageGenerated(finalPageAtoms, false);
+        // Found exact split point
+        const pageAtoms = allItems.slice(currentStart, lastValidEnd);
+        onPageGenerated(pageAtoms, false);
+        console.log(`✅ Page: ${pageAtoms.length} atoms, ${measureCount} measurements`);
         
-        // Setup for the next page
         const nextStart = lastValidEnd;
         setCurrentStart(nextStart);
         setLastValidEnd(nextStart);
-        setTestEnd(Math.min(nextStart + JUMP_SIZE, allItems.length));
+        setMeasureCount(0);
+        setTestEnd(estimatePageEnd(allItems, nextStart));
       } else {
-        // NARROW DOWN: Backtrack to the middle of the last known good and current fail
-        const newTestEnd = lastValidEnd + Math.max(1, Math.floor((testEnd - lastValidEnd) / 2));
-        setTestEnd(newTestEnd);
+        // Binary search backward
+        const midpoint = lastValidEnd + Math.max(1, Math.floor((testEnd - lastValidEnd) / 2));
+        setTestEnd(midpoint);
       }
     } else {
-      // --- UNDER LIMIT: We can fit more ---
-      
+      // Content fits - can add more
       if (testEnd >= allItems.length) {
-        // We reached the end of the Surah before filling the page
+        // Reached the end
         onPageGenerated(allItems.slice(currentStart, allItems.length), true);
+        console.log(`✅ Final page: ${allItems.length - currentStart} atoms, ${measureCount} measurements`);
         return;
       }
 
-      // Record this as the last known "Good" state
       setLastValidEnd(testEnd);
-
-      // Determine next jump
-      setTestEnd(prev => Math.min(prev + JUMP_SIZE, allItems.length));
+      
+      const remaining = allItems.length - testEnd;
+      const jump = Math.min(MAX_JUMP, Math.max(MIN_JUMP, Math.floor(remaining / 20)));
+      setTestEnd(prev => Math.min(prev + jump, allItems.length));
     }
   };
 

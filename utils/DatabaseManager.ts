@@ -417,8 +417,8 @@ export const getBookMarks = async () => {
 
 export const setWerdSegments = async (
     id: number = 1,
-	first_verse: number = 10,
-	last_verse: number = 100,
+	first_verse: number = 6231,
+	last_verse: number = 6236,
 	date: string = "8/8/2008"
 ) => {
     try {
@@ -479,10 +479,28 @@ export const test = async (start: number, end: number) => {
 	if (verses && verses.length) {
 		console.log("------------------------------------------");
 		verses.forEach((v: any, index: number) => {
-			console.log(`[Verse ${v.id}] ${v.text}`);
+			// console.log(`[Verse ${v.id}] ${v.text}`);
 		});
 		console.log("------------------------------------------");
 	} else {
 		console.log("No verses found");
 	}
+}
+
+export const resetWerdSegments = async () => {
+    try {
+        const db = await getDB();
+        
+        await db.withTransactionAsync(async () => {
+            await db.runAsync(`DELETE FROM werd_segments`);
+            await db.runAsync(`
+                INSERT INTO werd_segments (id, first_verse, last_verse, date) 
+                VALUES (?, ?, ?, ?)
+            `, [1, 1, 2, "8/8/2008"]);
+        });
+        
+        console.log("✅ Werd segments reset");
+    } catch (error) {
+        console.error("❌ Error resetting werd segments:", error);
+    }
 }

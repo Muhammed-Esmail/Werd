@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 const Card = ({sideIcon, sideText, mainText, underText}: any) =>{
   return  (
-      <View className='flex-1 gap-2 bg-surfaceBlack border border-borderDark rounded-lg p-4 ml-4 mr-4'>
+      <View className='flex-1 gap-2 bg-surfaceBlack dark:bg-white border border-borderDark rounded-lg p-4 ml-4 mr-4'>
         {/* Icon + Side Text */}
         <View className='flex-row gap-3 items-center'>
           <MaterialIcons name={sideIcon} size={20} color={'#D4AF37'}/>
