@@ -44,8 +44,15 @@ export interface Surah {
 
 export interface StreakData {
     count: number;
-    longest_count: number;
+    longest: number;
     date: string | null;
+}
+
+export interface DateData {
+    day: number;
+    month: number;
+    year: number;
+    is_done: number;
 }
 
 const isEmpty = async (db: SQLite.SQLiteDatabase, table: string) => {
@@ -447,6 +454,50 @@ export const getAllWerdSegments = async () => {
     catch (error) {
         console.log(error)
         return []
+    }
+}
+
+// export const getDates = async (year?: number, month?: number) => {
+//     try {
+//         const parameters: number[] = []
+//         const query = "SELECT * FROM dates WHERE "
+//         if (year !== undefined) {
+//             query += "year = ?"
+//             parameters.push(year)
+//         }
+//         if (month !== undefined) parameters.push(month)
+//         const db = await getDB()
+//         const data = await db.getAllAsync(`SELECT * FROM dates WHERE year = ? AND month = ?`, [year, month]) as DateData[]
+//         if (data) return data
+//         else return []
+//     }
+//     catch (error) {
+//         console.log(error)
+//         return []
+//     }
+// }
+
+export const getDates = async (year: number, month: number) => {
+    try {
+        const db = await getDB()
+        const data = await db.getAllAsync(`SELECT * FROM dates WHERE year = ? AND month = ?`, [year, month]) as DateData[]
+        if (data) return data
+        else return []
+    }
+    catch (error) {
+        console.log(error)
+        return []
+    }
+}
+
+export const insertDate = async (day: number, month: number, year: number, is_done: number) => {
+    try {
+        const db = await getDB()
+        await db.runAsync(`INSERT INTO dates VALUES (?, ?, ?, ?)`, [day, month, year, is_done])
+        console.log("Inserted New Date")
+    }
+    catch (error) {
+        console.log(error)
     }
 }
 
