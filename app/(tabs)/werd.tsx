@@ -103,6 +103,7 @@ const TodayCard = () => {
 const werd = () => {
   const { colorScheme, setColorScheme } = useColorScheme();
   
+    <SafeAreaView>
       {/* Today's Goal */}
       <View className='mt-10 ml-4 mr-4'>
         <View className='flex-row justify-between mb-3'>
@@ -119,7 +120,6 @@ const werd = () => {
       </View>
 
     </SafeAreaView>
-  )
 }
 
 export default werd

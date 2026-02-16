@@ -5,12 +5,14 @@ import * as rp from "@/types/reader_data"
 import * as qd from "@/types/quran_data"
 
 export interface UserSettings {
+    id: number;
     font?: string;
     font_size: number;
     reading_mode: number;
-    partition_type: number;
+    partition_type: string;
     starting_date: string;
     ending_date: string;
+    werd_plan_days: number,
     theme: number;
 	language: string;
 	currentWerd: number;
@@ -21,6 +23,7 @@ export interface WerdSegment {
 	first_verse: number;
 	last_verse: number;
 	date: string;
+    done: number;
 }
 
 export interface Bookmark {
@@ -111,11 +114,11 @@ export async function getDB() {
 
 export async function initDB(clear: number = 0) {
     try {
-        let db = await getDB(); // Use 'let' so we can reassign
+        let db = await getDB();
         
         if (clear) {
             console.log("clearing database");
-            await db.closeAsync(); // Close existing
+            await db.closeAsync();
             
             const dbPath = `${FileSystem.documentDirectory}SQLite/${DB_NAME}`;
             await FileSystem.deleteAsync(dbPath, { idempotent: true });
@@ -123,28 +126,25 @@ export async function initDB(clear: number = 0) {
             database = null;
             dbInitPromise = null;
             
-            // RE-ASSIGN the local db variable with a fresh handle
             db = await getDB(); 
         }
 
-        // Now 'db' is guaranteed to be an open resource
         if (await isEmpty(db, "streaks")) {
             await db.runAsync(`INSERT INTO streaks VALUES (?, ?, ?, ?)`, [1, 0, 0, '9/9/2009'])
         }
 
         if (await isEmpty(db, "user_settings")) {
             await db.runAsync(`
-                INSERT INTO user_settings (id, font, font_size, reading_mode, partition_type, starting_date, ending_date, theme, language, currentWerd) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
-                [1, "D1", 14, 0, 0, "6/6/2006", "7/7/2007", 0, "en", 1]);
+                INSERT INTO user_settings (id, font, font_size, reading_mode, partition_type, starting_date, ending_date, theme, language, currentWerd, werd_plan_days) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+                [1, "D1", 14, 0, "page", "6/6/2006", "7/7/2007", 0, "en", 1, 30]);
         }
 
         if (await isEmpty(db, "werd_segments")) {
-            await db.runAsync(`INSERT INTO werd_segments (id, first_verse, last_verse, date) 
-                VALUES (?, ?, ?, ?)`, [1, 1, 20, '11/11/2011'])
+            await db.runAsync(`INSERT INTO werd_segments (id, first_verse, last_verse, date, done) 
+                VALUES (?, ?, ?, ?, ?)`, [1, 1, 20, '11/11/2011', 0])
         }
 
-        // Use the exported helper function, not 'db.getSettings' (which doesn't exist on the SQLite object)
         const settings = await getSettings(); 
         console.log("SETTINGS GOT WHEN CREATING THE FIRST ROW =", settings);
         console.log("Database initialized successfully");
@@ -289,48 +289,6 @@ export const SetFont = async (font: string) => {
 	}
 }
 
-export const setSettings = async (
-    id: number = 1,
-    font: string = "D1",
-    font_size: number = 14,
-    reading_mode: number = 0,
-    partition_type: number = 0,
-    starting_date: string = "6/6/2006",
-    ending_date: string = "7/7/2007",
-    theme: number = 0,
-    language: string = "en",
-	currentWerd: number = 1
-) => {
-    try {
-        const db = await getDB();
-        if (await isEmpty(db, "user_settings")) {
-            await db.runAsync(`
-                INSERT INTO user_settings (id, font, font_size, reading_mode, partition_type, starting_date, ending_date, theme, language, currentWerd) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
-                [id, font, font_size, reading_mode, partition_type, starting_date, ending_date, theme, language, currentWerd]);
-        }
-        else {
-            await db.runAsync(`
-                UPDATE user_settings
-                SET font = ?,
-                font_size = ?,
-                reading_mode = ?,
-                partition_type = ?,
-                starting_date = ?,
-                ending_date = ?,
-                theme = ?,
-                language = ?,
-                currentWerd = ?
-                WHERE id = ?`,
-                [font, font_size, reading_mode, partition_type, starting_date, ending_date, theme, language, currentWerd, id]); // Added language and id
-        }
-        console.log("Settings Modified");
-    }
-    catch (error) {
-        console.log("Error updating settings:", error);
-    }
-}
-
 export const updateSettings = async(updates: Partial<UserSettings>, id: number = 1) => {
 	try {
 		const db = await getDB()
@@ -440,34 +398,14 @@ export const getBookMarks = async () => {
 	}
 }
 
-
-export const setWerdSegments = async (
-    id: number = 1,
-	first_verse: number = 6231,
-	last_verse: number = 6236,
-	date: string = "8/8/2008"
-) => {
+export const insertWerdSegment = async (id: number, first_verse: number, last_verse: number, date: string, done: number) => {
     try {
-        const db = await getDB();
-        if (await isEmpty(db, "werd_segments")) {
-            await db.runAsync(`
-                INSERT INTO werd_segments (id, first_verse, last_verse, date) 
-                VALUES (?, ?, ?, ?)`, 
-                [id, first_verse, last_verse, date]);
-        }
-        else {
-            await db.runAsync(`
-                UPDATE werd_segments
-                SET first_verse = ?,
-                last_verse = ?,
-                date = ?
-                WHERE id = ?`,
-                [first_verse, last_verse, date, id]);
-        }
-        console.log("Werd Segments Modified");
+        const db = await getDB()
+        await db.runAsync(`INSERT INTO werd_segments (id, first_verse, last_verse, date, done) VALUES (?, ?, ?, ?, ?)`, [id, first_verse, last_verse, date, done])
+        console.log("Added new werd segment")
     }
     catch (error) {
-        console.log("Error updating werd segments:", error);
+        console.log(error)
     }
 }
 
@@ -499,6 +437,19 @@ export const getWerdSegment = async (id: number) => {
 	}
 }
 
+export const getAllWerdSegments = async () => {
+    try {
+        const db = await getDB()
+        const data = await db.getAllAsync(`SELECT * FROM werd_segments`) as WerdSegment[]
+        if (data) return data
+        else return []
+    }
+    catch (error) {
+        console.log(error)
+        return []
+    }
+}
+
 
 export const test = async (start: number, end: number) => {
 	const verses = await fetchVerses(start, end, 'surah'); 
@@ -520,9 +471,9 @@ export const resetWerdSegments = async () => {
         await db.withTransactionAsync(async () => {
             await db.runAsync(`DELETE FROM werd_segments`);
             await db.runAsync(`
-                INSERT INTO werd_segments (id, first_verse, last_verse, date) 
+                INSERT INTO werd_segments (id, first_verse, last_verse, date, done) 
                 VALUES (?, ?, ?, ?)
-            `, [1, 1, 2, "8/8/2008"]);
+            `, [1, 1, 2, "8/8/2008", 0]);
         });
         
         console.log("✅ Werd segments reset");
