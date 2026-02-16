@@ -44,7 +44,7 @@ export interface Surah {
 
 export interface StreakData {
     count: number;
-    longest_count: number;
+    longest: number;
     date: string | null;
 }
 

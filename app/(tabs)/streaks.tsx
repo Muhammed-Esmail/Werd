@@ -45,8 +45,8 @@ const generateMockMonths = (): MonthData[] => {
 const MOCK_MONTHS = generateMockMonths();
 
 const StreakPage = () => {
-  const { streak, loading } = useStreak(); 
-  const longestStreak = 45; 
+  const { streak, incrementStreak, longest, loading } = useStreak(); 
+  const longestStreak = longest; 
   const [currentMonthIndex, setCurrentMonthIndex] = useState(MOCK_MONTHS.length - 1);
   const flatListRef = useRef<FlatList>(null);
 
@@ -128,6 +128,18 @@ const StreakPage = () => {
             <Text className="text-yellow-600/70 text-[10px] font-medium mt-1 text-center">DAYS</Text>
           </View>
         </View>
+
+        {/* --- TEST BUTTON --- */}
+        <TouchableOpacity 
+          onPress={() => incrementStreak()}
+          activeOpacity={0.7}
+          className="bg-yellow-500 py-4 rounded-2xl mb-8 items-center justify-center shadow-lg shadow-yellow-500/20"
+        >
+          <View className="flex-row items-center">
+            <Text className="text-black font-bold text-base mr-2">Test: Increment Streak</Text>
+            <Text>⚡</Text>
+          </View>
+        </TouchableOpacity>
 
         {/* Swipeable Heatmap Section */}
         <View className="bg-zinc-900/50 pt-6 pb-6 rounded-[32px] border border-zinc-800/50 mb-8 items-center w-full">
