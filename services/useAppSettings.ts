@@ -25,7 +25,7 @@ export const useAppSettings = () => {
     // Load settings from DB
     const loadSettings = useCallback(async () => {
         try {
-            const dbSettings = await DB.getSettings() as UserSettings;
+            const dbSettings = await DB.getSettings() as unknown as UserSettings;
             setSettings(dbSettings);
         } catch (error) {
             console.error('Error loading settings:', error);
