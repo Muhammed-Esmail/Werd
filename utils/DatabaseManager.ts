@@ -178,12 +178,12 @@ export const fetchQuranText = async (params: rp.ReaderParams): Promise<qd.Readin
         let verses: any[] = [];
 
         if (params.sessionType === "daily_werd") {
-            const settings = await getSettings() as UserSettings[];
-            if (!settings || settings.length === 0) {
+            const settings = await getSettings() as UserSettings;
+            if (!settings) {
                  console.log("No settings found");
                  return { sessionId: "-1", sessionType: params.sessionType, segments: [] };
             }
-            const currentDay = settings[0].currentWerd;
+            const currentDay = settings.currentWerd;
 
             const segment = await db.getFirstAsync<{ start_verse: number, end_verse: number }>(
                 `SELECT start_verse, end_verse FROM daily_progress WHERE day_number = ?`,
@@ -337,11 +337,11 @@ export const updateSettings = async(updates: Partial<UserSettings>, id: number =
 export const getSettings = async (id: number = 1) => {
     try {
         const db = await getDB();
-        const data = await db.getFirstAsync(`SELECT * FROM user_settings WHERE id = ?`, [id]);
-        return data || [];
+        const data = await db.getFirstAsync(`SELECT * FROM user_settings WHERE id = ?`, [id]) as UserSettings;
+        return data || null;
     } catch (error) {
         console.error("getSettings error:", error);
-        return [];
+        return null;
     }
 }
 

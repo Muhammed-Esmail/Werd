@@ -92,9 +92,9 @@ export class SegmentationEngine {
 
     static async savePlanToDB(db: SQLiteDatabase, plan: PlanSegment[]) {
         try {
-            await ensureDailyProgressTable();
+            await db.execAsync('DROP TABLE IF EXISTS daily_progress');
 
-            await db.execAsync('DELETE FROM daily_progress');
+            await ensureDailyProgressTable();
 
             if(plan.length == 0) return;
 
