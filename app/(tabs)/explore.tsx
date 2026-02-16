@@ -120,6 +120,7 @@ const explore = () => {
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
+          
           {/* Filters */}
           <View className='flex-row gap-3 px-4 mt-6 justify-center'>
             {['ALL', 'MECCAN', 'MEDINAN', 'FAVORITES'].map((cat) => (

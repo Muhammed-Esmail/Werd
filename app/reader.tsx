@@ -10,6 +10,8 @@ const ReaderMode = {
     INFINITE_SCROLL: 'infinite_scroll',
 }
 
+
+
 const Reader = () => {
 
     const [readerMode, setReaderMode] = React.useState<string>();

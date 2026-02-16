@@ -110,7 +110,7 @@ export const ReaderPages = () => {
 
         <TouchableOpacity
           onPress={() => goToPage(currentPage + 1)}
-          className="bg-surfaceBlack px-6 py-3 rounded-lg w-[35%] items-center"
+          className="bg-surfaceBlack px-6 py-3 rounded-lg w-[37%] items-center"
           style={{ opacity: currentPage === pages.length - 1 ? 0.5 : 1 }}
           disabled={currentPage === pages.length - 1}
         >
@@ -129,7 +129,7 @@ export const ReaderPages = () => {
 
         <TouchableOpacity
           onPress={() => goToPage(currentPage - 1)}
-          className="bg-surfaceBlack px-6 py-3 rounded-lg w-[35%] items-center"
+          className="bg-surfaceBlack px-6 py-3 rounded-lg w-[37%] items-center"
           style={{ opacity: currentPage === 0 ? 0.5 : 1 }}
           disabled={currentPage === 0}
         >

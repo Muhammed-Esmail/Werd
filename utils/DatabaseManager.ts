@@ -139,6 +139,11 @@ export async function initDB(clear: number = 0) {
                 [1, "D1", 14, 0, 0, "6/6/2006", "7/7/2007", 0, "en", 1]);
         }
 
+        if (await isEmpty(db, "werd_segments")) {
+            await db.runAsync(`INSERT INTO werd_segments (id, first_verse, last_verse, date) 
+                VALUES (?, ?, ?, ?)`, [1, 1, 20, '11/11/2011'])
+        }
+
         // Use the exported helper function, not 'db.getSettings' (which doesn't exist on the SQLite object)
         const settings = await getSettings(); 
         console.log("SETTINGS GOT WHEN CREATING THE FIRST ROW =", settings);

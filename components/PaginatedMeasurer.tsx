@@ -15,6 +15,7 @@ const CHARS_PER_PAGE = 120;      // Target characters per page
 const BUFFER_SIZE = 30;           // Extra atoms added to initial estimate
 const MIN_JUMP = 5;               // Minimum atoms to jump when searching
 const MAX_JUMP = 15;              // Maximum atoms to jump when searching
+const BUFFER = 20;
 
 function estimatePageEnd(atoms: PageAtom[], start: number): number {
   let charCount = 0;
@@ -42,7 +43,7 @@ export const PaginatedMeasurer = ({ allItems, targetHeight, onPageGenerated }: P
     const measuredHeight = event.nativeEvent.layout.height;
     setMeasureCount(prev => prev + 1);
 
-    if (measuredHeight > targetHeight) {
+    if (measuredHeight + BUFFER > targetHeight) {
       // Content overflows - need to reduce
       if (testEnd === lastValidEnd + 1) {
         // Found exact split point
