@@ -24,19 +24,17 @@ const SurahCard = React.memo(({id, nameEn, nameAr, ayahs, type, onPress} : Filte
       activeOpacity={0.5}
       className='mt-10 flex-row justify-between'
     >
-      {/* Left Number */}
       <View className='flex-row gap-5'>
         <Text className='ml-5 mt-5 text-primaryGold opacity-50'>{id_padded}</Text>
         <View>
-          <Text className='text-white font-bold text-[15px]'>{nameEn}</Text>
+          <Text className='text-gray-900 dark:text-white font-bold text-[15px]'>{nameEn}</Text>
           <View className='flex-row justify-between w-40 mt-2'>
-            <Text className='text-mutedWhite'>{ayahs} AYAHS</Text> 
-            <Text className='text-mutedWhite'> {type}</Text>
+            <Text className='text-gray-600 dark:text-mutedWhite'>{ayahs} AYAHS</Text> 
+            <Text className='text-gray-600 dark:text-mutedWhite'> {type}</Text>
           </View>
         </View>
       </View>
 
-      {/* Arabic Name */}
       <View className='justify-center items-center'>
         <Text className='py-2 mr-5 text-primaryGold text-2xl font-amiri-bold'>{nameAr.slice(7)}</Text>
       </View>
@@ -48,9 +46,9 @@ const FilterButton = ({ label, active, onPress }: any) => {
   return (
     <TouchableOpacity
       onPress={onPress}
-      className={`py-2 px-3 border border-white rounded-full ${active ? 'opacity-100' : 'opacity-50'}`}
+      className={`py-2 px-3 border border-gray-900 dark:border-white rounded-full ${active ? 'opacity-100' : 'opacity-50'}`}
     >
-      <Text className='text-mutedWhite font-bold text-[14px]'>
+      <Text className='text-gray-600 dark:text-mutedWhite font-bold text-[14px]'>
         {label}
       </Text>
     </TouchableOpacity>
@@ -67,7 +65,7 @@ const explore = () => {
   const handleFilterMedinan = useCallback(() => setFilter('MEDINAN'), []);
   const handleFilterFavorites = useCallback(() => setFilter('FAVORITES'), []);
 
-  const filterHandlers = useMemo(() => ({
+  const filterHandlers: Record<string, () => void> = useMemo(() => ({
     'ALL': handleFilterAll,
     'MECCAN': handleFilterMeccan,
     'MEDINAN': handleFilterMedinan,
@@ -84,14 +82,12 @@ const explore = () => {
       if (!matchesFilter) return false;
       if (!cleanQuery) return true;
 
-      // Fuzzy-ish logic: matches English name, Arabic name, or ID
       return (
         surah.englishName.toLowerCase().includes(cleanQuery) ||
         surah.arabicName.includes(cleanQuery) ||
         surah.id.toString() === cleanQuery
       );
     }).sort((a, b) => {
-        // Boost exact starts to the top for "closest" feel
         const aStarts = a.englishName.toLowerCase().startsWith(cleanQuery) ? 1 : 0;
         const bStarts = b.englishName.toLowerCase().startsWith(cleanQuery) ? 1 : 0;
         return bStarts - aStarts;
@@ -108,34 +104,29 @@ const explore = () => {
   console.log(filter);
 
   return (
-    <SafeAreaView className="flex-1 bg-bgBlack">
-          {/* Header Container */}
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-bgBlack">
           <View className='w-[100%] justify-center items-center'>
             <Text className='text-primaryGold mt-10 text-xl font-bold'> SURAH EXPLORER </Text>
           </View>
 
-          {/* Search Bar */}
           <SearchBar
             placeholder="Search Surah..."
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
           
-          {/* Filters */}
           <View className='flex-row gap-3 px-4 mt-6 justify-center'>
             {['ALL', 'MECCAN', 'MEDINAN', 'FAVORITES'].map((cat) => (
               <FilterButton 
                 key={cat}
                 label={cat} 
                 active={filter === cat} 
-                // @ts-ignore
                 onPress={filterHandlers[cat]} 
                 className={`${filter === cat ? 'opacity-100' : 'opacity-50'}`}
               />
             ))}
           </View>
           
-          {/* Surah List */}
           <FlatList
             data = {filteredSurahs}
             keyExtractor={(item) => item.id.toString()}
@@ -151,10 +142,9 @@ const explore = () => {
             )}
             initialNumToRender={10}
             maxToRenderPerBatch={20}
-            // windowSize={5}
             removeClippedSubviews={true}
             ItemSeparatorComponent={() => (
-              <View className='h-[1px] bg-white dark:bg-surfaceBlack mx-5 mt-10' />
+              <View className='h-[1px] bg-gray-300 dark:bg-white mx-5 mt-10' />
             )}
             showsVerticalScrollIndicator={false}
             ListFooterComponent={() => <View className="h-48" />}

@@ -10,6 +10,7 @@ import { ReadingSession } from "@/types/quran_data";
 import React from "react";
 
 
+
 export const ReaderInfiniteScroll = () => {
     
     const [quranData, setQuranData] = useState<ReadingSession>();
@@ -17,7 +18,7 @@ export const ReaderInfiniteScroll = () => {
     const [scrollProgress, setScrollProgress] = useState(0);
     const [contentHeight, setContentHeight] = useState(0);
     const [scrollViewHeight, setScrollViewHeight] = useState(0);
-    const scrollViewRef = useRef<ScrollView>(null);
+    const scrollViewRef = useRef<ScrollView>(null);    
 
     useEffect(() => {
         // If we have heights but the content doesn't exceed the screen
