@@ -9,6 +9,7 @@ export enum PartitionType {
 
 export interface PlanSegment {
     day: number;
+    date: string;
     start_verse: number;
     end_verse: number;
     start_unit_val: number;
@@ -23,7 +24,8 @@ export class SegmentationEngine {
     static async calculatePlan(
         db: SQLiteDatabase,
         days:number,
-        partitionType: PartitionType
+        partitionType: PartitionType,
+        startDate: Date = new Date()
     ): Promise<PlanSegment[]> {
 
         let totalUnits = 0;
@@ -68,8 +70,12 @@ export class SegmentationEngine {
                 [safeEndUnit]
             )
             if(startRes && endRes) {
+                const segmentDate = new Date(startDate);
+                segmentDate.setDate(startDate.getDate() + day - 1);
+
                 plan.push({
                     day,
+                    date: segmentDate.toISOString(),
                     start_verse: startRes.first_verse,
                     end_verse: endRes.last_verse,
                     start_unit_val: startUnit,
@@ -90,21 +96,10 @@ export class SegmentationEngine {
 
             await db.execAsync('DELETE FROM daily_progress');
 
-            await db.execAsync(`
-                CREATE TABLE IF NOT EXISTS daily_progress (
-                    day_number INTEGER PRIMARY KEY,
-                    start_verse INTEGER,
-                    end_verse INTEGER,
-                    start_unit_val INTEGER,
-                    end_unit_val INTEGER,
-                    is_completed INTEGER DEFAULT 0
-                );
-            `);
-
             if(plan.length == 0) return;
 
             const values = plan
-                .map(p => `(${p.day}, ${p.start_verse}, ${p.end_verse}, ${p.start_unit_val}, ${p.end_unit_val}, 0)`)
+                .map(p => `(${p.day}, '${p.date}', ${p.start_verse}, ${p.end_verse}, ${p.start_unit_val}, ${p.end_unit_val}, 0)`)
                 .join(',');
 
             await db.execAsync(`
@@ -187,8 +182,12 @@ export class SegmentationEngine {
                 [safeEndUnit]
             )
             if(startRes && endRes) {
+                const segmentDate = new Date(startDate);
+                segmentDate.setDate(startDate.getDate() + day - 1);
+
                 newPlan.push({
                     day,
+                    date: segmentDate.toISOString(),
                     start_verse: startRes.first_verse,
                     end_verse: endRes.last_verse,
                     start_unit_val: startUnit,
@@ -205,7 +204,7 @@ export class SegmentationEngine {
 
         if (newPlan.length > 0) {
             const values = newPlan
-                .map(p => `(${p.day}, ${p.start_verse}, ${p.end_verse}, ${p.start_unit_val}, ${p.end_unit_val}, 0)`)
+                .map(p => `(${p.day}, '${p.date}', ${p.start_verse}, ${p.end_verse}, ${p.start_unit_val}, ${p.end_unit_val}, 0)`)
                 .join(',');
 
             await db.execAsync(`
