@@ -32,8 +32,8 @@ module.exports = {
         goldMuted: '#FAF3E0',
       },
       fontFamily: {
-        'amiri': ['Amiri-Regular'],
-        'amiri-bold': ['Amiri-Bold'],
+        'Amiri-Regular': ['Amiri-Regular'],
+        'Amiri-Bold': ['Amiri-Bold'],
         'amiri': ['Amiri-Regular'],
         'amiri-bold': ['Amiri-Bold'],
         'amiri': ['Amiri-Regular'],
