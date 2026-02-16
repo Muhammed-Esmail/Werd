@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: "class",
   content: [
     "./app/**/*.{js,jsx,ts,tsx}",
     "./components/**/*.{js,jsx,ts,tsx}",
@@ -11,6 +12,10 @@ module.exports = {
         primaryGold: '#D4AF37',
         goldLight: '#F1E5AC',
         goldGlow: 'rgba(212, 175, 55, 0.15)',
+        circleIndicator : '#FFD700',
+        surahMarker: '#C5A059',
+        settingsGold: '#C5A059',
+        juzStar: '#F3E5AB',
         matteBlack: '#0A0A0A',
         surfaceBlack: '#121212',
         bgBlack: '#0c0c0c',
@@ -30,7 +35,8 @@ module.exports = {
       fontFamily: {
         'amiri': ['Amiri-Regular'],
         'amiri-bold': ['Amiri-Bold'],
-      }
+        'quran': ['Hafs'], // Using Amiri as a placeholder for the Quranic font
+      },
     },
   },
   plugins: [],

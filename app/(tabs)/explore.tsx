@@ -1,22 +1,13 @@
-import React, { useState } from 'react'
+import React, { useCallback, useState } from 'react'
 import { FlatList, Text, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import SearchBar from "@/components/SearchBar";
-
-// Sample surah data
-const SURAH_DATA = [
-  { id: 1, nameEn: 'Al-Fatihah', nameAr: 'الفاتحة', ayahs: 7, type: 'Meccan' },
-  { id: 2, nameEn: 'Al-Baqarah', nameAr: 'البقرة', ayahs: 286, type: 'Medinan' },
-  { id: 3, nameEn: "Ali 'Imran", nameAr: 'آل عمران', ayahs: 200, type: 'Medinan' },
-  { id: 4, nameEn: 'An-Nisa', nameAr: 'النساء', ayahs: 176, type: 'Medinan' },
-  { id: 5, nameEn: "Al-Ma'idah", nameAr: 'المائدة', ayahs: 120, type: 'Medinan' },
-  { id: 6, nameEn: "Al-An'am", nameAr: 'الأنعام', ayahs: 165, type: 'Meccan' },
-  { id: 7, nameEn: "Al-A'raf", nameAr: 'الأعراف', ayahs: 206, type: 'Meccan' },
-  { id: 8, nameEn: 'Al-Anfal', nameAr: 'الأنفال', ayahs: 75, type: 'Medinan' },
-]
+import { router } from 'expo-router';
+import { ReaderParams, SURAH_DATA } from '@/types/reader_data';
+import { useMemo } from 'react';
 
 
-const SurahCard = ({id, nameEn, nameAr, ayahs, type, onPress} : any) => {
+const SurahCard = React.memo(({id, nameEn, nameAr, ayahs, type, onPress} : any) => {
   let id_padded = `${id}`
   if(id_padded.length === 1) id_padded = "0" + id_padded
   return (
@@ -38,19 +29,18 @@ const SurahCard = ({id, nameEn, nameAr, ayahs, type, onPress} : any) => {
       </View>
 
       {/* Arabic Name */}
-      <View className='justify-center'>
-        <Text className='mr-5 text-primaryGold text-2xl font-amiri-bold'>{nameAr}</Text>
+      <View className='justify-center items-center'>
+        <Text className='py-2 mr-5 text-primaryGold text-2xl font-amiri-bold'>{nameAr}</Text>
       </View>
     </TouchableOpacity>
   )
-}
+});
 
-const FilterButton = ({label, active, onPress} : any) => {
+const FilterButton = ({ label, active, onPress }: any) => {
   return (
     <TouchableOpacity
       onPress={onPress}
-      activeOpacity={0.3}
-      className='py-2 px-3 border border-white rounded-full'
+      className={`py-2 px-3 border border-white rounded-full ${active ? 'opacity-100' : 'opacity-50'}`}
     >
       <Text className='text-mutedWhite font-bold text-[14px]'>
         {label}
@@ -62,11 +52,52 @@ const FilterButton = ({label, active, onPress} : any) => {
 const explore = () => {
 
   const [filter, setFilter] = useState('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const handleSurahPress = (surah: any) => {
-    console.log('Selected surah:', surah)
-    // Add navigation here
-  }
+  const handleFilterAll = useCallback(() => setFilter('ALL'), []);
+  const handleFilterMeccan = useCallback(() => setFilter('MECCAN'), []);
+  const handleFilterMedinan = useCallback(() => setFilter('MEDINAN'), []);
+  const handleFilterFavorites = useCallback(() => setFilter('FAVORITES'), []);
+
+  const filterHandlers = useMemo(() => ({
+    'ALL': handleFilterAll,
+    'MECCAN': handleFilterMeccan,
+    'MEDINAN': handleFilterMedinan,
+    'FAVORITES': handleFilterFavorites,
+  }), [handleFilterAll, handleFilterMeccan, handleFilterMedinan, handleFilterFavorites]);
+
+
+  const filteredSurahs = useMemo(() => {
+    const cleanQuery = searchQuery.toLowerCase().trim();
+    
+    return SURAH_DATA.filter((surah) => {
+      const matchesFilter = filter === 'ALL' || surah.type.toUpperCase() === filter;
+      
+      if (!matchesFilter) return false;
+      if (!cleanQuery) return true;
+
+      // Fuzzy-ish logic: matches English name, Arabic name, or ID
+      return (
+        surah.englishName.toLowerCase().includes(cleanQuery) ||
+        surah.arabicName.includes(cleanQuery) ||
+        surah.id.toString() === cleanQuery
+      );
+    }).sort((a, b) => {
+        // Boost exact starts to the top for "closest" feel
+        const aStarts = a.englishName.toLowerCase().startsWith(cleanQuery) ? 1 : 0;
+        const bStarts = b.englishName.toLowerCase().startsWith(cleanQuery) ? 1 : 0;
+        return bStarts - aStarts;
+    });
+  }, [filter, searchQuery]);
+
+  const handleSurahPress = useCallback((surahId: number) => {
+    router.push({
+      pathname: '/reader',
+      params: { surahId, sessionType: 'full_surah' } as any
+    });
+  }, []);
+
+  console.log(filter);
 
   return (
     <SafeAreaView className="flex-1 bg-bgBlack">
@@ -77,32 +108,42 @@ const explore = () => {
 
           {/* Search Bar */}
           <SearchBar
-            onPress={() => {}}
             placeholder="Search Surah..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
           />
           {/* Filters */}
           <View className='flex-row gap-3 px-4 mt-6 justify-center'>
-            <FilterButton label="ALL" active={filter === 'ALL'} onPress={() => setFilter('ALL')} />
-            <FilterButton label="MECCAN" active={filter === 'MECCAN'} onPress={() => setFilter('MECCAN')} />
-            <FilterButton label="MEDINAN" active={filter === 'MEDINAN'} onPress={() => setFilter('MEDINAN')} />
-            <FilterButton label="FAVORITES" active={filter === 'FAVORITES'} onPress={() => setFilter('FAVORITES')} />
+            {['ALL', 'MECCAN', 'MEDINAN', 'FAVORITES'].map((cat) => (
+              <FilterButton 
+                key={cat}
+                label={cat} 
+                active={filter === cat} 
+                // @ts-ignore
+                onPress={filterHandlers[cat]} 
+                className={`${filter === cat ? 'opacity-100' : 'opacity-50'}`}
+              />
+            ))}
           </View>
           
           {/* Surah List */}
           <FlatList
-            data = {SURAH_DATA}
+            data = {filteredSurahs}
             keyExtractor={(item) => item.id.toString()}
             renderItem={({item}) => (
               <SurahCard 
                 id={item.id} 
-                nameEn={item.nameEn}
-                nameAr={item.nameAr}
+                nameEn={item.englishName}
+                nameAr={item.arabicName}
                 ayahs={item.ayahs}
                 type={item.type}
-                onPress={() => handleSurahPress(item)}
+                onPress={() => handleSurahPress(item.id)}
               />
             )}
-            contentContainerStyle={{paddingBottom: 120}}
+            initialNumToRender={10}
+            maxToRenderPerBatch={20}
+            windowSize={5}
+            removeClippedSubviews={true}
             ItemSeparatorComponent={() => (
               <View className='h-[1px] bg-white mx-5 mt-10' />
             )}

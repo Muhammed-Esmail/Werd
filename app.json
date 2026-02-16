@@ -1,12 +1,19 @@
 {
   "expo": {
     "name": "Werd",
+    "assetBundlePatterns": [
+      "**/*",
+      "assets/database/*.db"
+    ],
+    "packagerOpts": {
+      "assetExts": ["db"]
+    },
     "slug": "Werd",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
+    "userInterfaceStyle": "light",
     "scheme": "werd",
-    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
@@ -39,7 +46,10 @@
           }
         }
       ],
-      "expo-sqlite"
+      "@react-native-community/datetimepicker",
+      "expo-sqlite",
+      "expo-localization",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true,
