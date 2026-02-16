@@ -10,8 +10,7 @@ export const useStreak = () => {
 
     const getTimeStamp = (dateInput?: string | Date) => {
         const date = dateInput ? new Date(dateInput) : new Date();
-        // Sets seconds and milliseconds to 0 for strict minute-to-minute comparison
-        return new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes(), 0, 0).getTime();
+        return new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes()).getTime();
     };
 
     const oneDayInMs = 60 * 1000;
@@ -28,7 +27,6 @@ export const useStreak = () => {
         const lastDate = getTimeStamp(savedData.date!);
         const diffInMs = today - lastDate;
 
-        // If more than 1 minute has passed since the LAST minute, reset
         if (diffInMs > oneDayInMs) {
             setStreak(0);
         } else {
@@ -85,7 +83,7 @@ export const useStreak = () => {
 
         const newLongest = newStreak > currentLongest ? newStreak : currentLongest;
 
-        const updatedData = { 
+        const updatedData : DB.StreakData = { 
             count: newStreak, 
             date: now.toISOString(), 
             longest: newLongest
