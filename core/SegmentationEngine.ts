@@ -3,7 +3,7 @@ import { SQLiteDatabase } from 'expo-sqlite';
 
 export enum PartitionType {
     JUZ = 1,
-    SURAH = 1,
+    SURAH = 2,
     PAGE = 3
 }
 
