@@ -11,9 +11,9 @@ import '../../i18n';
 import i18n from '../../i18n';
 import { SelectList } from 'react-native-dropdown-select-list'
 
+
 interface UserSettings {
-    id: number;
-    font: string;
+    font?: string;
     font_size: number;
     reading_mode: number;
     partition_type: number;
@@ -21,6 +21,7 @@ interface UserSettings {
     ending_date: string;
     theme: number;
 	language: string;
+	currentWerd: number;
 }
 
 const OPTIONS = [
@@ -188,16 +189,15 @@ const changeLang = async (lang: string = "en", startup: boolean = false) => {
 
 useEffect(() => {
   const init = async () => {
-    console.log("Initializing database...");
-    // await DB.initDB(0);
-	// await DB.addQuranText();
-	await DB.test(5, 6);
-	const current_settings = await DB.getSettings() as UserSettings[]
-	setIsEnabled(current_settings[0].theme === 0)
-	setColorScheme(current_settings[0].theme === 0 ? "dark" : "light")
-	setReadingMode(current_settings[0].reading_mode === 1)
+    console.log("Initializing Settings");
 
-	changeLang(current_settings[0].language, true)
+	const current_settings = await DB.getSettings() as UserSettings
+
+	setIsEnabled(current_settings.theme === 0)
+	setColorScheme(current_settings.theme === 0 ? "dark" : "light")
+	setReadingMode(current_settings.reading_mode === 1)
+
+	changeLang(current_settings.language, true)
 
 	console.log("Done")
   };
@@ -232,7 +232,7 @@ useEffect(() => {
                 onRequestClose={() => setFontModalVisible(false)}
             >
                 <View className="flex-1 justify-end bg-black/60"> 
-                    <View className="bg-white dark:bg-surfaceBlack rounded-t-3xl p-6 border-t border-settingsGold/50">
+                    <View className="bg-bgWhite dark:bg-surfaceBlack rounded-t-3xl p-6 border-t border-settingsGold/50">
                         <View className="flex-row justify-between items-center mb-6">
                             <Text className="text-primaryGold text-xl font-bold">Select Font</Text>
                             <TouchableOpacity onPress={() => setFontModalVisible(false)}>

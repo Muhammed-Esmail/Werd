@@ -1,37 +1,47 @@
-import { Text, ScrollView } from 'react-native'
-import React from 'react'
-import { ReadingSession } from '@/types/quran_data'
+import React, { use, useEffect, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { ReaderInfiniteScroll } from '@/components/ReaderInfiniteScroll';
 import { ReaderPages } from '@/components/ReaderPages';
-
-interface ReaderProps {
-    readingSession: ReadingSession;
-}
+import * as DB from "@/utils/DatabaseManager";
 
 const ReaderMode = {
     PAGES: 'pages',
     INFINITE_SCROLL: 'infinite_scroll',
 }
 
-const Reader = () => {
-    
-    const mode = ReaderMode.INFINITE_SCROLL; // Change this to switch modes
 
-    if(mode === ReaderMode.PAGES) {
+
+const Reader = () => {
+
+    const [readerMode, setReaderMode] = React.useState<string>();
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const loadMode = async () => {
+            await DB.getDB()
+            const settings = await DB.getSettings() as DB.UserSettings;
+            const readerMode = settings.reading_mode;
+            console.log(`Reading Mode = ${readerMode}`)
+            if(readerMode === undefined || readerMode === 0) {
+                setReaderMode(ReaderMode.INFINITE_SCROLL);
+            } else {
+                setReaderMode(ReaderMode.PAGES);
+            }
+        };
+        loadMode();
+    }, []);
+    
+    if(readerMode === ReaderMode.PAGES) {
         return <ReaderPages/>
     }
-    else if(mode === ReaderMode.INFINITE_SCROLL) {
+    else if(readerMode === ReaderMode.INFINITE_SCROLL) {
         return <ReaderInfiniteScroll/>
     }
     
     return (
         <SafeAreaView className='bg-matteBlack h-full'>
             <Stack.Screen options={{ headerShown: false }} />
-            <ScrollView>
-                <Text className='text-white'>Reader Mode Coming Soon...</Text>
-            </ScrollView>
         </SafeAreaView>
     )
 }

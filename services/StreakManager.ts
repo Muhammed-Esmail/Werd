@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback} from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import * as DB from '../utils/DatabaseManager'
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface StreakData {
     count: number;

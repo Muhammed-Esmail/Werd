@@ -1,9 +1,11 @@
 import { Image, View } from "react-native"
 import { SURAH_NAMES } from "@/constants/surah_assets"
+import React from "react";
 
 export const SurahHeader = ({ surahId }: { surahId: number }) => {
   // Grab the SVG component from our map
   const SurahPng = SURAH_NAMES[surahId];
+  console.log(surahId);
 
   return (
     <View className="h-[100px] w-full justify-center items-center overflow-hidden border-b border-t border-l border-r border-white/30">
