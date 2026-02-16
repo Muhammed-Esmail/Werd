@@ -5,11 +5,10 @@ import { router } from 'expo-router';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useColorScheme } from 'nativewind';
 
 const Card = ({sideIcon, sideText, mainText, underText}: any) =>{
   return  (
-      <View className='flex-1 gap-2 bg-surfaceBlack dark:bg-bgWhite border border-borderDark rounded-lg p-4 ml-4 mr-4'>
+      <View className='flex-1 gap-2 bg-surfaceBlack dark:bg-white border border-borderDark rounded-lg p-4 ml-4 mr-4'>
         {/* Icon + Side Text */}
         <View className='flex-row gap-3 items-center'>
           <MaterialIcons name={sideIcon} size={20} color={'#D4AF37'}/>
@@ -46,7 +45,7 @@ const TodayCard = () => {
   }
 
   return (
-    <View className='bg-white dark:bg-surfaceBlack border-[1px] border-mutedWhite rounded-[20px]'>
+    <View className='bg-surfaceBlack border-[1px] border-mutedWhite rounded-[20px]'>
       {/* Surah Name + Pages + Icon */}
       <View className='flex-row justify-between mt-3 '>
         {/* Surah Name + Pages */}
@@ -101,9 +100,22 @@ const TodayCard = () => {
 }
 
 const werd = () => {
-  const { colorScheme, setColorScheme } = useColorScheme();
-  
-    <SafeAreaView>
+  return (
+    <SafeAreaView className="flex-1 bg-bgBlack">
+      
+      {/* Header Container */}
+      <View className='w-[100%] justify-center items-center'>
+        <Text className='text-primaryGold mt-10 text-xl font-bold'> DAILY WERD </Text>
+      </View>
+
+        {/* Streak + Pages */}
+      <View className='w-[100%] mt-10 flex-row justify-center items-center'>
+        
+        <Card sideIcon="local-fire-department" sideText="STREAK" mainText="15 Days" underText="Personal Best!"/>
+        <Card sideText="TOTAL PAGES" mainText="412" underText="THIS MONTH"/>
+
+      </View>
+
       {/* Today's Goal */}
       <View className='mt-10 ml-4 mr-4'>
         <View className='flex-row justify-between mb-3'>
@@ -120,6 +132,7 @@ const werd = () => {
       </View>
 
     </SafeAreaView>
+  )
 }
 
 export default werd
