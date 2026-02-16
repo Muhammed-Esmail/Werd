@@ -22,7 +22,7 @@ export const useStreak = () => {
     const [loading, setLoading] = useState<boolean>(true);
     const [heatmapData, setHeatmapData] = useState<MonthData[]>([]);
 
-    const oneDayInMs = 60 * 1000;
+    const oneDayInMs = 24 * 60 * 60 * 1000;
 
     const fetchHeatmapData = useCallback(async () => {
         const today = new Date();
@@ -60,7 +60,7 @@ export const useStreak = () => {
 
     const getTimeStamp = (dateInput?: string | Date) => {
         const date = dateInput ? new Date(dateInput) : new Date();
-        return new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes()).getTime();
+        return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
     };
 
 
