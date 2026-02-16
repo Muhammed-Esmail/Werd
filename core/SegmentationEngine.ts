@@ -103,7 +103,7 @@ export class SegmentationEngine {
                 .join(',');
 
             await db.execAsync(`
-                INSERT INTO daily_progress (day_number, start_verse, end_verse, start_unit_val, end_unit_val, is_completed)
+                INSERT INTO daily_progress (day_number, date, start_verse, end_verse, start_unit_val, end_unit_val, is_completed)
                 VALUES ${values}
             `);
 
@@ -121,7 +121,7 @@ export class SegmentationEngine {
         partitionType: PartitionType
     ) {
         const remainingDays = totalDays - currentDay;
-        if(remainingDays <= 0) return; // Bro's cooked
+        if(remainingDays <= 0) return; // BRO IS COOKED
 
         let totalUnits = 0;
         let table = '';
@@ -155,11 +155,13 @@ export class SegmentationEngine {
         const nextStartUnit = currentUnitRes.id + 1;
         const remainingUnits = totalUnits - currentUnitRes.id;
 
-        if(remainingUnits <= 0) return; // Bro's cooked
+        if(remainingUnits <= 0) return; // BRO IS COOKED
 
         const unitsPerDay = remainingUnits / remainingDays;
         const newPlan: PlanSegment[] = [];
         let currentFloatUnit = nextStartUnit;
+
+        const startDate = new Date(); 
 
         for(let i = 1; i <= remainingDays; i++) {
             const day = currentDay + i;
@@ -183,7 +185,7 @@ export class SegmentationEngine {
             )
             if(startRes && endRes) {
                 const segmentDate = new Date(startDate);
-                segmentDate.setDate(startDate.getDate() + day - 1);
+                segmentDate.setDate(startDate.getDate() + i);
 
                 newPlan.push({
                     day,
@@ -208,7 +210,7 @@ export class SegmentationEngine {
                 .join(',');
 
             await db.execAsync(`
-                INSERT INTO daily_progress (day_number, start_verse, end_verse, start_unit_val, end_unit_val, is_completed)
+                INSERT INTO daily_progress (day_number, date, start_verse, end_verse, start_unit_val, end_unit_val, is_completed)
                 VALUES ${values}
             `);
         }
