@@ -36,7 +36,7 @@ export const ReaderPageAtom = ({ items }: Props) => {
     renderedContent.push(
         <Text
             key={`text-group-${keySuffix}`}
-            className="text-right text-white text-[24px] leading-[40px] mt-2 ml-2"
+            className="text-right text-black dark:text-white text-[24px] leading-[40px] mt-2 ml-2"
             style={{ fontFamily: 'U3', textAlign: 'justify', writingDirection: 'rtl'}}
         >
             {currentAyahBucket}

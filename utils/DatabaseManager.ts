@@ -12,32 +12,37 @@ export interface UserSettings {
     partition_type: string;
     starting_date: string;
     ending_date: string;
-    werd_plan_days: number,
+    werd_plan_days: number;
     theme: number;
-	language: string;
-	currentWerd: number;
+    language: string;
+    currentWerd: number;
+    notification_enabled: number;
+    notification_time: string;
+    notification_hour: number;
+    notification_minute: number;
+    setup_completed: number;
 }
 
 export interface UserProgress {
-	first_verse: number;
-	last_verse: number;
-	date: string;
+    first_verse: number;
+    last_verse: number;
+    date: string;
 }
 
 export interface Bookmark {
-	id: number;
-	verse: number;
+    id: number;
+    verse: number;
 }
 
 export interface Surah {
-	id: number;
-	first_verse: number;
-	last_verse: number;
-	starting_page_id: number;
-	ayahs: number,
-	arabicName: string;
-	englishName: string;
-	type: string;
+    id: number;
+    first_verse: number;
+    last_verse: number;
+    starting_page_id: number;
+    ayahs: number;
+    arabicName: string;
+    englishName: string;
+    type: string;
 }
 
 export interface StreakData {
@@ -53,8 +58,18 @@ export interface DateData {
     is_done: number;
 }
 
-const isEmpty = async (db: SQLite.SQLiteDatabase, table: string) => {
-	const result = await db.getFirstAsync<{ count: number }>(
+export interface DailyProgress {
+    day_number: number;
+    date: string;
+    start_verse: number;
+    end_verse: number;
+    start_unit_val: number;
+    end_unit_val: number;
+    is_completed: number;
+}
+
+export const isEmpty = async (db: SQLite.SQLiteDatabase, table: string) => {
+    const result = await db.getFirstAsync<{ count: number }>(
         `SELECT COUNT(*) as count FROM ${table}`
     );
     return result!.count === 0;
@@ -74,7 +89,7 @@ export async function getDB() {
             const dbDir = `${FileSystem.documentDirectory}SQLite/`;
 
             const fileInfo = await FileSystem.getInfoAsync(dbPath);
-            
+
             if (!fileInfo.exists || fileInfo.size === 0) {
                 console.log("Database missing or empty. Copying from assets...");
                 const dirInfo = await FileSystem.getInfoAsync(dbDir);
@@ -140,19 +155,29 @@ export async function ensureDailyProgressTable() {
 export async function initDB(clear: number = 0) {
     try {
         let db = await getDB();
-        
+
         if (clear) {
             console.log("clearing database");
             await db.closeAsync();
-            
+
             const dbPath = `${FileSystem.documentDirectory}SQLite/${DB_NAME}`;
             await FileSystem.deleteAsync(dbPath, { idempotent: true });
-            
+
             database = null;
             dbInitPromise = null;
-            
-            db = await getDB(); 
+
+            db = await getDB();
         }
+
+        try {
+            await db.runAsync('ALTER TABLE user_settings ADD COLUMN setup_completed INTEGER DEFAULT 0');
+            console.log("Added setup_completed column");
+        } catch (e) {
+            console.log("setup_completed column already exists, skipping...");
+        }
+
+        // Add Notification Columns if missing
+        await addNotificationColumns();
 
         if (await isEmpty(db, "streaks")) {
             await db.runAsync(`INSERT INTO streaks VALUES (?, ?, ?, ?)`, [1, 0, 0, '9/9/2009'])
@@ -160,9 +185,9 @@ export async function initDB(clear: number = 0) {
 
         if (await isEmpty(db, "user_settings")) {
             await db.runAsync(`
-                INSERT INTO user_settings (id, font, font_size, reading_mode, partition_type, starting_date, ending_date, theme, language, currentWerd, werd_plan_days) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
-                [1, "D1", 14, 0, "page", "6/6/2006", "7/7/2007", 0, "en", 1, 30]);
+                INSERT INTO user_settings (id, font, font_size, reading_mode, partition_type, starting_date, ending_date, theme, language, currentWerd, werd_plan_days, setup_completed, notification_enabled, notification_time, notification_hour, notification_minute) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+                [1, "D1", 14, 0, "page", "6/6/2006", "7/7/2007", 1, "en", 1, 30, 0, 0, 'evening', 20, 0]);
         }
 
         if (await isEmpty(db, "werd_segments")) {
@@ -170,7 +195,7 @@ export async function initDB(clear: number = 0) {
                 VALUES (?, ?, ?, ?, ?)`, [1, 1, 20, '11/11/2011', 0])
         }
 
-        const settings = await getSettings(); 
+        const settings = await getSettings();
         console.log("SETTINGS GOT WHEN CREATING THE FIRST ROW =", settings);
         console.log("Database initialized successfully");
     }
@@ -193,17 +218,18 @@ export const fetchQuranText = async (params: rp.ReaderParams): Promise<qd.Readin
             }
 
             const currentWerdId = settings.currentWerd;
-            const segment = await getWerdSegment(currentWerdId) as WerdSegment;
+            const segment = await getDailyProgress(currentWerdId) as DailyProgress;
 
             if (segment) {
+                // Using start_verse/end_verse from daily_progress table
                 verses = await fetchVerses(segment.start_verse, segment.end_verse, 'verse');
             } else {
                 console.log("No segment found for today");
                 return { sessionId: "-1", sessionType: params.sessionType, segments: [] };
             }
         }
-		else if(params.sessionType === "full_surah") {
-			// @ts-ignore
+        else if(params.sessionType === "full_surah") {
+            // @ts-ignore
             verses = await fetchVerses(params.surahId, params.surahId, 'surah');
         }
 
@@ -256,7 +282,7 @@ export const fetchQuranText = async (params: rp.ReaderParams): Promise<qd.Readin
 
     } catch (error) {
         console.error("Error fetching Quran Text:", error);
-		return {
+        return {
             sessionId: "-1",
             sessionType: params.sessionType,
             segments: []
@@ -268,22 +294,22 @@ export type PartitionType = 'verse' | 'surah' | 'juz' | 'page';
 
 export const fetchVerses = async (l: number, r: number, partitionType: PartitionType) => {
     const db = await getDB();
-    let first_verse = l, last_verse = r; // verses by default
+    let first_verse = l, last_verse = r; 
 
     try {
-        if (partitionType === 'surah') { // surahs
+        if (partitionType === 'surah') {
             const resL = await db.getFirstAsync<{first_verse: number}>(`SELECT first_verse FROM surahs WHERE id = ?`, [l]);
             const resR = await db.getFirstAsync<{last_verse: number}>(`SELECT last_verse FROM surahs WHERE id = ?`, [r]);
             if (resL) first_verse = resL.first_verse;
             if (resR) last_verse = resR.last_verse;
         }
-        else if (partitionType === 'juz') { // juz
+        else if (partitionType === 'juz') {
             const resL = await db.getFirstAsync<{first_verse: number}>(`SELECT first_verse FROM juz WHERE id = ?`, [l]);
             const resR = await db.getFirstAsync<{last_verse: number}>(`SELECT last_verse FROM juz WHERE id = ?`, [r]);
             if (resL) first_verse = resL.first_verse;
             if (resR) last_verse = resR.last_verse;
         }
-        else if (partitionType === 'page') { // pages
+        else if (partitionType === 'page') {
             const resL = await db.getFirstAsync<{first_verse: number}>(`SELECT first_verse FROM pages WHERE id = ?`, [l]);
             const resR = await db.getFirstAsync<{last_verse: number}>(`SELECT last_verse FROM pages WHERE id = ?`, [r]);
             if (resL) first_verse = resL.first_verse;
@@ -312,40 +338,36 @@ export const getSurahs = async () => {
 }
 
 export const SetFont = async (font: string) => {
-	try {
-		const db = await getDB()
-		await db.runAsync(`UPDATE user_settings SET font = ?`, [font])
-		console.log("font updated")
-	}
-	catch (error) {
-		console.log(error)
-	}
+    try {
+        const db = await getDB()
+        await db.runAsync(`UPDATE user_settings SET font = ?`, [font])
+        console.log("font updated")
+    }
+    catch (error) {
+        console.log(error)
+    }
 }
 
 export const updateSettings = async(updates: Partial<UserSettings>, id: number = 1) => {
-	try {
-		const db = await getDB()
-		const fields = Object.keys(updates)
-		if (!fields.length) return
-		const values = Object.values(updates)
-		values.push(id)
-		const query = fields.map(field => `${field} = ?`).join(", ")
-		console.log("Settings Modified")
-		await db.runAsync(`UPDATE user_settings SET ${query} WHERE id = ?`, values)
-	}
-	catch(error) {
-		console.log(error)
-	}
+    try {
+        const db = await getDB()
+        const fields = Object.keys(updates)
+        if (!fields.length) return
+        const values = Object.values(updates)
+        values.push(id)
+        const query = fields.map(field => `${field} = ?`).join(", ")
+        console.log("Settings Modified")
+        await db.runAsync(`UPDATE user_settings SET ${query} WHERE id = ?`, values)
+    }
+    catch(error) {
+        console.log(error)
+    }
 }
 
 export const getSettings = async (id: number = 1) => {
     try {
         const db = await getDB();
-<<<<<<< feature/StreakManager
-        const data = await db.getFirstAsync(`SELECT * FROM user_settings WHERE id = ?`, [id]) as UserSettings
-=======
         const data = await db.getFirstAsync(`SELECT * FROM user_settings WHERE id = ?`, [id]) as UserSettings;
->>>>>>> main
         return data || null;
     } catch (error) {
         console.error("getSettings error:", error);
@@ -354,118 +376,64 @@ export const getSettings = async (id: number = 1) => {
 }
 
 export const getUserProgress = async () => {
-    // THIS IS STILL IN TESTING, NOT FINALIZED
-	try {
-		const db = await getDB()
+    try {
+        const db = await getDB()
         await ensureDailyProgressTable();
-		const data = await db.getAllAsync(`SELECT * FROM daily_progress WHERE is_completed = 1`) 
-		return data
-	}
-	catch (error) {
-		console.log(error)
-		return []
-	}
+        const data = await db.getAllAsync(`SELECT * FROM daily_progress WHERE is_completed = 1`) 
+        return data
+    }
+    catch (error) {
+        console.log(error)
+        return []
+    }
 }
-// init streak table
 
 export const getStreak = async() => {
-	try {
-		const db = await getDB()
+    try {
+        const db = await getDB()
         const data = await db.getFirstAsync(`SELECT * FROM streaks WHERE id = 1`) as StreakData
         if (data) return data
         else return null
-	}
-	catch (error) {
-		console.log(error)
+    }
+    catch (error) {
+        console.log(error)
         return null
-	}
+    }
 }
 
 export const updateStreak = async (updates: Partial<StreakData>) => {
-	try {
-		const db = await getDB()
-		const fields = Object.keys(updates)
-		const values = Object.values(updates)
-		const query = fields.map(field => `${field} = ?`).join(", ")
-		await db.runAsync(`UPDATE streaks SET ${query} WHERE id = 1`, values)
-		console.log("Updated user streak")
-	}
-	catch (error) {
-		console.log(error)
-	}
-}
-
-export const addBookMark = async (verse: number) => {
-	try {
-		const db = await getDB()
-		await db.runAsync(`INSERT INTO bookmarks (verse_id) VALUES (?)`, [verse])
-		console.log("Added user bookmark")
-	}
-	catch (error) {
-		console.log(error)
-	}
-}
-
-export const getBookMarks = async () => {
-	try {
-		const db = await getDB()
-		const data = await db.getAllAsync(`SELECT * FROM bookmarks`) as Bookmark[]
-		if (data) {
-            console.log("Fetched user bookmarks")
-			return data
-		}
-		else return []
-	}
-	catch (error) {
-		console.log(error)
-		return []
-	}
-}
-
-export const insertWerdSegment = async (id: number, first_verse: number, last_verse: number, date: string, done: number) => {
     try {
         const db = await getDB()
-        await db.runAsync(`INSERT INTO werd_segments (id, first_verse, last_verse, date, done) VALUES (?, ?, ?, ?, ?)`, [id, first_verse, last_verse, date, done])
-        console.log("Added new werd segment")
+        const fields = Object.keys(updates)
+        const values = Object.values(updates)
+        const query = fields.map(field => `${field} = ?`).join(", ")
+        await db.runAsync(`UPDATE streaks SET ${query} WHERE id = 1`, values)
+        console.log("Updated user streak")
     }
     catch (error) {
         console.log(error)
     }
 }
 
-export const updateWerdSegments = async (updates: Partial<WerdSegment>, id: number = 1) => {
-	try {
-		const db = await getDB()
-		const fields = Object.keys(updates)
-		const values = Object.values(updates)
-		values.push(id)
-		const query = fields.map(field => `${field} = ?`).join(", ")
-		await db.runAsync(`UPDATE werd_segments SET ${query} WHERE id = ?`, values)
-		console.log("Updated werd segments")
-	}
-	catch (error) {
-		console.log(error)
-	}
-}
-
-export const getWerdSegment = async (id: number) => {
-	try {
-		const db = await getDB();
-		const data = await db.getFirstAsync(`SELECT * FROM werd_segments WHERE id = ?`, [id]) as WerdSegment
-		if (data) return data
-		else return null;
-	}
-	catch (error) {
-		console.log("Error reading werd segment")
-		return null;
-	}
-}
-
-export const getAllWerdSegments = async () => {
+export const addBookMark = async (verse: number) => {
     try {
         const db = await getDB()
-        const data = await db.getAllAsync(`SELECT * FROM werd_segments`) as WerdSegment[]
-        if (data) return data
+        await db.runAsync(`INSERT INTO bookmarks (verse_id) VALUES (?)`, [verse])
+        console.log("Added user bookmark")
+    }
+    catch (error) {
+        console.log(error)
+    }
+}
+
+export const getBookMarks = async () => {
+    try {
+        const db = await getDB()
+        const data = await db.getAllAsync(`SELECT * FROM bookmarks`) as Bookmark[]
+        if (data) {
+            console.log("Fetched user bookmarks")
+            return data
+        }
         else return []
     }
     catch (error) {
@@ -474,25 +442,18 @@ export const getAllWerdSegments = async () => {
     }
 }
 
-// export const getDates = async (year?: number, month?: number) => {
-//     try {
-//         const parameters: number[] = []
-//         const query = "SELECT * FROM dates WHERE "
-//         if (year !== undefined) {
-//             query += "year = ?"
-//             parameters.push(year)
-//         }
-//         if (month !== undefined) parameters.push(month)
-//         const db = await getDB()
-//         const data = await db.getAllAsync(`SELECT * FROM dates WHERE year = ? AND month = ?`, [year, month]) as DateData[]
-//         if (data) return data
-//         else return []
-//     }
-//     catch (error) {
-//         console.log(error)
-//         return []
-//     }
-// }
+export const getDailyProgress = async (day_number: number) => {
+    try {
+        const db = await getDB();
+        const data = await db.getFirstAsync(`SELECT * FROM daily_progress WHERE day_number = ?`, [day_number]) as DailyProgress
+        if (data) return data
+        else return null;
+    }
+    catch (error) {
+        console.log("Error reading werd segment")
+        return null;
+    }
+}
 
 export const getDates = async (year: number, month: number) => {
     try {
@@ -520,14 +481,122 @@ export const insertDate = async (day: number, month: number, year: number, is_do
 
 
 export const test = async (start: number, end: number) => {
-	const verses = await fetchVerses(start, end, 'surah'); 
-	if (verses && verses.length) {
-		console.log("------------------------------------------");
-		verses.forEach((v: any, index: number) => {
-			// console.log(`[Verse ${v.id}] ${v.text}`);
-		});
-		console.log("------------------------------------------");
-	} else {
-		console.log("No verses found");
-	}
+    const verses = await fetchVerses(start, end, 'surah');
+    if (verses && verses.length) {
+        console.log("------------------------------------------");
+        verses.forEach((v: any, index: number) => {
+            // console.log(`[Verse ${v.id}] ${v.text}`);
+        });
+        console.log("------------------------------------------");
+    } else {
+        console.log("No verses found");
+    }
 }
+
+// --- Notification Specific Functions ---
+
+export const resetWerdSegments = async () => {
+    try {
+        const db = await getDB();
+
+        await db.withTransactionAsync(async () => {
+            await db.runAsync(`DELETE FROM werd_segments`);
+            await db.runAsync(`
+                INSERT INTO werd_segments (id, first_verse, last_verse, date, done) 
+                VALUES (?, ?, ?, ?, ?)
+            `, [1, 1, 2, "8/8/2008", 0]);
+        });
+
+        console.log("✅ Werd segments reset");
+    } catch (error) {
+        console.error("❌ Error resetting werd segments:", error);
+    }
+}
+
+export const addNotificationColumns = async () => {
+    try {
+        const db = await getDB();
+
+        const tableInfo = await db.getAllAsync(`PRAGMA table_info(user_settings)`);
+        const columns = tableInfo.map((col: any) => col.name);
+
+        if (!columns.includes('notification_enabled')) {
+            await db.execAsync(`ALTER TABLE user_settings ADD COLUMN notification_enabled INTEGER DEFAULT 0;`);
+            console.log('✅ Added notification_enabled column');
+        }
+
+        if (!columns.includes('notification_time')) {
+            await db.execAsync(`ALTER TABLE user_settings ADD COLUMN notification_time TEXT DEFAULT 'evening';`);
+            console.log('✅ Added notification_time column');
+        }
+
+        if (!columns.includes('notification_hour')) {
+            await db.execAsync(`ALTER TABLE user_settings ADD COLUMN notification_hour INTEGER DEFAULT 20;`);
+            console.log('✅ Added notification_hour column');
+        }
+
+        if (!columns.includes('notification_minute')) {
+            await db.execAsync(`ALTER TABLE user_settings ADD COLUMN notification_minute INTEGER DEFAULT 0;`);
+            console.log('✅ Added notification_minute column');
+        }
+
+    } catch (error) {
+        console.error('❌ Failed to add notification columns:', error);
+    }
+};
+
+export const updateNotificationSettings = async (
+    enabled: boolean,
+    time: string,
+    hour: number,
+    minute: number,
+    userId: number = 1
+) => {
+    try {
+        const db = await getDB();
+        await db.runAsync(`
+            UPDATE user_settings 
+            SET notification_enabled = ?,
+                notification_time = ?,
+                notification_hour = ?,
+                notification_minute = ?
+            WHERE id = ?
+        `, [enabled ? 1 : 0, time, hour, minute, userId]);
+
+        console.log('✅ Notification settings saved to database');
+    } catch (error) {
+        console.error('❌ Failed to save notification settings:', error);
+        throw error;
+    }
+};
+
+export const getNotificationSettings = async (userId: number = 1) => {
+    try {
+        const db = await getDB();
+
+        const settings = await db.getFirstAsync(
+            `SELECT notification_enabled, notification_time, notification_hour, notification_minute FROM user_settings WHERE id = ?`,
+            [userId]
+        );
+
+        if (settings) {
+            return settings;
+        }
+
+        return {
+            notification_enabled: 0,
+            notification_time: 'evening',
+            notification_hour: 20,
+            notification_minute: 0
+        };
+
+    } catch (error) {
+        console.error('❌ Failed to load notification settings:', error);
+        return {
+            notification_enabled: 0,
+            notification_time: 'evening',
+            notification_hour: 20,
+            notification_minute: 0
+        };
+    }
+};
