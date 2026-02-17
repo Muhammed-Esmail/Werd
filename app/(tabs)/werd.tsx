@@ -3,7 +3,7 @@ import {MaterialIcons} from '@expo/vector-icons';
 import {LinearGradient} from 'expo-linear-gradient';
 import {router} from 'expo-router';
 import React from 'react';
-import {Text, TouchableOpacity, View, Alert} from 'react-native';
+import {Text, TouchableOpacity, View, ScrollView , Alert} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import * as PDFExporter from '@/services/PDFExporter';
 
@@ -53,9 +53,10 @@ const TodayCard = () => {
         );
 
         // Get mock data for testing
-        const mockData = PDFExporter.getMockWerdData();
+        const mockData = await PDFExporter.getTodaysWerdData();
 
-        // Generate and share PDF
+        // Generate and share PDF 
+        // @ts-ignore
         const success = await PDFExporter.generateAndSharePDF(mockData);
 
         if (success) {
@@ -82,6 +83,7 @@ const TodayCard = () => {
                     <MaterialIcons name='menu-book' size={35} color={'#D4AF37'}/>
                 </View>
             </View>
+
             {/* Progress bar */}
 
             <View className='mt-6 ml-5 mr-5 mb-3'>
@@ -139,35 +141,40 @@ const TodayCard = () => {
 const werd = () => {
     return (
         <SafeAreaView className="flex-1 bg-bgBlack">
+            <ScrollView 
+                scrollEventThrottle={16}
+                contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }}
+                showsVerticalScrollIndicator={false}
+            >
+                {/* Header Container */}
+                <View className='w-[100%] justify-center items-center'>
+                    <Text className='text-primaryGold mt-10 text-xl font-bold'> DAILY WERD </Text>
+                </View>
 
-            {/* Header Container */}
-            <View className='w-[100%] justify-center items-center'>
-                <Text className='text-primaryGold mt-10 text-xl font-bold'> DAILY WERD </Text>
-            </View>
+                {/* Streak + Pages */}
+                <View className='w-[100%] mt-10 flex-row justify-center items-center'>
 
-            {/* Streak + Pages */}
-            <View className='w-[100%] mt-10 flex-row justify-center items-center'>
+                    <Card sideIcon="local-fire-department" sideText="STREAK" mainText="15 Days" underText="Personal Best!"/>
+                    <Card sideText="TOTAL PAGES" mainText="412" underText="THIS MONTH"/>
 
-                <Card sideIcon="local-fire-department" sideText="STREAK" mainText="15 Days" underText="Personal Best!"/>
-                <Card sideText="TOTAL PAGES" mainText="412" underText="THIS MONTH"/>
+                </View>
 
-            </View>
+                {/* Today's Goal */}
+                <View className='mt-10 ml-4 mr-4'>
+                    <View className='flex-row justify-between mb-3'>
 
-            {/* Today's Goal */}
-            <View className='mt-10 ml-4 mr-4'>
-                <View className='flex-row justify-between mb-3'>
+                        <Text className='font-bold tracking-widest text-mutedWhite'>TODAY'S GOAL</Text>
 
-                    <Text className='font-bold tracking-widest text-mutedWhite'>TODAY'S GOAL</Text>
-
-                    <Text className='text-xs text-primaryGold font-bold'>WERD #04</Text>
+                        <Text className='text-xs text-primaryGold font-bold'>WERD #04</Text>
 
                 </View>
                 <View>
                     {/* Main Card */}
                     <TodayCard/>
                 </View>
-            </View>
 
+                </View>
+            </ScrollView>
         </SafeAreaView>
     )
 }

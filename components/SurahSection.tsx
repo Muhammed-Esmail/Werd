@@ -3,7 +3,7 @@ import { SurahHeader } from './SurahHeader'
 import { Bismillah } from './Bismillah';
 import { Text, View } from 'react-native';
 import { Ayah } from './Ayah';
-
+import React from 'react';
 
 interface Props{
     segment: SurahSegment;
