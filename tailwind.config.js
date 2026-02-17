@@ -22,6 +22,7 @@ module.exports = {
         borderDark: '#1F1F1F',
         mutedWhite: 'rgba(255, 255, 255, 0.42)',
         successGreen: '#10B981',
+        hassibGreen: '#00FF9F',
 
         // --- NEW LIGHT THEME COLORS ---
         bgWhite: '#FDFBF7',      // Warm Ivory background
