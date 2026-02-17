@@ -18,7 +18,7 @@ export const ReaderInfiniteScroll = () => {
     const [contentHeight, setContentHeight] = useState(0);
     const [scrollViewHeight, setScrollViewHeight] = useState(0);
     const [surahPositions, setSurahPositions] = useState<Record<number, number>>({});
-    const [progressPercent, setProgressPercent] = useState(0);
+    // const [progressPercent, setProgressPercent] = useState(0);
     const { incrementStreak } = useStreak(); 
 
     // Use standard Animated.Value for the landmark progress
@@ -46,39 +46,62 @@ export const ReaderInfiniteScroll = () => {
         fetchData();
     }, [params]);
 
-    useFocusEffect(
+//     useFocusEffect(
+//     useCallback(() => {
+//         return () => {
+//             const saveProgress = async () => {
+//                 console.log(`progressPercent = ${progressPercent}`)
+//                 const today = await DB.getLastStopped();
+//                 const data = await DB.getDailyProgress(today!)
+//                 if (today !== null) {
+//                     await DB.updateDailyProgress({ scroll_percentage: Math.max(progressPercent, data!.scroll_percentage) }, today);
+//                 }
+//             };
+//             saveProgress();
+//         };
+//     }, [progressPercent])
+// );
+const isCompletedRef = useRef(false);
+
+useFocusEffect(
     useCallback(() => {
+        isCompletedRef.current = false; // reset on enter
         return () => {
             const saveProgress = async () => {
-                console.log(`progressPercent = ${progressPercent}`)
+                if (isCompletedRef.current) return; // skip if just completed
+                const currentPercent = Math.round((scrollProgress as any)._value);
+                console.log(`progressPercent = ${currentPercent}`);
                 const today = await DB.getLastStopped();
                 if (today !== null) {
-                    await DB.updateDailyProgress({ scroll_percentage: progressPercent }, today);
+                    const data = await DB.getDailyProgress(today);
+                    const best = Math.max(currentPercent, data?.scroll_percentage ?? 0);
+                    await DB.updateDailyProgress({ scroll_percentage: best }, today);
                 }
             };
             saveProgress();
         };
-    }, [progressPercent])
+    }, [])
 );
 
-    useEffect(() => {
-        const listener = scrollProgress.addListener(({ value }) => {
-            setProgressPercent(Math.round(value)); // 0–100
-        });
-        return () => scrollProgress.removeListener(listener);
-    }, []);
+    // useEffect(() => {
+    //     const listener = scrollProgress.addListener(({ value }) => {
+    //         setProgressPercent(Math.round(value)); // 0–100
+    //     });
+    //     return () => scrollProgress.removeListener(listener);
+    // }, []);
 
-    const handleCompleted = async () => {
-        try {
-            await incrementStreak()
-            const today = await DB.getLastStopped()
-            await DB.updateDailyProgress({is_completed: 1}, today!)
-            console.log("Marked as completed")
-        }
-        catch (error) {
-            console.log(error)
-        }
+const handleCompleted = async () => {
+    try {
+        await incrementStreak()
+        const today = await DB.getLastStopped()
+        await DB.updateDailyProgress({ is_completed: 1, scroll_percentage: 0 }, today!)
+        isCompletedRef.current = true;
+        console.log("Marked as completed")
     }
+    catch (error) {
+        console.log(error)
+    }
+}
 
     const segments = quranData?.segments || [];
 
