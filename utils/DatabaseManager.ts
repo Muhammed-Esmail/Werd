@@ -16,6 +16,10 @@ export interface UserSettings {
     theme: number;
 	language: string;
 	currentWerd: number;
+    notification_enabled: number;
+    notification_time: string;
+    notification_hour: number;
+    notification_minute: number;
 }
 
 export interface WerdSegment {
@@ -76,7 +80,7 @@ export async function getDB() {
             const dbDir = `${FileSystem.documentDirectory}SQLite/`;
 
             const fileInfo = await FileSystem.getInfoAsync(dbPath);
-            
+
             if (!fileInfo.exists || fileInfo.size === 0) {
                 console.log("Database missing or empty. Copying from assets...");
                 const dirInfo = await FileSystem.getInfoAsync(dbDir);
@@ -122,18 +126,18 @@ export async function getDB() {
 export async function initDB(clear: number = 0) {
     try {
         let db = await getDB();
-        
+
         if (clear) {
             console.log("clearing database");
             await db.closeAsync();
-            
+
             const dbPath = `${FileSystem.documentDirectory}SQLite/${DB_NAME}`;
             await FileSystem.deleteAsync(dbPath, { idempotent: true });
-            
+
             database = null;
             dbInitPromise = null;
-            
-            db = await getDB(); 
+
+            db = await getDB();
         }
 
         if (await isEmpty(db, "streaks")) {
@@ -143,7 +147,7 @@ export async function initDB(clear: number = 0) {
         if (await isEmpty(db, "user_settings")) {
             await db.runAsync(`
                 INSERT INTO user_settings (id, font, font_size, reading_mode, partition_type, starting_date, ending_date, theme, language, currentWerd, werd_plan_days) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [1, "D1", 14, 0, "page", "6/6/2006", "7/7/2007", 0, "en", 1, 30]);
         }
 
@@ -152,7 +156,7 @@ export async function initDB(clear: number = 0) {
                 VALUES (?, ?, ?, ?, ?)`, [1, 1, 20, '11/11/2011', 0])
         }
 
-        const settings = await getSettings(); 
+        const settings = await getSettings();
         console.log("SETTINGS GOT WHEN CREATING THE FIRST ROW =", settings);
         console.log("Database initialized successfully");
     }
@@ -177,18 +181,18 @@ export const fetchQuranText = async (params: rp.ReaderParams): Promise<qd.Readin
 			console.log(segment)
 
 			verses = await fetchVerses(segment.first_verse, segment.last_verse, 'verse');
-        } 
+        }
 		else if(params.sessionType === "full_surah") {
 			// @ts-ignore
             verses = await fetchVerses(params.surahId, params.surahId, 'surah');
         }
 
         const segments: qd.SurahSegment[] = [];
-        
+
 		let curSurah = verses[0].surah_id
 		let ayahs: qd.AyahData[] = []
         for (let i = 0; i < verses.length; i++) {
-		
+
 			if (verses[i].surah_id === curSurah) {
 				ayahs.push({
 					number: verses[i].relative_id,
@@ -221,7 +225,7 @@ export const fetchQuranText = async (params: rp.ReaderParams): Promise<qd.Readin
 				ayahs: ayahs
 			});
 		}
-		
+
         return {
             sessionId: "-1",
             sessionType: params.sessionType,
@@ -503,7 +507,7 @@ export const insertDate = async (day: number, month: number, year: number, is_do
 
 
 export const test = async (start: number, end: number) => {
-	const verses = await fetchVerses(start, end, 'surah'); 
+	const verses = await fetchVerses(start, end, 'surah');
 	if (verses && verses.length) {
 		console.log("------------------------------------------");
 		verses.forEach((v: any, index: number) => {
@@ -518,7 +522,7 @@ export const test = async (start: number, end: number) => {
 export const resetWerdSegments = async () => {
     try {
         const db = await getDB();
-        
+
         await db.withTransactionAsync(async () => {
             await db.runAsync(`DELETE FROM werd_segments`);
             await db.runAsync(`
@@ -526,9 +530,135 @@ export const resetWerdSegments = async () => {
                 VALUES (?, ?, ?, ?)
             `, [1, 1, 2, "8/8/2008", 0]);
         });
-        
+
         console.log("✅ Werd segments reset");
     } catch (error) {
         console.error("❌ Error resetting werd segments:", error);
     }
 }
+
+export const addNotificationColumns = async () => {
+    try {
+        const db = await getDB();
+
+        const tableInfo = await db.getAllAsync(`PRAGMA table_info(user_settings)`);
+        const columns = tableInfo.map((col: any) => col.name);
+
+        if (!columns.includes('notification_enabled')) {
+            await db.execAsync(`
+				ALTER TABLE user_settings ADD COLUMN notification_enabled INTEGER DEFAULT 0;
+			`);
+            console.log('✅ Added notification_enabled column');
+        }
+
+        if (!columns.includes('notification_time')) {
+            await db.execAsync(`
+				ALTER TABLE user_settings ADD COLUMN notification_time TEXT DEFAULT 'evening';
+			`);
+            console.log('✅ Added notification_time column');
+        }
+
+        if (!columns.includes('notification_hour')) {
+            await db.execAsync(`
+				ALTER TABLE user_settings ADD COLUMN notification_hour INTEGER DEFAULT 20;
+			`);
+            console.log('✅ Added notification_hour column');
+        }
+
+        if (!columns.includes('notification_minute')) {
+            await db.execAsync(`
+				ALTER TABLE user_settings ADD COLUMN notification_minute INTEGER DEFAULT 0;
+			`);
+            console.log('✅ Added notification_minute column');
+        }
+
+        console.log('✅ Notification settings columns ready');
+
+    } catch (error) {
+        console.error('❌ Failed to add notification columns:', error);
+    }
+};
+
+export const updateNotificationSettings = async (
+    enabled: boolean,
+    time: string,
+    hour: number,
+    minute: number,
+    userId: number = 1
+) => {
+    try {
+        console.log('🔔 Updating notification settings...');
+        console.log(`   User ID: ${userId}`);
+        console.log(`   Enabled: ${enabled}`);
+        console.log(`   Time: ${time}`);
+        console.log(`   Hour: ${hour}, Minute: ${minute}`);
+
+        const db = await getDB();
+
+        const tableInfo = await db.getAllAsync(`PRAGMA table_info(user_settings)`);
+        const columns = tableInfo.map((col: any) => col.name);
+
+        if (!columns.includes('notification_enabled')) {
+            throw new Error('Database columns not created. Please restart the app.');
+        }
+
+        const user = await db.getFirstAsync(`SELECT id FROM user_settings WHERE id = ?`, [userId]);
+
+        if (!user) {
+            console.log('⚠️ User not found, cannot update');
+            throw new Error(`User with ID ${userId} not found`);
+        }
+
+        console.log('✅ User found, updating...');
+
+        await db.runAsync(`
+			UPDATE user_settings 
+			SET notification_enabled = ?,
+				notification_time = ?,
+				notification_hour = ?,
+				notification_minute = ?
+			WHERE id = ?
+		`, [enabled ? 1 : 0, time, hour, minute, userId]);
+
+        console.log('✅ Notification settings saved to database');
+        console.log(`   Enabled: ${enabled}, Time: ${time}, Hour: ${hour}:${minute}`);
+
+    } catch (error) {
+        console.error('❌ Failed to save notification settings:', error);
+        throw error;
+    }
+};
+
+export const getNotificationSettings = async (userId: number = 1) => {
+    try {
+        const db = await getDB();
+
+        const settings = await db.getFirstAsync(
+			`SELECT notification_enabled, notification_time, notification_hour, notification_minute FROM user_settings WHERE id = ?`,
+            [userId]
+        );
+
+        if (settings) {
+            console.log('✅ Loaded notification settings from database');
+            return settings;
+        }
+
+        return {
+            notification_enabled: 0,
+            notification_time: 'evening',
+            notification_hour: 20,
+            notification_minute: 0
+        };
+
+    } catch (error) {
+        console.error('❌ Failed to load notification settings:', error);
+        console.error('Error details', error);
+
+        return{
+            notification_enabled: 0,
+            notification_time: 'evening',
+            notification_hour: 20,
+            notification_minute: 0
+        };
+    }
+};
