@@ -13,10 +13,14 @@ interface Props{
 
 export const SurahSection = ({ segment, isLastSegment } : Props) => {
     
-    const { font } =  useAppSettings();
+    const { font, theme } =  useAppSettings();
     console.log(font);
     
     const showBismillah = segment.surahId !== 9;
+    const textColor = (!theme ? 'white' : 'black');
+    
+    console.log("SURAH THEME: " + theme);
+    console.log(textColor);
 
     return (
         <View>
@@ -29,7 +33,7 @@ export const SurahSection = ({ segment, isLastSegment } : Props) => {
             
             {/* Ayaht */}
             <View className='mr-3 mb-5'>
-                <Text className='text-right text-white text-[24px] leading-[40px] mt-2 ml-3' style={{ fontFamily: font, writingDirection: 'rtl', textAlign: 'justify' }}>
+                <Text className='text-right text-[24px] leading-[40px] mt-2 ml-3' style={{ fontFamily: font || 'Amiri-Regular', writingDirection: 'rtl', textAlign: 'justify', color:textColor }}>
                     {segment.ayahs.map(({text, number}) => (
                         <Ayah key={number} text={text} number={number}/>
                     ))}                    

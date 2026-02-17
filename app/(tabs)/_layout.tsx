@@ -2,14 +2,18 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Tabs } from "expo-router";
 import React, { useEffect, useState } from 'react';
 import { Text, View } from "react-native";
-import * as DB from '@/utils/DatabaseManager';
+import { useColorScheme } from "nativewind";
+import tailwindConfig from '@/tailwind.config.js';
+import resolveConfig from 'tailwindcss/resolveConfig';
+
+const fullConfig = resolveConfig(tailwindConfig);
 
 const TabIcon = ({focused, iconName, title}: any) =>{
     const val = 30;
     if(focused){
         return (
             <View 
-                className='items-center min-w-[300px]'
+                className='items-center min-w-[50px]'
                 hitSlop={{ top: val, bottom: val, left: val, right: val }}
             >
                 <MaterialIcons name={iconName} size={20} color={'rgba(212, 175, 55, 1)'} />
@@ -32,30 +36,17 @@ const TabIcon = ({focused, iconName, title}: any) =>{
 }
 
 const _layout = () => {
-    const [color, setColor] = useState<string>("#0A0A0A")
-    const [loading, setLoading] = useState(true);
+    const { colorScheme } = useColorScheme();
+    
+    console.log("Current Theme in Tabs Layout:", colorScheme);
+    
+    const colors = fullConfig.theme.colors as any;
 
-   useEffect(() => {
-        const init = async () => {
-            try {
-                const settingsData = await DB.getSettings() as DB.UserSettings;
-                
-                if (settingsData) {
-                    const theme = settingsData.theme;
-                    setColor(theme === 0 ? '#0A0A0A' : '#FAF3E0');
-                }
-            } catch (error) {
-                console.error("Layout Init Error:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        init();
-    }, []);
-
-    if (loading) return null;
-  return (
+    const tabColors = colorScheme === 'dark' ? colors.bgBlack : colors.bgWhite;
+    
+    return (
     <Tabs
+        key={colorScheme}
         screenOptions={{
             tabBarShowLabel: false,
             headerShown: false,
@@ -65,7 +56,7 @@ const _layout = () => {
                 alignItems: 'center'
             },
             tabBarStyle: {
-                backgroundColor: color,
+                backgroundColor: tabColors,
                 borderRadius: 50,
                 marginHorizontal: 10,
                 marginBottom: 50,
@@ -73,8 +64,9 @@ const _layout = () => {
                 position:'absolute',
                 overflow: 'hidden',
                 borderWidth: 1,
-                borderColor: color
-            }
+                borderColor: tabColors,
+
+            },
         }}
         >
         <Tabs.Screen

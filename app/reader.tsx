@@ -1,9 +1,7 @@
-import React, { use, useEffect, useState } from 'react'
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack } from 'expo-router';
+import React from 'react'
 import { ReaderInfiniteScroll } from '@/components/ReaderInfiniteScroll';
 import { ReaderPages } from '@/components/ReaderPages';
-import * as DB from "@/utils/DatabaseManager";
+import { useAppSettings } from '@/services/useAppSettings';
 
 const ReaderMode = {
     PAGES: 'pages',
@@ -14,36 +12,14 @@ const ReaderMode = {
 
 const Reader = () => {
 
-    const [readerMode, setReaderMode] = React.useState<string>();
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const loadMode = async () => {
-            await DB.getDB()
-            const settings = await DB.getSettings() as DB.UserSettings;
-            const readerMode = settings.reading_mode;
-            console.log(`Reading Mode = ${readerMode}`)
-            if(readerMode === undefined || readerMode === 0) {
-                setReaderMode(ReaderMode.INFINITE_SCROLL);
-            } else {
-                setReaderMode(ReaderMode.PAGES);
-            }
-        };
-        loadMode();
-    }, []);
+    const { theme, isScrollMode } = useAppSettings();
     
-    if(readerMode === ReaderMode.PAGES) {
-        return <ReaderPages/>
+    if(isScrollMode) {
+        return <ReaderInfiniteScroll/>;
     }
-    else if(readerMode === ReaderMode.INFINITE_SCROLL) {
-        return <ReaderInfiniteScroll/>
+    else {
+        return <ReaderPages/>;
     }
-    
-    return (
-        <SafeAreaView className='bg-matteBlack h-full'>
-            <Stack.Screen options={{ headerShown: false }} />
-        </SafeAreaView>
-    )
 }
 
 export default Reader

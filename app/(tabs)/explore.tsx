@@ -5,6 +5,7 @@ import SearchBar from "@/components/SearchBar";
 import { router } from 'expo-router';
 import { SURAH_DATA, Surah } from '@/types/reader_data';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface FilterButtonProps {
   id: number;
@@ -16,6 +17,7 @@ interface FilterButtonProps {
 }
 
 const SurahCard = React.memo(({id, nameEn, nameAr, ayahs, type, onPress} : FilterButtonProps) => {
+  const { t } = useTranslation();
   let id_padded = `${id}`
   if(id_padded.length === 1) id_padded = "0" + id_padded
   return (
@@ -29,7 +31,7 @@ const SurahCard = React.memo(({id, nameEn, nameAr, ayahs, type, onPress} : Filte
         <View>
           <Text className='text-gray-900 dark:text-white font-bold text-[15px]'>{nameEn}</Text>
           <View className='flex-row justify-between w-40 mt-2'>
-            <Text className='text-gray-600 dark:text-mutedWhite'>{ayahs} AYAHS</Text> 
+            <Text className='text-gray-600 dark:text-mutedWhite'>{ayahs} {t('ayahs')}</Text> 
             <Text className='text-gray-600 dark:text-mutedWhite'> {type}</Text>
           </View>
         </View>
@@ -56,6 +58,7 @@ const FilterButton = ({ label, active, onPress }: any) => {
 }
 
 const explore = () => {
+  const { t } = useTranslation();
 
   const [filter, setFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -106,11 +109,11 @@ const explore = () => {
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-bgBlack">
           <View className='w-[100%] justify-center items-center'>
-            <Text className='text-primaryGold mt-10 text-xl font-bold'> SURAH EXPLORER </Text>
+            <Text className='text-primaryGold mt-10 text-xl font-bold'> {t('surahExplorer')} </Text>
           </View>
 
           <SearchBar
-            placeholder="Search Surah..."
+            placeholder={t('searchSurah')}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
@@ -119,7 +122,7 @@ const explore = () => {
             {['ALL', 'MECCAN', 'MEDINAN', 'FAVORITES'].map((cat) => (
               <FilterButton 
                 key={cat}
-                label={cat} 
+                label={t(cat.toLowerCase())} 
                 active={filter === cat} 
                 onPress={filterHandlers[cat]} 
                 className={`${filter === cat ? 'opacity-100' : 'opacity-50'}`}

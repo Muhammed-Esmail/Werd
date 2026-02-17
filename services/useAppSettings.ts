@@ -25,7 +25,7 @@ export const useAppSettings = () => {
     // Load settings from DB
     const loadSettings = useCallback(async () => {
         try {
-            const dbSettings = await DB.getSettings() as UserSettings;
+            const dbSettings = await DB.getSettings() as unknown as UserSettings;
             setSettings(dbSettings);
         } catch (error) {
             console.error('Error loading settings:', error);
@@ -42,13 +42,11 @@ export const useAppSettings = () => {
     // UPDATE METHODS
     // ==========================================
 
-    /**
-     * Update font
-     */
     const updateFont = useCallback(async (font: string) => {
         try {
             await DB.updateSettings({ font });
             setSettings(prev => prev ? { ...prev, font } : null);
+            console.log('✅ Font updated to:', font);
             return true;
         } catch (error) {
             console.error('Error updating font:', error);
@@ -56,9 +54,6 @@ export const useAppSettings = () => {
         }
     }, []);
 
-    /**
-     * Update font size
-     */
     const updateFontSize = useCallback(async (fontSize: number) => {
         try {
             await DB.updateSettings({ font_size: fontSize });
@@ -70,14 +65,12 @@ export const useAppSettings = () => {
         }
     }, []);
 
-    /**
-     * Update theme (and apply immediately)
-     */
     const updateTheme = useCallback(async (theme: number) => {
         try {
             await DB.updateSettings({ theme });
             setColorScheme(theme === 0 ? 'dark' : 'light');
             setSettings(prev => prev ? { ...prev, theme } : null);
+            console.log('✅ Theme updated to:', theme === 0 ? 'dark' : 'light');
             return true;
         } catch (error) {
             console.error('Error updating theme:', error);
@@ -85,17 +78,11 @@ export const useAppSettings = () => {
         }
     }, [setColorScheme]);
 
-    /**
-     * Toggle theme (convenience method)
-     */
     const toggleTheme = useCallback(async () => {
         const newTheme = settings?.theme === 0 ? 1 : 0;
         return await updateTheme(newTheme);
     }, [settings?.theme, updateTheme]);
 
-    /**
-     * Update reading mode
-     */
     const updateReadingMode = useCallback(async (mode: number) => {
         try {
             await DB.updateSettings({ reading_mode: mode });
@@ -107,17 +94,11 @@ export const useAppSettings = () => {
         }
     }, []);
 
-    /**
-     * Toggle reading mode (convenience method)
-     */
     const toggleReadingMode = useCallback(async () => {
         const newMode = settings?.reading_mode === 0 ? 1 : 0;
         return await updateReadingMode(newMode);
     }, [settings?.reading_mode, updateReadingMode]);
 
-    /**
-     * Update language (and reload app if needed)
-     */
     const updateLanguage = useCallback(async (lang: string, shouldReload: boolean = true) => {
         try {
             await DB.updateSettings({ language: lang });
@@ -128,7 +109,6 @@ export const useAppSettings = () => {
             
             setSettings(prev => prev ? { ...prev, language: lang } : null);
             
-            // Reload app to apply RTL changes
             if (shouldReload) {
                 await Updates.reloadAsync();
             }
@@ -140,9 +120,6 @@ export const useAppSettings = () => {
         }
     }, []);
 
-    /**
-     * Update current werd
-     */
     const updateCurrentWerd = useCallback(async (werdNumber: number) => {
         try {
             await DB.updateSettings({ currentWerd: werdNumber });
@@ -154,9 +131,6 @@ export const useAppSettings = () => {
         }
     }, []);
 
-    /**
-     * Update werd dates
-     */
     const updateWerdDates = useCallback(async (startDate: string, endDate: string) => {
         try {
             await DB.updateSettings({ 
@@ -175,9 +149,6 @@ export const useAppSettings = () => {
         }
     }, []);
 
-    /**
-     * Update partition type
-     */
     const updatePartitionType = useCallback(async (type: number) => {
         try {
             // @ts-ignore
@@ -190,22 +161,15 @@ export const useAppSettings = () => {
         }
     }, []);
 
-    /**
-     * Refresh settings from DB (useful after external changes)
-     */
     const refresh = useCallback(async () => {
         await loadSettings();
     }, [loadSettings]);
 
-    /**
-     * Batch update multiple settings at once
-     */
     const updateMultiple = useCallback(async (updates: Partial<UserSettings>) => {
         try {
             await DB.updateSettings(updates as any);
             setSettings(prev => prev ? { ...prev, ...updates } : null);
             
-            // Apply theme if it was updated
             if ('theme' in updates && updates.theme !== undefined) {
                 setColorScheme(updates.theme === 0 ? 'dark' : 'light');
             }
@@ -217,23 +181,29 @@ export const useAppSettings = () => {
         }
     }, [setColorScheme]);
 
+    // ==========================================
+    // SAFE GETTERS - Return actual values or null
+    // Components should handle loading state
+    // ==========================================
+    
     return {
         // Current settings
         settings,
         loading,
         
-        // Convenience getters
-        font: settings?.font || 'U3',
-        fontSize: settings?.font_size || 24,
-        theme: settings?.theme || 0,
-        readingMode: settings?.reading_mode || 0,
-        language: settings?.language || 'en',
-        currentWerd: settings?.currentWerd || 1,
-        partitionType: settings?.partition_type || 0,
-        startingDate: settings?.starting_date || '',
-        endingDate: settings?.ending_date || '',
+        // CHANGED: Return actual values from settings, or null if not loaded
+        // This way components know when data isn't ready yet
+        font: settings?.font ?? null,
+        fontSize: settings?.font_size ?? null,
+        theme: settings?.theme ?? null,
+        readingMode: settings?.reading_mode ?? null,
+        language: settings?.language ?? null,
+        currentWerd: settings?.currentWerd ?? null,
+        partitionType: settings?.partition_type ?? null,
+        startingDate: settings?.starting_date ?? null,
+        endingDate: settings?.ending_date ?? null,
         
-        // Boolean helpers
+        // Boolean helpers - null-safe
         isDarkMode: settings?.theme === 0,
         isLightMode: settings?.theme === 1,
         isScrollMode: settings?.reading_mode === 0,
