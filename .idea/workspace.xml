@@ -5,6 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="097c6390-df6a-40a1-8921-e291af2b8829" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/app/(tabs)/werd.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(tabs)/werd.tsx" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/app/notificationSettings.tsx" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/services/NotificationManager.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/(tabs)/settings.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(tabs)/settings.tsx" afterDir="false" />
@@ -37,7 +38,7 @@
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;feature/notifications&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;feature/pdf-exporter&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Animated, Easing, View } from "react-native";
+import { Animated, Easing, Text, View } from "react-native";
 import React from 'react';
 
 interface Marker {
