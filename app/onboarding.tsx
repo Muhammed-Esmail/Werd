@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { useColorScheme } from "nativewind";
 import { MaterialIcons } from '@expo/vector-icons';
 import * as DB from '@/utils/DatabaseManager';
+import * as engine from "@/core/SegmentationEngine";
 
 const { width } = Dimensions.get('window');
 
@@ -21,12 +22,21 @@ const Onboarding = () => {
     };
 
     const finishOnboarding = async () => {
-        await DB.updateSettings({ 
-            werd_plan_days: planDays,
-            // @ts-ignore
-            setup_completed: 1 
-        });
-        router.replace('/(tabs)/werd'); 
+        try {
+            await DB.updateSettings({ 
+                werd_plan_days: planDays,
+                partition_type: 'page',
+                // @ts-ignore
+                setup_completed: 1 
+            });
+
+            console.log(`Generating plan for ${planDays} days...`);
+            await engine.SegmentationEngine.calculatePlan(planDays, engine.PartitionType.PAGE);
+
+            router.replace('/(tabs)/werd'); 
+        } catch (error) {
+            console.error("Error finishing onboarding:", error);
+        }
     };
 
     return (
