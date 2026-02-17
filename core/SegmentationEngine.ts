@@ -1,4 +1,4 @@
-import { ensureDailyProgressTable } from '@/utils/DatabaseManager';
+import * as DB from '@/utils/DatabaseManager';
 import { SQLiteDatabase } from 'expo-sqlite';
 
 export enum PartitionType {
@@ -22,12 +22,11 @@ export class SegmentationEngine {
     private static TOTAL_SURAH = 114;
 
     static async calculatePlan(
-        db: SQLiteDatabase,
         days:number,
         partitionType: PartitionType,
         startDate: Date = new Date()
     ): Promise<PlanSegment[]> {
-
+        const db = await DB.getDB()
         let totalUnits = 0;
         let table = '';
 
@@ -81,31 +80,35 @@ export class SegmentationEngine {
                     start_unit_val: startUnit,
                     end_unit_val: safeEndUnit
                 });
+
             } else {
                 console.error(`[SegmentationEngine] Error fetching bounds for ${table} IDs: ${startUnit}-${endUnit}`);
             }
-
+            
+            await this.savePlanToDB(db, plan)
             currentFloatUnit += unitsPerDay;
         }
         return plan;
     }
 
     static async savePlanToDB(db: SQLiteDatabase, plan: PlanSegment[]) {
+        console.log("Saving Plan to DB")
         try {
-            await db.execAsync('DROP TABLE IF EXISTS daily_progress');
+            // clear the table, not delete it
+            await db.execAsync('DELETE FROM daily_progress');
 
-            await ensureDailyProgressTable();
+            await DB.ensureDailyProgressTable();
 
             if(plan.length == 0) return;
 
             const values = plan
                 .map(p => `(${p.day}, '${p.date}', ${p.start_verse}, ${p.end_verse}, ${p.start_unit_val}, ${p.end_unit_val}, 0)`)
-                .join(',');
-
+                .join(',');            
             await db.execAsync(`
                 INSERT INTO daily_progress (day_number, date, start_verse, end_verse, start_unit_val, end_unit_val, is_completed)
                 VALUES ${values}
             `);
+            console.log("Inserted Werd Plan into daily_progress")
 
             console.log(`[SegmentationEngine] Saved ${plan.length} days to daily_progress.`);
         } catch(e) {
@@ -113,13 +116,14 @@ export class SegmentationEngine {
         }
     }
 
-    static async recalculatePlan(
-        db: SQLiteDatabase,
+    static async recalculatePlan(db: SQLiteDatabase,
         currentDay: number,
         lastCompletedVerse: number,
         totalDays: number,
-        partitionType: PartitionType
-    ) {
+        partitionType: PartitionType) {
+        console.log("Recalcaulating Plan...")
+        
+
         const remainingDays = totalDays - currentDay;
         if(remainingDays <= 0) return; // BRO IS COOKED
 
@@ -163,7 +167,7 @@ export class SegmentationEngine {
 
         const startDate = new Date(); 
 
-        for(let i = 1; i <= remainingDays; i++) {
+        for(let i = 0; i <= remainingDays; i++) {
             const day = currentDay + i;
 
             const startUnit = Math.floor(currentFloatUnit);
@@ -202,7 +206,13 @@ export class SegmentationEngine {
             currentFloatUnit += unitsPerDay;
         }
 
-        await db.execAsync(`DELETE FROM daily_progress WHERE day_number > ${currentDay}`);
+        const today = await db.getFirstAsync(`SELECT * FROM daily_progress WHERE day_number = 1`)
+        console.log(`TODAY: ${JSON.stringify(today, null, 2)}`)
+
+        const data = await db.getAllAsync(`SELECT * FROM daily_progress WHERE day_number >= ?`, [currentDay]);
+        console.log(`ROWS THAT WILL BE DELETED: ${JSON.stringify(data, null, 2)}`);
+        await db.runAsync(`DELETE FROM daily_progress WHERE day_number >= ?`, [currentDay]);
+        console.log("DELETED DELETED DELETEDDELETED DELETED")
 
         if (newPlan.length > 0) {
             const values = newPlan
@@ -213,7 +223,11 @@ export class SegmentationEngine {
                 INSERT INTO daily_progress (day_number, date, start_verse, end_verse, start_unit_val, end_unit_val, is_completed)
                 VALUES ${values}
             `);
+            console.log("Inserted Werd Plan into daily_progress")
         }
         console.log(`[SegmentationEngine] Recalculated ${newPlan.length} remaining days.`);
+
+        const newData = await db.getAllAsync(`SELECT * FROM daily_progress`)
+        console.log(`New Plan Data: ${JSON.stringify(newData, null, 2)}`);
     }
 }

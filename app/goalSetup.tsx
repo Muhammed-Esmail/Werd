@@ -6,6 +6,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import Slider from '@react-native-community/slider';
 import * as DB from "@/utils/DatabaseManager"
 import { useTranslation } from 'react-i18next';
+import * as engine from "@/core/SegmentationEngine"
 
 const RadioButton = ({ text, selected, description, onSelected }: any) => {
     return (
@@ -64,6 +65,32 @@ const goalSetup = () => {
         alert("Werd Settings Set!")
         const settings = await DB.getSettings() as DB.UserSettings
         console.log(`settings = ${settings.werd_plan_days} , ${settings.partition_type}`)
+        let partition: engine.PartitionType
+        if (selectedPartition === 1) partition = engine.PartitionType.JUZ
+        if (selectedPartition === 2) partition = engine.PartitionType.SURAH
+        else partition = engine.PartitionType.PAGE
+
+        const db = await DB.getDB()
+        let currentDay, lastCompletedVerse;
+        const firstNotDoneProgress = await db.getFirstAsync(`SELECT * FROM daily_progress WHERE day_number = (
+                SELECT MIN(day_number) FROM daily_progress WHERE is_completed = 0
+            )`) as DB.DailyProgress
+        if (!firstNotDoneProgress) {
+            currentDay = 1
+            lastCompletedVerse = 1
+        }
+        else {
+            currentDay = firstNotDoneProgress.day_number
+            lastCompletedVerse = firstNotDoneProgress.end_verse
+        }
+        const userSettings = await DB.getSettings() as DB.UserSettings
+        const totalDays: number = userSettings.werd_plan_days
+        let partitionType: engine.PartitionType
+        if (settings.partition_type === "juz") partitionType = engine.PartitionType.JUZ
+        else if (settings.partition_type === "surah") partitionType = engine.PartitionType.SURAH
+        else partitionType = engine.PartitionType.PAGE
+        if (await DB.isEmpty(await DB.getDB(), "daily_progress") || firstNotDoneProgress.day_number === 1) await engine.SegmentationEngine.calculatePlan(goal, engine.PartitionType.JUZ)
+        else await engine.SegmentationEngine.recalculatePlan(db, currentDay, lastCompletedVerse, totalDays, partitionType)
     }
 
     const renderOption = (item: any, currentSelected: number, setter: (id: number) => void) => {
@@ -145,10 +172,10 @@ const goalSetup = () => {
                                 maximumTrackTintColor="#374151"
                                 thumbTintColor="#D4AF37"
                             />
-                            <div className="flex-row justify-between mt-1">
+                            <View className="flex-row justify-between mt-1">
                                 <Text className="text-gray-400 text-xs">1 {t('page')}</Text>
                                 <Text className="text-gray-400 text-xs">50 {t('page')}</Text>
-                            </div>
+                            </View>
                         </View>
                     )}
 

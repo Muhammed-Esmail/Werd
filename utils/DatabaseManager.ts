@@ -53,7 +53,17 @@ export interface DateData {
     is_done: number;
 }
 
-const isEmpty = async (db: SQLite.SQLiteDatabase, table: string) => {
+export interface DailyProgress {
+    day_number: number;
+    date: string;
+    start_verse: number;
+    end_verse: number;
+    start_unit_val: number;
+    end_unit_val: number;
+    is_completed: number;
+}
+
+export const isEmpty = async (db: SQLite.SQLiteDatabase, table: string) => {
 	const result = await db.getFirstAsync<{ count: number }>(
         `SELECT COUNT(*) as count FROM ${table}`
     );
@@ -193,7 +203,7 @@ export const fetchQuranText = async (params: rp.ReaderParams): Promise<qd.Readin
             }
 
             const currentWerdId = settings.currentWerd;
-            const segment = await getWerdSegment(currentWerdId) as WerdSegment;
+            const segment = await getDailyProgress(currentWerdId) as DailyProgress;
 
             if (segment) {
                 verses = await fetchVerses(segment.start_verse, segment.end_verse, 'verse');
@@ -341,11 +351,7 @@ export const updateSettings = async(updates: Partial<UserSettings>, id: number =
 export const getSettings = async (id: number = 1) => {
     try {
         const db = await getDB();
-<<<<<<< feature/StreakManager
-        const data = await db.getFirstAsync(`SELECT * FROM user_settings WHERE id = ?`, [id]) as UserSettings
-=======
         const data = await db.getFirstAsync(`SELECT * FROM user_settings WHERE id = ?`, [id]) as UserSettings;
->>>>>>> main
         return data || null;
     } catch (error) {
         console.error("getSettings error:", error);
@@ -422,36 +428,36 @@ export const getBookMarks = async () => {
 	}
 }
 
-export const insertWerdSegment = async (id: number, first_verse: number, last_verse: number, date: string, done: number) => {
-    try {
-        const db = await getDB()
-        await db.runAsync(`INSERT INTO werd_segments (id, first_verse, last_verse, date, done) VALUES (?, ?, ?, ?, ?)`, [id, first_verse, last_verse, date, done])
-        console.log("Added new werd segment")
-    }
-    catch (error) {
-        console.log(error)
-    }
-}
+// export const insertWerdSegment = async (id: number, first_verse: number, last_verse: number, date: string, done: number) => {
+//     try {
+//         const db = await getDB()
+//         await db.runAsync(`INSERT INTO werd_segments (id, first_verse, last_verse, date, done) VALUES (?, ?, ?, ?, ?)`, [id, first_verse, last_verse, date, done])
+//         console.log("Added new werd segment")
+//     }
+//     catch (error) {
+//         console.log(error)
+//     }
+// }
 
-export const updateWerdSegments = async (updates: Partial<WerdSegment>, id: number = 1) => {
-	try {
-		const db = await getDB()
-		const fields = Object.keys(updates)
-		const values = Object.values(updates)
-		values.push(id)
-		const query = fields.map(field => `${field} = ?`).join(", ")
-		await db.runAsync(`UPDATE werd_segments SET ${query} WHERE id = ?`, values)
-		console.log("Updated werd segments")
-	}
-	catch (error) {
-		console.log(error)
-	}
-}
+// export const updateWerdSegments = async (updates: Partial<WerdSegment>, id: number = 1) => {
+// 	try {
+// 		const db = await getDB()
+// 		const fields = Object.keys(updates)
+// 		const values = Object.values(updates)
+// 		values.push(id)
+// 		const query = fields.map(field => `${field} = ?`).join(", ")
+// 		await db.runAsync(`UPDATE werd_segments SET ${query} WHERE id = ?`, values)
+// 		console.log("Updated werd segments")
+// 	}
+// 	catch (error) {
+// 		console.log(error)
+// 	}
+// }
 
-export const getWerdSegment = async (id: number) => {
+export const getDailyProgress = async (day_number: number) => {
 	try {
 		const db = await getDB();
-		const data = await db.getFirstAsync(`SELECT * FROM werd_segments WHERE id = ?`, [id]) as WerdSegment
+		const data = await db.getFirstAsync(`SELECT * FROM daily_progress WHERE day_number = ?`, [day_number]) as DailyProgress
 		if (data) return data
 		else return null;
 	}
@@ -461,18 +467,18 @@ export const getWerdSegment = async (id: number) => {
 	}
 }
 
-export const getAllWerdSegments = async () => {
-    try {
-        const db = await getDB()
-        const data = await db.getAllAsync(`SELECT * FROM werd_segments`) as WerdSegment[]
-        if (data) return data
-        else return []
-    }
-    catch (error) {
-        console.log(error)
-        return []
-    }
-}
+// export const getAllWerdSegments = async () => {
+//     try {
+//         const db = await getDB()
+//         const data = await db.getAllAsync(`SELECT * FROM werd_segments`) as WerdSegment[]
+//         if (data) return data
+//         else return []
+//     }
+//     catch (error) {
+//         console.log(error)
+//         return []
+//     }
+// }
 
 // export const getDates = async (year?: number, month?: number) => {
 //     try {
