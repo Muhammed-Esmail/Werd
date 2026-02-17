@@ -38,7 +38,7 @@ const SurahCard = React.memo(({id, nameEn, nameAr, ayahs, type, onPress} : Filte
       </View>
 
       <View className='justify-center items-center'>
-        <Text className='py-2 mr-5 text-primaryGold text-2xl font-amiri-bold'>{nameAr.slice(7)}</Text>
+        <Text className='py-2 mr-5 text-primaryGold text-2xl font-amiri-bold'>{nameAr}</Text>
       </View>
     </TouchableOpacity>
   )
