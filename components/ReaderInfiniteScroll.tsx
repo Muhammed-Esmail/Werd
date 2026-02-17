@@ -10,6 +10,7 @@ import { ReadingSession } from "@/types/quran_data";
 import React from "react";
 
 
+
 export const ReaderInfiniteScroll = () => {
     
     const [quranData, setQuranData] = useState<ReadingSession>();
@@ -87,7 +88,7 @@ export const ReaderInfiniteScroll = () => {
     };
 
     return (
-        <SafeAreaView className='bg-matteBlack h-full flex-row'>
+        <SafeAreaView className='bg-white dark:bg-matteBlack h-full flex-row'>
             
             <Stack.Screen options={{ headerShown: false }} />
 

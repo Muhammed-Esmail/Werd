@@ -122,9 +122,9 @@ const settings = () => {
 					<SelectList 
 							setSelected={async (val: string) => {
 									if (val !== selectedLang) {
-										setSelectedLang(val)
-										let lang = "en"
+                                        let lang = "en"
 										if (val === "arabic") lang = "ar"
+										setSelectedLang(lang)
 										await changeLang(lang)
 									}
 								}
@@ -174,13 +174,25 @@ const changeLang = async (lang: string = "en", startup: boolean = false) => {
 	console.log(`changing to ${lang}`)
 	await i18n.changeLanguage(lang)
 	if (startup) {
-		I18nManager.allowRTL(lang === "ar");
-		I18nManager.forceRTL(lang === "ar");
+        if (selectedLang === "en" && lang === "ar") {
+            I18nManager.allowRTL(true);
+		    I18nManager.forceRTL(true);
+        }
+        else if (selectedLang === "ar" && lang === "en") {
+            I18nManager.allowRTL(false);
+		    I18nManager.forceRTL(false);
+        }
 	}
 	else {
 		await DB.updateSettings({language: lang})
-		I18nManager.allowRTL(lang === "ar");
-		I18nManager.forceRTL(lang === "ar");
+		if (selectedLang === "en" && lang === "ar") {
+            I18nManager.allowRTL(true);
+		    I18nManager.forceRTL(true);
+        }
+        else if (selectedLang === "ar" && lang === "en") {
+            I18nManager.allowRTL(false);
+		    I18nManager.forceRTL(false);
+        }
 		await (async () => {
 			return await Updates.reloadAsync();
 		})();
@@ -190,8 +202,13 @@ const changeLang = async (lang: string = "en", startup: boolean = false) => {
 useEffect(() => {
   const init = async () => {
     console.log("Initializing Settings");
-
+    // @ts-ignore
 	const current_settings = await DB.getSettings() as UserSettings
+
+    if(!current_settings) {
+        console.log("No settings found, something definitely went wrong with initialization");
+        return;
+    }
 
 	setIsEnabled(current_settings.theme === 0)
 	setColorScheme(current_settings.theme === 0 ? "dark" : "light")

@@ -1,4 +1,5 @@
 export type SessionType = 'daily_werd' | 'full_surah' | 'custom_range';
+import * as DB from "@/utils/DatabaseManager"
 
 export interface ReaderParams {
   surahId?: number;
