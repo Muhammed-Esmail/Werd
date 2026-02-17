@@ -92,5 +92,10 @@
   "pagesPerDayHint": "Based on your selection, you will read roughly {{count}} pages per day.",
   "startJourney": "Start Journey",
   "next": "Next",
-  "back": "Back"
+  "back": "Back",
+  "werdNumber": "Werd #{{number}}",
+  "exportPDF": "Export Today's Werd as PDF",
+  "generating": "Generating...",
+  "exportSuccess": "Exported successfully",
+  "exportFailed": "Export failed"
 }

@@ -92,5 +92,10 @@
   "pagesPerDayHint": "بناءً على اختيارك، ستقرأ تقريباً {{count}} صفحات يومياً.",
   "startJourney": "ابدأ الرحلة",
   "next": "التالي",
-  "back": "رجوع"
+  "back": "رجوع",
+  "werdNumber": "ورد #{{number}}",
+  "exportPDF": "تصدير ورد اليوم كـ PDF",
+  "generating": "جارٍ التوليد...",
+  "exportSuccess": "تم التصدير بنجاح",
+  "exportFailed": "فشل التصدير"
 }
