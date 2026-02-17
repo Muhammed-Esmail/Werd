@@ -1,26 +1,12 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Asset } from 'expo-asset';
 import { ReadingSession } from '@/types/quran_data';
 import * as DB from '@/utils/DatabaseManager';
 import { ReaderParams } from '@/types/reader_data';
 import { SURAH_NAMES } from "@/constants/surah_assets";
-
-// 📝 Fallback list of Surah Names to ensure we NEVER show numbers
-const SURAH_ARABIC_NAMES = [
-    "الفاتحة", "البقرة", "آل عمران", "النساء", "المائدة", "الأنعام", "الأعراف", "الأنفال", "التوبة", "يونس",
-    "هود", "يوسف", "الرعد", "إبراهيم", "الحجر", "النحل", "الإسراء", "الكهف", "مريم", "طه",
-    "الأنبياء", "الحج", "المؤمنون", "النور", "الفرقان", "الشعراء", "النمل", "القصص", "العنكبوت", "الروم",
-    "لقمان", "السجدة", "الأحزاب", "سبأ", "فاطر", "يس", "الصافات", "ص", "الزمر", "غافر",
-    "فصلت", "الشورى", "الزخرف", "الدخان", "الجاثية", "الأحقاف", "محمد", "الفتح", "الحجرات", "ق",
-    "الذاريات", "الطور", "النجم", "القمر", "الرحمن", "الواقعة", "الحديد", "المجادلة", "الحشر", "الممتحنة",
-    "الصف", "الجمعة", "المنافقون", "التغابن", "الطلاق", "التحريم", "الملك", "القلم", "الحاقة", "المعارج",
-    "نوح", "الجن", "المزمل", "المدثر", "القيامة", "الإنسان", "المرسلات", "النبأ", "النازعات", "عبس",
-    "التكوير", "الإنفطار", "المطففين", "الإنشقاق", "البروج", "الطارق", "الأعلى", "الغاشية", "الفجر", "البلد",
-    "الشمس", "الليل", "الضحى", "الشرح", "التين", "العلق", "القدر", "البينة", "الزلزلة", "العاديات",
-    "القارعة", "التكاثر", "العصر", "الهمزة", "الفيل", "قريش", "الماعون", "الكوثر", "الكافرون", "النصر",
-    "المسد", "الإخلاص", "الفلق", "الناس"
-];
+import { SURAH_ARABIC_NAMES } from '@/constants/surahArabicNames';
 
 const getSurahName = (id: number): string => {
     if (id >= 1 && id <= 114) {
@@ -50,6 +36,20 @@ const getAssetBase64 = async (surahId: number): Promise<string | null> => {
     }
 };
 
+const getAmiriBase64 = async (): Promise<string | null> => {
+    try {
+        const asset = Asset.fromModule(require('@/assets/fonts/Amiri-Regular.ttf'));
+        await asset.downloadAsync();
+        const base64 = await FileSystem.readAsStringAsync(asset.localUri!, {
+            encoding: FileSystem.EncodingType.Base64,
+        });
+        return base64;
+    } catch (e) {
+        console.warn('Could not load Amiri font:', e);
+        return null;
+    }
+};
+
 const convertToArabicNumerals = (number: number | string): string => {
     const arabicNumerals = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
     return number.toString().split('').map(digit => {
@@ -64,30 +64,27 @@ const getGregorianDateArabic = (): string => {
     return `${convertToArabicNumerals(date.getDate())} ${months[date.getMonth()]} ${convertToArabicNumerals(date.getFullYear())} م`;
 };
 
-// 🗓️ Manual Hijri Calculation to guarantee correctness
 const getHijriDate = (): string => {
-    const date = new Date();
-    const options: Intl.DateTimeFormatOptions = {
+    return new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura', {
         day: 'numeric',
         month: 'long',
         year: 'numeric',
-        calendar: 'islamic-uma'
-    };
-    
-    // Try using the native Intl API first (works on most modern iOS/Android)
-    try {
-        return new Intl.DateTimeFormat('ar-SA', options).format(date) + ' هـ';
-    } catch (e) {
-        // Fallback if islamic calendar is not supported on device
-        return "التاريخ الهجري غير متاح";
-    }
+    }).format(new Date());
 };
 
 const generateHTML = async (session: ReadingSession): Promise<string> => {
     const gregorianDate = getGregorianDateArabic();
     const hijriDate = getHijriDate();
+    const amiriBase64 = await getAmiriBase64();
 
-    // 📋 Generate Table of Contents (Fihris)
+    const fontFace = amiriBase64
+        ? `@font-face {
+            font-family: 'Amiri';
+            src: url('data:font/ttf;base64,${amiriBase64}') format('truetype');
+            font-weight: 400;
+           }`
+        : '';
+
     const tableOfContents = session.segments.map(s => {
         const name = getSurahName(s.surahId);
         const start = convertToArabicNumerals(s.ayahs[0]?.number || 1);
@@ -101,7 +98,6 @@ const generateHTML = async (session: ReadingSession): Promise<string> => {
         `;
     }).join('');
 
-    // 📖 Generate Content Blocks
     const contentBlocks = await Promise.all(session.segments.map(async (segment) => {
         const base64Image = await getAssetBase64(segment.surahId);
         const surahName = getSurahName(segment.surahId);
@@ -137,12 +133,12 @@ const generateHTML = async (session: ReadingSession): Promise<string> => {
     <head>
       <meta charset="UTF-8">
       <style>
-        @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap');
+        ${fontFace}
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
           font-family: 'Amiri', serif;
           direction: rtl;
-          padding: 40px 30px;
+          padding: 40px 30px 40px 30px;
           background: #0c0c0c;
           color: #ffffff;
         }
@@ -169,7 +165,7 @@ const generateHTML = async (session: ReadingSession): Promise<string> => {
           border: 1px solid rgba(212, 175, 55, 0.4);
           border-radius: 12px;
           padding: 25px;
-          margin-bottom: 50px; /* Space after TOC */
+          margin-bottom: 50px;
         }
         .metadata-title {
             text-align: center;
@@ -199,6 +195,7 @@ const generateHTML = async (session: ReadingSession): Promise<string> => {
 
         /* SURAH CONTENT */
         .surah-container { margin-bottom: 50px; page-break-inside: avoid; }
+        .surah-container:last-of-type { margin-bottom: 0; }
         
         .surah-image-header {
           height: 100px;
@@ -230,7 +227,7 @@ const generateHTML = async (session: ReadingSession): Promise<string> => {
         .ayah-text { font-size: 24px; line-height: 2.8; text-align: justify; word-spacing: 2px; }
         
         .footer { 
-            margin-top: 60px; 
+            margin-top: 20px; 
             text-align: center; 
             color: #D4AF37; 
             font-size: 14px; 
