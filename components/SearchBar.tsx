@@ -1,25 +1,28 @@
 import { MaterialIcons } from '@expo/vector-icons'
 import React from 'react'
 import { Image, TextInput, View } from 'react-native'
+import tailwindConfig from '@/tailwind.config.js';
+import resolveConfig from 'tailwindcss/resolveConfig';
+import { Background } from '@react-navigation/elements';
 
 interface Props {
     placeholder: string,
-    onPress?: () => void
+    value: string,
+    onChangeText: (text: string) => void,
 }
 
-const SearchBar = ({placeholder, onPress}: Props) => {
+const SearchBar = ({placeholder, value, onChangeText}: Props) => {
   return (
     <View
-        className='flex-row items-center bg-[#121212] mt-5 border-[1px] border-[#D4AF37] rounded-lg px-5 py-2 w-[93%] self-center'
+        className='bg-bgWhite dark:bg-black flex-row items-center mt-5 border-[1px] border-[#D4AF37] rounded-lg px-5 py-2 w-[93%] self-center'
     >
       <MaterialIcons name='search' size={23} color={'#D4AF37'}/>
       <TextInput
-        onPress={onPress}
         placeholder={placeholder}
-        value=''
-        onChange={() => {}}
-        placeholderTextColor={"white"}
-        className='flex-1 ml-2 text-white ml-3'
+        placeholderTextColor={'#9CA3AF'}
+        value={value}
+        onChangeText={onChangeText}
+        className='flex-1 ml-2 text-black dark:text-white ml-3'
       />
     </View>
   )

@@ -6,8 +6,12 @@
   <component name="ChangeListManager">
     <list default="true" id="097c6390-df6a-40a1-8921-e291af2b8829" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/app/(tabs)/werd.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(tabs)/werd.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/notificationSettings.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/NotificationManager.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(tabs)/settings.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(tabs)/settings.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/DatabaseManager.ts" beforeDir="false" afterPath="$PROJECT_DIR$/utils/DatabaseManager.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -41,6 +45,7 @@
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_interpreter_path&quot;: &quot;C:/Users/Dell/AppData/Roaming/JetBrains/WebStorm2025.2/node/versions/24.13.0/node&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;npm.Expo Start.executor&quot;: &quot;Run&quot;,
     &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
     &quot;ts.external.directory.path&quot;: &quot;C:\\Users\\Dell\\WebstormProjects\\Werdd\\node_modules\\typescript\\lib&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
@@ -89,6 +94,11 @@
       <workItem from="1771178193213" duration="4727000" />
       <workItem from="1771186799239" duration="990000" />
       <workItem from="1771189823428" duration="23000" />
+      <workItem from="1771193439865" duration="2754000" />
+      <workItem from="1771258756969" duration="8000" />
+      <workItem from="1771272617442" duration="865000" />
+      <workItem from="1771281615784" duration="6171000" />
+      <workItem from="1771338856950" duration="3535000" />
     </task>
     <servers />
   </component>

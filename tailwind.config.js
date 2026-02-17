@@ -22,20 +22,34 @@ module.exports = {
         borderDark: '#1F1F1F',
         mutedWhite: 'rgba(255, 255, 255, 0.42)',
         successGreen: '#10B981',
-        light: {
-          100: '#D6C6FF',
-          200: '#A8B5DB',
-          300: '#9CA4AB'
-        },
-        dark: {
-          100: '#221f3d',
-          200: '#0f0d23',
-        }
+        hassibGreen: '#00FF9F',
+
+        // --- NEW LIGHT THEME COLORS ---
+        bgWhite: '#FDFBF7',      // Warm Ivory background
+        surfaceWhite: '#FFFFFF', // Pure white for cards/inputs
+        textDeep: '#1A1A1A',     // Near-black for readability
+        textSoft: '#666666',     // Muted text for sub-labels
+        borderGold: '#E5D1B0',   // Champagne/Soft gold for borders
+        goldMuted: '#FAF3E0',
       },
       fontFamily: {
+        'Amiri-Bold': ['Amiri-Bold'],
+        'Amiri-BoldItalic': ['Amiri-BoldItalic'],
+        'Amiri-Italic': ['Amiri-Italic'],
+        'Amiri-Regular': ['Amiri-Regular'],
+        'D1': ['D1'],
+        'D2': ['D2'],
+        'HAFS': ['HAFS'],
+        'J1': ['J1'],
+        'J2': ['J2'],
+        'Q1': ['Q1'],
+        'U3': ['U3'],
+        'UthmanTN1-Ver10': ['UthmanTN1-Ver10'],
+        'UthmanTN_v2-0': ['UthmanTN_v2-0'],
+        // Keeping your custom aliases below
         'amiri': ['Amiri-Regular'],
         'amiri-bold': ['Amiri-Bold'],
-        'quran': ['Hafs'], // Using Amiri as a placeholder for the Quranic font
+        'quran': ['HAFS']
       },
     },
   },
