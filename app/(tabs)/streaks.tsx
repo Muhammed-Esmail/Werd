@@ -3,12 +3,14 @@ import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, FlatList, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useStreak, MonthData, DayData } from '@/services/StreakManager';
 import { useTranslation } from 'react-i18next';
+import { useColorScheme } from "nativewind";
 
 const { width } = Dimensions.get('window');
 const MAX_GRID_WIDTH = 360; 
 const LIST_WIDTH = Math.min(width - 88, MAX_GRID_WIDTH);
 
 const StreakPage = () => {
+  const { colorScheme } = useColorScheme();
   const { t } = useTranslation();
   const { streak, incrementStreak, longest, loading, heatmapData } = useStreak(); 
   
@@ -52,7 +54,7 @@ const StreakPage = () => {
             <View 
               className="flex-1 rounded-md border border-gray-200/20 dark:border-white/5"
               style={{ 
-                backgroundColor: day.intensity > 0 ? '#eab308' : '#18181b',
+                backgroundColor: day.intensity > 0 ? '#eab308' : (colorScheme === 'dark' ? '#18181b' : '#e5e7eb'),
                 shadowColor: day.intensity > 0 ? '#eab308' : 'transparent',
                 shadowOpacity: day.intensity > 0 ? 0.2 : 0,
                 shadowRadius: 4

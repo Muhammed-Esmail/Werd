@@ -85,7 +85,7 @@ const TodayCard = () => {
         className='mt-5 h-15 p-4 bg-goldMuted dark:bg-mutedBlack border-[1px] border-gray-300 dark:border-light-300 rounded-2xl w-[80%] items-center justify-center self-center mb-7'
       >
         <View className='items-center justify-center'>
-          <Text className='font-bold tracking-wide text-[15px] text-gray-600 dark:text-mutedWhite'>{t('markCompleted')}</Text>
+          <Text className='font-bold tracking-wide text-[15px] text-gray-600'>{t('markCompleted')}</Text>
         </View>
       </TouchableOpacity>
 

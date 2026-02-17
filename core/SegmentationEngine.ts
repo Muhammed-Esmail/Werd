@@ -37,7 +37,7 @@ export class SegmentationEngine {
                 break;
             case PartitionType.SURAH:
                 totalUnits = this.TOTAL_SURAH;
-                table = 'surah';
+                table = 'surahs';
                 break;
             case PartitionType.PAGE:
             default:
@@ -137,7 +137,7 @@ export class SegmentationEngine {
                 break;
             case PartitionType.SURAH:
                 totalUnits = this.TOTAL_SURAH;
-                table = 'surah';
+                table = 'surahs';
                 break;
             case PartitionType.PAGE:
             default:

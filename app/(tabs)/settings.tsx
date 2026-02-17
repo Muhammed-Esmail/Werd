@@ -205,6 +205,11 @@ useEffect(() => {
     // @ts-ignore
 	const current_settings = await DB.getSettings() as UserSettings
 
+    if(!current_settings) {
+        console.log("No settings found, something definitely went wrong with initialization");
+        return;
+    }
+
 	setIsEnabled(current_settings.theme === 0)
 	setColorScheme(current_settings.theme === 0 ? "dark" : "light")
 	setReadingMode(current_settings.reading_mode === 1)
