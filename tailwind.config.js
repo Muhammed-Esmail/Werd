@@ -32,13 +32,23 @@ module.exports = {
         goldMuted: '#FAF3E0',
       },
       fontFamily: {
+        'Amiri-Bold': ['Amiri-Bold'],
+        'Amiri-BoldItalic': ['Amiri-BoldItalic'],
+        'Amiri-Italic': ['Amiri-Italic'],
+        'Amiri-Regular': ['Amiri-Regular'],
+        'D1': ['D1'],
+        'D2': ['D2'],
+        'HAFS': ['HAFS'],
+        'J1': ['J1'],
+        'J2': ['J2'],
+        'Q1': ['Q1'],
+        'U3': ['U3'],
+        'UthmanTN1-Ver10': ['UthmanTN1-Ver10'],
+        'UthmanTN_v2-0': ['UthmanTN_v2-0'],
+        // Keeping your custom aliases below
         'amiri': ['Amiri-Regular'],
         'amiri-bold': ['Amiri-Bold'],
-        'amiri': ['Amiri-Regular'],
-        'amiri-bold': ['Amiri-Bold'],
-        'amiri': ['Amiri-Regular'],
-        'amiri-bold': ['Amiri-Bold'],
-        'quran': ['Hafs']
+        'quran': ['HAFS']
       },
     },
   },

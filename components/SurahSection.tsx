@@ -3,7 +3,8 @@ import { SurahHeader } from './SurahHeader'
 import { Bismillah } from './Bismillah';
 import { Text, View } from 'react-native';
 import { Ayah } from './Ayah';
-
+import { useAppSettings } from '@/services/useAppSettings';
+import React from 'react';
 
 interface Props{
     segment: SurahSegment;
@@ -11,6 +12,9 @@ interface Props{
 }
 
 export const SurahSection = ({ segment, isLastSegment } : Props) => {
+    
+    const { font } =  useAppSettings();
+    console.log(font);
     
     const showBismillah = segment.surahId !== 9;
 
@@ -25,7 +29,7 @@ export const SurahSection = ({ segment, isLastSegment } : Props) => {
             
             {/* Ayaht */}
             <View className='mr-3 mb-5'>
-                <Text className='text-right text-white text-[24px] leading-[40px] mt-2 ml-3' style={{ fontFamily: 'U3', writingDirection: 'rtl', textAlign: 'justify' }}>
+                <Text className='text-right text-white text-[24px] leading-[40px] mt-2 ml-3' style={{ fontFamily: font, writingDirection: 'rtl', textAlign: 'justify' }}>
                     {segment.ayahs.map(({text, number}) => (
                         <Ayah key={number} text={text} number={number}/>
                     ))}                    

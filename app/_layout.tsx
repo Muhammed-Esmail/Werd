@@ -2,6 +2,7 @@ import { Stack } from "expo-router";
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
+import { SQLiteProvider } from 'expo-sqlite';
 import './globals.css';
 import * as DB from "@/utils/DatabaseManager"
 import * as rd from '@/types/reader_data';
@@ -27,7 +28,9 @@ export default function RootLayout() {
     const init = async () => {
       console.log("Initializing database...");
       
-      await DB.initDB(1);
+      // await DB.initDB(1);
+      await DB.ensureDailyProgressTable();
+      await DB.initDB(0);
       await DB.test(114,114);
 
       const surahs = await DB.getSurahs();
