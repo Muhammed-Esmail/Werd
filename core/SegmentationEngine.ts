@@ -101,11 +101,15 @@ export class SegmentationEngine {
 
             if(plan.length == 0) return;
 
-            const values = plan
-                .map(p => `(${p.day}, '${p.date}', ${p.start_verse}, ${p.end_verse}, ${p.start_unit_val}, ${p.end_unit_val}, 0)`)
-                .join(',');            
+            const valueRows = await Promise.all(
+                plan.map(async p => {
+                    const pageCount = await DB.getPageCount(p.start_verse, p.end_verse);
+                    return `(${p.day}, '${p.date}', ${p.start_verse}, ${p.end_verse}, ${p.start_unit_val}, ${p.end_unit_val}, 0, 0, 0, ${p.end_verse - p.start_verse + 1}, ${pageCount})`;
+                })
+            );
+            const values = valueRows.join(',');          
             await db.execAsync(`
-                INSERT INTO daily_progress (day_number, date, start_verse, end_verse, start_unit_val, end_unit_val, is_completed)
+                INSERT INTO daily_progress (day_number, date, start_verse, end_verse, start_unit_val, end_unit_val, is_completed, max_verse, max_page, total_verses, total_pages)
                 VALUES ${values}
             `);
             console.log("Inserted Werd Plan into daily_progress")
@@ -215,12 +219,16 @@ export class SegmentationEngine {
         console.log("DELETED DELETED DELETEDDELETED DELETED")
 
         if (newPlan.length > 0) {
-            const values = newPlan
-                .map(p => `(${p.day}, '${p.date}', ${p.start_verse}, ${p.end_verse}, ${p.start_unit_val}, ${p.end_unit_val}, 0)`)
-                .join(',');
+            const valueRows = await Promise.all(
+                newPlan.map(async p => {
+                    const pageCount = await DB.getPageCount(p.start_verse, p.end_verse);
+                    return `(${p.day}, '${p.date}', ${p.start_verse}, ${p.end_verse}, ${p.start_unit_val}, ${p.end_unit_val}, 0, 0, 0, ${p.end_verse - p.start_verse + 1}, ${pageCount})`;
+                })
+            );
+            const values = valueRows.join(',');
 
             await db.execAsync(`
-                INSERT INTO daily_progress (day_number, date, start_verse, end_verse, start_unit_val, end_unit_val, is_completed)
+                INSERT INTO daily_progress (day_number, date, start_verse, end_verse, start_unit_val, end_unit_val, is_completed, max_verse, max_page, total_verses, total_pages)
                 VALUES ${values}
             `);
             console.log("Inserted Werd Plan into daily_progress")

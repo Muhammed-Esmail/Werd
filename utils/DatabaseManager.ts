@@ -63,9 +63,13 @@ export interface DailyProgress {
     date: string;
     start_verse: number;
     end_verse: number;
+    total_verses: number;
+    total_pages: number;
     start_unit_val: number;
     end_unit_val: number;
     is_completed: number;
+    max_verses: number;
+    max_pages: number;
 }
 
 export const isEmpty = async (db: SQLite.SQLiteDatabase, table: string) => {
@@ -78,11 +82,12 @@ export const isEmpty = async (db: SQLite.SQLiteDatabase, table: string) => {
 const DB_NAME = "werd_db.db";
 let database: SQLite.SQLiteDatabase | null = null;
 let dbInitPromise: Promise<SQLite.SQLiteDatabase> | null = null;
-
+// @ts-ignore
 export async function getDB() {
     if (database) return database;
     if (dbInitPromise) return dbInitPromise;
-
+    
+    // @ts-ignore
     dbInitPromise = (async () => {
         try {
             const dbPath = `${FileSystem.documentDirectory}SQLite/${DB_NAME}`;
@@ -299,18 +304,21 @@ export const fetchVerses = async (l: number, r: number, partitionType: Partition
     try {
         if (partitionType === 'surah') {
             const resL = await db.getFirstAsync<{first_verse: number}>(`SELECT first_verse FROM surahs WHERE id = ?`, [l]);
+            // @ts-ignore
             const resR = await db.getFirstAsync<{last_verse: number}>(`SELECT last_verse FROM surahs WHERE id = ?`, [r]);
             if (resL) first_verse = resL.first_verse;
             if (resR) last_verse = resR.last_verse;
         }
         else if (partitionType === 'juz') {
             const resL = await db.getFirstAsync<{first_verse: number}>(`SELECT first_verse FROM juz WHERE id = ?`, [l]);
+            // @ts-ignore
             const resR = await db.getFirstAsync<{last_verse: number}>(`SELECT last_verse FROM juz WHERE id = ?`, [r]);
             if (resL) first_verse = resL.first_verse;
             if (resR) last_verse = resR.last_verse;
         }
         else if (partitionType === 'page') {
             const resL = await db.getFirstAsync<{first_verse: number}>(`SELECT first_verse FROM pages WHERE id = ?`, [l]);
+            // @ts-ignore
             const resR = await db.getFirstAsync<{last_verse: number}>(`SELECT last_verse FROM pages WHERE id = ?`, [r]);
             if (resL) first_verse = resL.first_verse;
             if (resR) last_verse = resR.last_verse;
@@ -442,6 +450,21 @@ export const getBookMarks = async () => {
     }
 }
 
+export const updateDailyProgress = async (updates: Partial<DailyProgress>, day_number: number = 1) => {
+    try {
+        const db = await getDB()
+        const fields = Object.keys(updates)
+        const values = Object.values(updates)
+        values.push(day_number)
+        const query = fields.map(field => `${field} = ?`).join(", ")
+        await db.runAsync(`UPDATE daily_progress SET ${query} WHERE day_number = ?`, values)
+        console.log("Updated werd segments")
+    }
+    catch (error) {
+        console.log(error)
+    }
+}
+
 export const getDailyProgress = async (day_number: number) => {
     try {
         const db = await getDB();
@@ -479,6 +502,32 @@ export const insertDate = async (day: number, month: number, year: number, is_do
     }
 }
 
+export const getLastStopped = async () => {
+    try {
+        const db = await getDB()
+        const today = await db.getFirstAsync(`SELECT day_number FROM daily_progress WHERE day_number = (SELECT MIN(day_number) WHERE is_completed = 0)`)
+        if (today) return today
+        console.log("Retrieved Last Stop at werd")
+    }
+    catch (error) {
+        console.log(error)
+    }
+}
+
+export const getPageCount = async (first_verse: number, last_verse: number) => {
+    try {
+        const db = await getDB()
+        // @ts-ignore
+        const res = await db.getFirstAsync<{ total_pages: number }>(
+            `SELECT COUNT(*) as total_pages FROM pages WHERE last_verse >= ? AND first_verse <= ?`,
+            [first_verse, last_verse]
+        );
+        return res.total_pages ?? 0;
+    }
+    catch (error) {
+        console.log(error)
+    }
+}
 
 export const test = async (start: number, end: number) => {
     const verses = await fetchVerses(start, end, 'surah');
