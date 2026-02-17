@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 
-const FONT_OPTIONS = ['D1', 'U3', 'Amiri-Regular', 'HAFS']; 
+const FONT_OPTIONS = ['D1', 'U3', 'Amiri-Regular', 'HAFS'];
 
 const Onboarding = () => {
     const router = useRouter();
@@ -75,7 +75,7 @@ const Onboarding = () => {
 
             console.log(`Generating plan: ${finalSettings.werd_plan_days} days, Type: ${finalSettings.partition_type}`);
             await engine.SegmentationEngine.calculatePlan(
-                finalSettings.werd_plan_days, 
+                finalSettings.werd_plan_days,
                 pType
             );
 
@@ -87,7 +87,7 @@ const Onboarding = () => {
 
     return (
         <SafeAreaView className="flex-1 bg-gray-50 dark:bg-bgBlack justify-between p-6">
-            
+
             {/* Header: Progress & Skip */}
             <View className="flex-row justify-between items-center mt-2">
                 <View className="flex-row space-x-2">
@@ -103,7 +103,7 @@ const Onboarding = () => {
             {/* Main Content Area */}
             <View className="flex-1 justify-center mt-4">
                 <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center' }} showsVerticalScrollIndicator={false}>
-                    
+
                     {/* STEP 0: Welcome & Language */}
                     {step === 0 && (
                         <View className="items-center w-full">
@@ -116,13 +116,13 @@ const Onboarding = () => {
                             </Text>
 
                             <View className="flex-row gap-4 w-full justify-center">
-                                <TouchableOpacity 
+                                <TouchableOpacity
                                     onPress={() => changeLanguage('en')}
                                     className={`w-[45%] p-4 rounded-2xl border-2 items-center ${i18n.language === 'en' ? 'bg-primaryGold border-primaryGold' : 'border-gray-300 dark:border-gray-700'}`}
                                 >
                                     <Text className={`font-bold text-lg ${i18n.language === 'en' ? 'text-white' : 'text-gray-600 dark:text-gray-300'}`}>English</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity 
+                                <TouchableOpacity
                                     onPress={() => changeLanguage('ar')}
                                     className={`w-[45%] p-4 rounded-2xl border-2 items-center ${i18n.language === 'ar' ? 'bg-primaryGold border-primaryGold' : 'border-gray-300 dark:border-gray-700'}`}
                                 >
@@ -137,7 +137,7 @@ const Onboarding = () => {
                         <View className="items-center w-full">
                             <MaterialIcons name="format-paint" size={60} color="#D4AF37" />
                             <Text className="text-2xl font-bold text-gray-900 dark:text-white mt-4 mb-8">Appearance</Text>
-                            
+
                             {/* Dark Mode */}
                             <View className="flex-row items-center justify-between w-full bg-white dark:bg-surfaceBlack p-5 rounded-2xl border border-gray-200 dark:border-white/10 mb-4">
                                 <View className="flex-row items-center">
@@ -156,7 +156,7 @@ const Onboarding = () => {
                             <Text className="self-start ml-2 mb-2 text-gray-500 font-bold uppercase text-xs tracking-widest">Quran Font</Text>
                             <View className="w-full flex-row flex-wrap justify-between">
                                 {FONT_OPTIONS.map(font => (
-                                    <TouchableOpacity 
+                                    <TouchableOpacity
                                         key={font}
                                         onPress={() => setSelectedFont(font)}
                                         className={`w-[48%] mb-3 p-3 rounded-xl border-2 items-center justify-center ${selectedFont === font ? 'border-primaryGold bg-goldGlow/20' : 'border-gray-200 dark:border-white/5'}`}
@@ -177,14 +177,14 @@ const Onboarding = () => {
 
                             {/* Mode Selection */}
                             <View className="flex-row w-full gap-4 mb-8">
-                                <TouchableOpacity 
+                                <TouchableOpacity
                                     onPress={() => setReadingMode(0)}
                                     className={`flex-1 p-4 rounded-2xl border-2 items-center ${readingMode === 0 ? 'border-primaryGold bg-goldGlow/10' : 'border-gray-200 dark:border-white/10'}`}
                                 >
                                     <MaterialIcons name="smartphone" size={30} color={readingMode === 0 ? '#D4AF37' : 'gray'} />
                                     <Text className={`mt-2 font-bold ${readingMode === 0 ? 'text-primaryGold' : 'text-gray-500'}`}>Vertical Scroll</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity 
+                                <TouchableOpacity
                                     onPress={() => setReadingMode(1)}
                                     className={`flex-1 p-4 rounded-2xl border-2 items-center ${readingMode === 1 ? 'border-primaryGold bg-goldGlow/10' : 'border-gray-200 dark:border-white/10'}`}
                                 >
@@ -197,7 +197,7 @@ const Onboarding = () => {
                             <Text className="self-start ml-2 mb-2 text-gray-500 font-bold uppercase text-xs tracking-widest">Divide Werd By</Text>
                             <View className="w-full bg-white dark:bg-surfaceBlack rounded-2xl border border-gray-200 dark:border-white/10 overflow-hidden">
                                 {['page', 'surah', 'juz'].map((type, index) => (
-                                    <TouchableOpacity 
+                                    <TouchableOpacity
                                         key={type}
                                         onPress={() => setPartitionType(type)}
                                         className={`p-4 flex-row justify-between items-center ${index !== 2 ? 'border-b border-gray-100 dark:border-white/5' : ''} ${partitionType === type ? 'bg-goldGlow/10' : ''}`}
@@ -220,13 +220,16 @@ const Onboarding = () => {
                             <Text className="text-gray-500 mb-8 text-center px-4">
                                 In how many days do you want to complete the Quran?
                             </Text>
-                            
+
                             <View className="flex-row flex-wrap justify-center gap-4">
                                 {[7, 30, 60, 90].map((days) => (
-                                    <TouchableOpacity 
-                                        key={days}
+                                    <TouchableOpacity
+                                        key={days.toString()}
                                         onPress={() => setPlanDays(days)}
-                                        className={`w-[40%] p-5 rounded-2xl border-2 items-center ${planDays === days ? 'bg-primaryGold border-primaryGold shadow-lg shadow-gold/20' : 'bg-white dark:bg-surfaceBlack border-gray-200 dark:border-white/10'}`}
+                                        className={`w-[40%] p-5 rounded-2xl border-2 items-center ${planDays === days
+                                            ? 'bg-primaryGold border-primaryGold shadow-lg shadow-primaryGold/20'
+                                            : 'bg-white dark:bg-surfaceBlack border-gray-200 dark:border-white/10'
+                                            }`}
                                     >
                                         <Text className={`font-bold text-xl ${planDays === days ? 'text-white' : 'text-gray-600 dark:text-gray-300'}`}>
                                             {days} Days
@@ -248,15 +251,15 @@ const Onboarding = () => {
 
             {/* Footer Navigation */}
             <View className="w-full mt-4">
-                <TouchableOpacity 
+                <TouchableOpacity
                     onPress={() => step < 3 ? setStep(step + 1) : handleFinish()}
-                    className="w-full bg-primaryGold p-4 rounded-xl items-center shadow-md shadow-gold/20"
+                    className="w-full bg-primaryGold p-4 rounded-xl items-center shadow-md shadow-primaryGold/20"
                 >
                     <Text className="text-white font-bold text-lg">
                         {step === 3 ? "Start Journey" : "Next"}
                     </Text>
                 </TouchableOpacity>
-                
+
                 {step > 0 && (
                     <TouchableOpacity onPress={() => setStep(step - 1)} className="mt-4 items-center py-2">
                         <Text className="text-gray-500 dark:text-gray-400 font-medium">Back</Text>
