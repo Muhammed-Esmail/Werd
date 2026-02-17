@@ -18,12 +18,10 @@ export interface UserSettings {
 	currentWerd: number;
 }
 
-export interface WerdSegment {
-	id: number;
+export interface UserProgress {
 	first_verse: number;
 	last_verse: number;
 	date: string;
-    done: number;
 }
 
 export interface Bookmark {
@@ -119,6 +117,26 @@ export async function getDB() {
     return dbInitPromise;
 }
 
+export async function ensureDailyProgressTable() {
+    try {
+        const db = await getDB();
+        await db.execAsync(`
+            CREATE TABLE IF NOT EXISTS daily_progress (
+                day_number INTEGER PRIMARY KEY,
+                date TEXT,
+                start_verse INTEGER,
+                end_verse INTEGER,
+                start_unit_val INTEGER,
+                end_unit_val INTEGER,
+                is_completed INTEGER DEFAULT 0
+            );
+        `);
+        console.log("Checked daily_progress table.");
+    } catch (e) {
+        console.error("Error creating daily_progress table:", e);
+    }
+}
+
 export async function initDB(clear: number = 0) {
     try {
         let db = await getDB();
@@ -168,16 +186,22 @@ export const fetchQuranText = async (params: rp.ReaderParams): Promise<qd.Readin
 
         if (params.sessionType === "daily_werd") {
             const settings = await getSettings() as UserSettings;
-			console.log("settings")
-			console.log(settings)
+            
+            if (!settings) {
+                console.log("No settings found");
+                return { sessionId: "-1", sessionType: params.sessionType, segments: [] };
+            }
 
             const currentWerdId = settings.currentWerd;
-			const segment = await getWerdSegment(currentWerdId) as WerdSegment
-			console.log("werd segment")
-			console.log(segment)
+            const segment = await getWerdSegment(currentWerdId) as WerdSegment;
 
-			verses = await fetchVerses(segment.first_verse, segment.last_verse, 'verse');
-        } 
+            if (segment) {
+                verses = await fetchVerses(segment.start_verse, segment.end_verse, 'verse');
+            } else {
+                console.log("No segment found for today");
+                return { sessionId: "-1", sessionType: params.sessionType, segments: [] };
+            }
+        }
 		else if(params.sessionType === "full_surah") {
 			// @ts-ignore
             verses = await fetchVerses(params.surahId, params.surahId, 'surah');
@@ -185,43 +209,45 @@ export const fetchQuranText = async (params: rp.ReaderParams): Promise<qd.Readin
 
         const segments: qd.SurahSegment[] = [];
         
-		let curSurah = verses[0].surah_id
-		let ayahs: qd.AyahData[] = []
-        for (let i = 0; i < verses.length; i++) {
-		
-			if (verses[i].surah_id === curSurah) {
-				ayahs.push({
-					number: verses[i].relative_id,
-					text: verses[i].text
-				});
-			}
-			else {
-				segments.push({
-						surahId: curSurah,
-						surahNameEnglish: "-1",
-						surahNameArabic: "-1",
-						surahType: 'Meccan',
-						ayahs: ayahs
-					}
-				);
-				ayahs = [{
-                    number: verses[i].relative_id,
-                    text: verses[i].text
-                }]
-				++curSurah
-			}
+        if (verses.length > 0) {
+            let curSurah = verses[0].surah_id
+            let ayahs: qd.AyahData[] = []
+            for (let i = 0; i < verses.length; i++) {
+            
+                if (verses[i].surah_id === curSurah) {
+                    ayahs.push({
+                        number: verses[i].relative_id,
+                        text: verses[i].text
+                    });
+                }
+                else {
+                    segments.push({
+                            surahId: curSurah,
+                            surahNameEnglish: "-1",
+                            surahNameArabic: "-1",
+                            surahType: 'Meccan',
+                            ayahs: ayahs
+                        }
+                    );
+                    ayahs = [{
+                        number: verses[i].relative_id,
+                        text: verses[i].text
+                    }]
+                    curSurah = verses[i].surah_id 
+                }
+            }
+
+            if (ayahs.length > 0) {
+                segments.push({
+                    surahId: curSurah,
+                    surahNameEnglish: "-1",
+                    surahNameArabic: "-1",
+                    surahType: 'Meccan',
+                    ayahs: ayahs
+                });
+            }
         }
 
-		if (ayahs.length > 0) {
-			segments.push({
-				surahId: curSurah,
-				surahNameEnglish: "-1",
-				surahNameArabic: "-1",
-				surahType: 'Meccan',
-				ayahs: ayahs
-			});
-		}
-		
         return {
             sessionId: "-1",
             sessionType: params.sessionType,
@@ -315,7 +341,11 @@ export const updateSettings = async(updates: Partial<UserSettings>, id: number =
 export const getSettings = async (id: number = 1) => {
     try {
         const db = await getDB();
+<<<<<<< feature/StreakManager
         const data = await db.getFirstAsync(`SELECT * FROM user_settings WHERE id = ?`, [id]) as UserSettings
+=======
+        const data = await db.getFirstAsync(`SELECT * FROM user_settings WHERE id = ?`, [id]) as UserSettings;
+>>>>>>> main
         return data || null;
     } catch (error) {
         console.error("getSettings error:", error);
@@ -323,26 +353,13 @@ export const getSettings = async (id: number = 1) => {
     }
 }
 
-export const addProgress = async (first_verse: number, last_verse: number, date: string) => {
-	try {
-		const db = await getDB()
-		await db.runAsync(`INSERT INTO werd_segments (first_verse, last_verse, date) VALUES (?, ?, ?)`, [first_verse, last_verse, date])
-		console.log("Added user progress")
-	}
-	catch (error) {
-		console.log(error)
-	}
-}
-
 export const getUserProgress = async () => {
+    // THIS IS STILL IN TESTING, NOT FINALIZED
 	try {
 		const db = await getDB()
-		const data = await db.getAllAsync(`SELECT * FROM werd_segments`) as UserProgress[]
-		if (data) {
-			console.log("Fetched user progress")
-			return data
-		}
-		else return []
+        await ensureDailyProgressTable();
+		const data = await db.getAllAsync(`SELECT * FROM daily_progress WHERE is_completed = 1`) 
+		return data
 	}
 	catch (error) {
 		console.log(error)
@@ -382,7 +399,7 @@ export const addBookMark = async (verse: number) => {
 	try {
 		const db = await getDB()
 		await db.runAsync(`INSERT INTO bookmarks (verse_id) VALUES (?)`, [verse])
-		console.log("Added user progress")
+		console.log("Added user bookmark")
 	}
 	catch (error) {
 		console.log(error)
@@ -394,7 +411,7 @@ export const getBookMarks = async () => {
 		const db = await getDB()
 		const data = await db.getAllAsync(`SELECT * FROM bookmarks`) as Bookmark[]
 		if (data) {
-			console.log("Fetched user progress")
+            console.log("Fetched user bookmarks")
 			return data
 		}
 		else return []
@@ -513,22 +530,4 @@ export const test = async (start: number, end: number) => {
 	} else {
 		console.log("No verses found");
 	}
-}
-
-export const resetWerdSegments = async () => {
-    try {
-        const db = await getDB();
-        
-        await db.withTransactionAsync(async () => {
-            await db.runAsync(`DELETE FROM werd_segments`);
-            await db.runAsync(`
-                INSERT INTO werd_segments (id, first_verse, last_verse, date, done) 
-                VALUES (?, ?, ?, ?)
-            `, [1, 1, 2, "8/8/2008", 0]);
-        });
-        
-        console.log("✅ Werd segments reset");
-    } catch (error) {
-        console.error("❌ Error resetting werd segments:", error);
-    }
 }

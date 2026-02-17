@@ -1,55 +1,29 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, FlatList, Dimensions, ViewToken, ListRenderItem } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useStreak } from '@/services/StreakManager';
+import { useStreak, MonthData, DayData } from '@/services/StreakManager';
 import { useTranslation } from 'react-i18next';
 
-interface DayData {
-  intensity: number;
-}
-
-interface MonthData {
-  id: string;
-  label: string;
-  days: DayData[];
-}
-
 const { width } = Dimensions.get('window');
-
 const MAX_GRID_WIDTH = 360; 
 const LIST_WIDTH = Math.min(width - 88, MAX_GRID_WIDTH);
 
-const generateMockMonths = (t: any): MonthData[] => {
-  const months: MonthData[] = [];
-  const today = new Date();
-  const MONTH_NAMES = [
-    t('jan'), t('feb'), t('mar'), t('apr'), 
-    t('may'), t('jun'), t('jul'), t('aug'), 
-    t('sep'), t('oct'), t('nov'), t('dec')
-  ];
-  
-  for (let i = 0; i < 6; i++) {
-    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-    const monthName = MONTH_NAMES[d.getMonth()];
-    const year = d.getFullYear();
-    const daysInMonth = new Date(year, d.getMonth() + 1, 0).getDate();
-    
-    const days: DayData[] = Array.from({ length: daysInMonth }, () => ({
-      intensity: Math.random() > 0.4 ?  1 : 0, 
-    }));
-
-    months.push({ id: `${monthName}-${year}`, label: `${monthName} ${year}`, days });
-  }
-  return months.reverse(); 
-};
-
 const StreakPage = () => {
   const { t } = useTranslation();
-  const { streak, incrementStreak, longest, loading } = useStreak();
-  const MOCK_MONTHS = React.useMemo(() => generateMockMonths(t), [t]);
-  const longestStreak = longest; 
-  const [currentMonthIndex, setCurrentMonthIndex] = useState(MOCK_MONTHS.length - 1);
+  const { streak, incrementStreak, longest, loading, heatmapData } = useStreak(); 
+  
+  const [currentMonthIndex, setCurrentMonthIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
+
+  useEffect(() => {
+    if (heatmapData.length > 0) {
+        setCurrentMonthIndex(heatmapData.length - 1);
+        
+        setTimeout(() => {
+             flatListRef.current?.scrollToIndex({ index: heatmapData.length - 1, animated: false });
+        }, 100);
+    }
+  }, [heatmapData.length]);
 
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     if (viewableItems.length > 0 && viewableItems[0].index !== null) {
@@ -58,7 +32,7 @@ const StreakPage = () => {
   }).current;
 
   const scrollToIndex = (index: number) => {
-    if (index >= 0 && index < MOCK_MONTHS.length) {
+    if (index >= 0 && index < heatmapData.length) {
       flatListRef.current?.scrollToIndex({ index, animated: true });
     }
   };
@@ -78,7 +52,10 @@ const StreakPage = () => {
             <View 
               className="flex-1 rounded-md border border-gray-200/20 dark:border-white/5"
               style={{ 
-                backgroundColor: day.intensity === 0 ? '#f4f4f5' : '#eab308' 
+                backgroundColor: day.intensity > 0 ? '#eab308' : '#18181b',
+                shadowColor: day.intensity > 0 ? '#eab308' : 'transparent',
+                shadowOpacity: day.intensity > 0 ? 0.2 : 0,
+                shadowRadius: 4
               }}
             />
           </View>
@@ -116,7 +93,7 @@ const StreakPage = () => {
 
           <View className="flex-1 bg-white dark:bg-zinc-900 p-5 rounded-3xl border border-gray-200 dark:border-zinc-800 items-center justify-center">
             <Text className="text-gray-500 dark:text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-1 text-center">{t('longestStreak')}</Text>
-            <Text className="text-4xl font-bold text-gray-900 dark:text-zinc-200 text-center">{longestStreak}</Text>
+            <Text className="text-4xl font-bold text-gray-900 dark:text-zinc-200 text-center">{longest}</Text>
             <Text className="text-yellow-600/70 text-[10px] font-medium mt-1 text-center">{t('days')}</Text>
           </View>
         </View>
@@ -135,11 +112,12 @@ const StreakPage = () => {
         <View className="bg-white dark:bg-zinc-900/50 pt-6 pb-6 rounded-[32px] border border-gray-200 dark:border-zinc-800/50 mb-8 items-center w-full">
           
           <View 
-            style={{ width: LIST_WIDTH + 10 }}
+            style={{ width: LIST_WIDTH + 10 }} 
             className="flex-row justify-between items-center mb-2"
           >
             <TouchableOpacity 
               onPress={() => scrollToIndex(currentMonthIndex - 1)}
+              disabled={currentMonthIndex === 0}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Text className={`text-2xl ${currentMonthIndex === 0 ? 'text-gray-300 dark:text-zinc-700' : 'text-yellow-500'}`}>‹</Text>
@@ -149,15 +127,16 @@ const StreakPage = () => {
             
             <TouchableOpacity 
               onPress={() => scrollToIndex(currentMonthIndex + 1)}
+              disabled={currentMonthIndex === heatmapData.length - 1}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Text className={`text-2xl ${currentMonthIndex === MOCK_MONTHS.length - 1 ? 'text-gray-300 dark:text-zinc-700' : 'text-yellow-500'}`}>›</Text>
+              <Text className={`text-2xl ${currentMonthIndex === heatmapData.length - 1 ? 'text-gray-300 dark:text-zinc-700' : 'text-yellow-500'}`}>›</Text>
             </TouchableOpacity>
           </View>
           
           <FlatList
             ref={flatListRef}
-            data={MOCK_MONTHS}
+            data={heatmapData}
             keyExtractor={(item) => item.id}
             horizontal
             pagingEnabled
@@ -172,7 +151,6 @@ const StreakPage = () => {
             })}
             onViewableItemsChanged={onViewableItemsChanged}
             viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
-            initialScrollIndex={MOCK_MONTHS.length - 1}
             onScrollToIndexFailed={(info) => {
               const wait = new Promise(resolve => setTimeout(resolve, 500));
               wait.then(() => {
