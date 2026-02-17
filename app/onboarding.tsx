@@ -8,6 +8,8 @@ import * as DB from '@/utils/DatabaseManager';
 import * as engine from "@/core/SegmentationEngine";
 import i18n from '@/i18n';
 import { useTranslation } from 'react-i18next';
+import * as Updates from 'expo-updates';
+import RNRestart from 'react-native-restart';
 
 const { width } = Dimensions.get('window');
 
@@ -18,14 +20,11 @@ const Onboarding = () => {
     const { colorScheme, setColorScheme } = useColorScheme();
     const { t } = useTranslation();
 
-    // Steps: 0=Intro/Lang, 1=Appearance, 2=Reading Prefs, 3=Goal
     const [step, setStep] = useState(0);
-
-    // State for all settings
     const [planDays, setPlanDays] = useState(30);
     const [selectedFont, setSelectedFont] = useState('D1');
-    const [readingMode, setReadingMode] = useState(0); // 0: Scroll, 1: Page
-    const [partitionType, setPartitionType] = useState('page'); // 'page', 'surah', 'juz'
+    const [readingMode, setReadingMode] = useState(0);
+    const [partitionType, setPartitionType] = useState('page');
 
     const toggleTheme = async (val: boolean) => {
         const newTheme = val ? 'dark' : 'light';
@@ -37,6 +36,9 @@ const Onboarding = () => {
         const isRTL = lang === 'ar';
         I18nManager.allowRTL(isRTL);
         I18nManager.forceRTL(isRTL);
+        await (async () => {
+            return await Updates.reloadAsync();
+        })();
     };
 
     const handleSkip = async () => {
@@ -96,7 +98,7 @@ const Onboarding = () => {
                     ))}
                 </View>
                 <TouchableOpacity onPress={handleSkip}>
-                    <Text className="text-gray-400 dark:text-gray-500 font-medium">Skip Setup</Text>
+                    <Text className="text-gray-400 dark:text-gray-500 font-medium">{t('skipSetup')}</Text>
                 </TouchableOpacity>
             </View>
 
@@ -109,10 +111,10 @@ const Onboarding = () => {
                         <View className="items-center w-full">
                             <MaterialIcons name="menu-book" size={80} color="#D4AF37" />
                             <Text className="text-3xl font-bold text-gray-900 dark:text-white mt-6 text-center">
-                                Welcome to Werd
+                                {t('welcomeToWerd')}
                             </Text>
                             <Text className="text-gray-500 dark:text-gray-400 text-center mt-2 mb-8 px-4">
-                                Choose your preferred language. You can change everything later in Settings.
+                                {t('onboardingLanguageHint')}
                             </Text>
 
                             <View className="flex-row gap-4 w-full justify-center">
@@ -120,13 +122,13 @@ const Onboarding = () => {
                                     onPress={() => changeLanguage('en')}
                                     className={`w-[45%] p-4 rounded-2xl border-2 items-center ${i18n.language === 'en' ? 'bg-primaryGold border-primaryGold' : 'border-gray-300 dark:border-gray-700'}`}
                                 >
-                                    <Text className={`font-bold text-lg ${i18n.language === 'en' ? 'text-white' : 'text-gray-600 dark:text-gray-300'}`}>English</Text>
+                                    <Text className={`font-bold text-lg ${i18n.language === 'en' ? 'text-white' : 'text-gray-600 dark:text-gray-300'}`}>{t('english')}</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     onPress={() => changeLanguage('ar')}
                                     className={`w-[45%] p-4 rounded-2xl border-2 items-center ${i18n.language === 'ar' ? 'bg-primaryGold border-primaryGold' : 'border-gray-300 dark:border-gray-700'}`}
                                 >
-                                    <Text className={`font-bold text-lg ${i18n.language === 'ar' ? 'text-white' : 'text-gray-600 dark:text-gray-300'}`}>العربية</Text>
+                                    <Text className={`font-bold text-lg ${i18n.language === 'ar' ? 'text-white' : 'text-gray-600 dark:text-gray-300'}`}>{t('arabic')}</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -136,13 +138,13 @@ const Onboarding = () => {
                     {step === 1 && (
                         <View className="items-center w-full">
                             <MaterialIcons name="format-paint" size={60} color="#D4AF37" />
-                            <Text className="text-2xl font-bold text-gray-900 dark:text-white mt-4 mb-8">Appearance</Text>
+                            <Text className="text-2xl font-bold text-gray-900 dark:text-white mt-4 mb-8">{t('appearance')}</Text>
 
                             {/* Dark Mode */}
                             <View className="flex-row items-center justify-between w-full bg-white dark:bg-surfaceBlack p-5 rounded-2xl border border-gray-200 dark:border-white/10 mb-4">
                                 <View className="flex-row items-center">
                                     <Ionicons name="moon" size={20} color={colorScheme === 'dark' ? '#D4AF37' : 'gray'} />
-                                    <Text className="text-lg font-medium text-gray-900 dark:text-white ml-3">Dark Mode</Text>
+                                    <Text className="text-lg font-medium text-gray-900 dark:text-white ml-3">{t('darkMode')}</Text>
                                 </View>
                                 <Switch
                                     trackColor={{ false: '#767577', true: '#D4AF37' }}
@@ -153,7 +155,7 @@ const Onboarding = () => {
                             </View>
 
                             {/* Font Selection */}
-                            <Text className="self-start ml-2 mb-2 text-gray-500 font-bold uppercase text-xs tracking-widest">Quran Font</Text>
+                            <Text className="self-start ml-2 mb-2 text-gray-500 font-bold uppercase text-xs tracking-widest">{t('quranFont')}</Text>
                             <View className="w-full flex-row flex-wrap justify-between">
                                 {FONT_OPTIONS.map(font => (
                                     <TouchableOpacity
@@ -173,7 +175,7 @@ const Onboarding = () => {
                     {step === 2 && (
                         <View className="items-center w-full">
                             <MaterialIcons name="chrome-reader-mode" size={60} color="#D4AF37" />
-                            <Text className="text-2xl font-bold text-gray-900 dark:text-white mt-4 mb-8">Reading Style</Text>
+                            <Text className="text-2xl font-bold text-gray-900 dark:text-white mt-4 mb-8">{t('readingStyle')}</Text>
 
                             {/* Mode Selection */}
                             <View className="flex-row w-full gap-4 mb-8">
@@ -182,19 +184,19 @@ const Onboarding = () => {
                                     className={`flex-1 p-4 rounded-2xl border-2 items-center ${readingMode === 0 ? 'border-primaryGold bg-goldGlow/10' : 'border-gray-200 dark:border-white/10'}`}
                                 >
                                     <MaterialIcons name="smartphone" size={30} color={readingMode === 0 ? '#D4AF37' : 'gray'} />
-                                    <Text className={`mt-2 font-bold ${readingMode === 0 ? 'text-primaryGold' : 'text-gray-500'}`}>Vertical Scroll</Text>
+                                    <Text className={`mt-2 font-bold ${readingMode === 0 ? 'text-primaryGold' : 'text-gray-500'}`}>{t('verticalScroll')}</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     onPress={() => setReadingMode(1)}
                                     className={`flex-1 p-4 rounded-2xl border-2 items-center ${readingMode === 1 ? 'border-primaryGold bg-goldGlow/10' : 'border-gray-200 dark:border-white/10'}`}
                                 >
                                     <MaterialIcons name="menu-book" size={30} color={readingMode === 1 ? '#D4AF37' : 'gray'} />
-                                    <Text className={`mt-2 font-bold ${readingMode === 1 ? 'text-primaryGold' : 'text-gray-500'}`}>Paged Mode</Text>
+                                    <Text className={`mt-2 font-bold ${readingMode === 1 ? 'text-primaryGold' : 'text-gray-500'}`}>{t('pagedMode')}</Text>
                                 </TouchableOpacity>
                             </View>
 
                             {/* Partition Selection */}
-                            <Text className="self-start ml-2 mb-2 text-gray-500 font-bold uppercase text-xs tracking-widest">Divide Werd By</Text>
+                            <Text className="self-start ml-2 mb-2 text-gray-500 font-bold uppercase text-xs tracking-widest">{t('divideWerdBy')}</Text>
                             <View className="w-full bg-white dark:bg-surfaceBlack rounded-2xl border border-gray-200 dark:border-white/10 overflow-hidden">
                                 {['page', 'surah', 'juz'].map((type, index) => (
                                     <TouchableOpacity
@@ -203,7 +205,7 @@ const Onboarding = () => {
                                         className={`p-4 flex-row justify-between items-center ${index !== 2 ? 'border-b border-gray-100 dark:border-white/5' : ''} ${partitionType === type ? 'bg-goldGlow/10' : ''}`}
                                     >
                                         <Text className={`capitalize text-base ${partitionType === type ? 'text-primaryGold font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
-                                            By {type}
+                                            {t(`by_${type}`)}
                                         </Text>
                                         {partitionType === type && <Ionicons name="checkmark-circle" size={20} color="#D4AF37" />}
                                     </TouchableOpacity>
@@ -216,9 +218,9 @@ const Onboarding = () => {
                     {step === 3 && (
                         <View className="items-center w-full">
                             <MaterialIcons name="track-changes" size={80} color="#D4AF37" />
-                            <Text className="text-2xl font-bold text-gray-900 dark:text-white mt-6 text-center">Set Your Goal</Text>
+                            <Text className="text-2xl font-bold text-gray-900 dark:text-white mt-6 text-center">{t('setYourGoal')}</Text>
                             <Text className="text-gray-500 mb-8 text-center px-4">
-                                In how many days do you want to complete the Quran?
+                                {t('goalDescription')}
                             </Text>
 
                             <View className="flex-row flex-wrap justify-center gap-4">
@@ -247,7 +249,7 @@ const Onboarding = () => {
                                             }
                                         >
                                             <Text className={`font-bold text-xl ${isSelected ? 'text-white' : 'text-gray-600 dark:text-gray-300'}`}>
-                                                {days} Days
+                                                {t('daysCount', { count: days })}
                                             </Text>
                                         </TouchableOpacity>
                                     );
@@ -256,7 +258,7 @@ const Onboarding = () => {
 
                             <View className="mt-8 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-900/30">
                                 <Text className="text-blue-600 dark:text-blue-400 text-center text-xs">
-                                    Based on your selection, you will read roughly {Math.ceil(604 / planDays)} pages per day.
+                                    {t('pagesPerDayHint', { count: Math.ceil(604 / planDays) })}
                                 </Text>
                             </View>
                         </View>
@@ -279,13 +281,13 @@ const Onboarding = () => {
                     }}
                 >
                     <Text className="text-white font-bold text-lg">
-                        {step === 3 ? "Start Journey" : "Next"}
+                        {step === 3 ? t('startJourney') : t('next')}
                     </Text>
                 </TouchableOpacity>
 
                 {step > 0 && (
                     <TouchableOpacity onPress={() => setStep(step - 1)} className="mt-4 items-center py-2">
-                        <Text className="text-gray-500 dark:text-gray-400 font-medium">Back</Text>
+                        <Text className="text-gray-500 dark:text-gray-400 font-medium">{t('back')}</Text>
                     </TouchableOpacity>
                 )}
             </View>
