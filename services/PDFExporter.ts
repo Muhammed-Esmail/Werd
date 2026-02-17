@@ -116,7 +116,7 @@ const generateHTML = async (session: ReadingSession): Promise<string> => {
                     }
                 </div>
 
-                ${segment.surahId !== 9 && segment.ayahs[0]?.number === 1 ? `
+                ${segment.surahId !== 9 && segment.surahId !== 1 && segment.ayahs[0]?.number === 1 ? `
                     <div class="bismillah">بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ</div>
                 ` : ''}
 
