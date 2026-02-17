@@ -181,9 +181,6 @@ export async function initDB(clear: number = 0) {
             console.log("setup_completed column already exists, skipping...");
         }
 
-        // Add Notification Columns if missing
-        await addNotificationColumns();
-
         if (await isEmpty(db, "streaks")) {
             await db.runAsync(`INSERT INTO streaks VALUES (?, ?, ?, ?)`, [1, 0, 0, '9/9/2009'])
         }
@@ -505,7 +502,9 @@ export const insertDate = async (day: number, month: number, year: number, is_do
 export const getLastStopped = async () => {
     try {
         const db = await getDB()
-        const today = await db.getFirstAsync(`SELECT day_number FROM daily_progress WHERE day_number = (SELECT MIN(day_number) WHERE is_completed = 0)`)
+        const today = await db.getFirstAsync(`SELECT day_number FROM daily_progress WHERE day_number = (
+                SELECT MIN(day_number) FROM daily_progress WHERE is_completed = 0
+            )`)
         if (today) return today
         console.log("Retrieved Last Stop at werd")
     }
@@ -562,90 +561,90 @@ export const resetWerdSegments = async () => {
     }
 }
 
-export const addNotificationColumns = async () => {
-    try {
-        const db = await getDB();
+// export const addNotificationColumns = async () => {
+//     try {
+//         const db = await getDB();
 
-        const tableInfo = await db.getAllAsync(`PRAGMA table_info(user_settings)`);
-        const columns = tableInfo.map((col: any) => col.name);
+//         const tableInfo = await db.getAllAsync(`PRAGMA table_info(user_settings)`);
+//         const columns = tableInfo.map((col: any) => col.name);
 
-        if (!columns.includes('notification_enabled')) {
-            await db.execAsync(`ALTER TABLE user_settings ADD COLUMN notification_enabled INTEGER DEFAULT 0;`);
-            console.log('✅ Added notification_enabled column');
-        }
+//         if (!columns.includes('notification_enabled')) {
+//             await db.execAsync(`ALTER TABLE user_settings ADD COLUMN notification_enabled INTEGER DEFAULT 0;`);
+//             console.log('✅ Added notification_enabled column');
+//         }
 
-        if (!columns.includes('notification_time')) {
-            await db.execAsync(`ALTER TABLE user_settings ADD COLUMN notification_time TEXT DEFAULT 'evening';`);
-            console.log('✅ Added notification_time column');
-        }
+//         if (!columns.includes('notification_time')) {
+//             await db.execAsync(`ALTER TABLE user_settings ADD COLUMN notification_time TEXT DEFAULT 'evening';`);
+//             console.log('✅ Added notification_time column');
+//         }
 
-        if (!columns.includes('notification_hour')) {
-            await db.execAsync(`ALTER TABLE user_settings ADD COLUMN notification_hour INTEGER DEFAULT 20;`);
-            console.log('✅ Added notification_hour column');
-        }
+//         if (!columns.includes('notification_hour')) {
+//             await db.execAsync(`ALTER TABLE user_settings ADD COLUMN notification_hour INTEGER DEFAULT 20;`);
+//             console.log('✅ Added notification_hour column');
+//         }
 
-        if (!columns.includes('notification_minute')) {
-            await db.execAsync(`ALTER TABLE user_settings ADD COLUMN notification_minute INTEGER DEFAULT 0;`);
-            console.log('✅ Added notification_minute column');
-        }
+//         if (!columns.includes('notification_minute')) {
+//             await db.execAsync(`ALTER TABLE user_settings ADD COLUMN notification_minute INTEGER DEFAULT 0;`);
+//             console.log('✅ Added notification_minute column');
+//         }
 
-    } catch (error) {
-        console.error('❌ Failed to add notification columns:', error);
-    }
-};
+//     } catch (error) {
+//         console.error('❌ Failed to add notification columns:', error);
+//     }
+// };
 
-export const updateNotificationSettings = async (
-    enabled: boolean,
-    time: string,
-    hour: number,
-    minute: number,
-    userId: number = 1
-) => {
-    try {
-        const db = await getDB();
-        await db.runAsync(`
-            UPDATE user_settings 
-            SET notification_enabled = ?,
-                notification_time = ?,
-                notification_hour = ?,
-                notification_minute = ?
-            WHERE id = ?
-        `, [enabled ? 1 : 0, time, hour, minute, userId]);
+// export const updateNotificationSettings = async (
+//     enabled: boolean,
+//     time: string,
+//     hour: number,
+//     minute: number,
+//     userId: number = 1
+// ) => {
+//     try {
+//         const db = await getDB();
+//         await db.runAsync(`
+//             UPDATE user_settings 
+//             SET notification_enabled = ?,
+//                 notification_time = ?,
+//                 notification_hour = ?,
+//                 notification_minute = ?
+//             WHERE id = ?
+//         `, [enabled ? 1 : 0, time, hour, minute, userId]);
 
-        console.log('✅ Notification settings saved to database');
-    } catch (error) {
-        console.error('❌ Failed to save notification settings:', error);
-        throw error;
-    }
-};
+//         console.log('✅ Notification settings saved to database');
+//     } catch (error) {
+//         console.error('❌ Failed to save notification settings:', error);
+//         throw error;
+//     }
+// };
 
-export const getNotificationSettings = async (userId: number = 1) => {
-    try {
-        const db = await getDB();
+// export const getNotificationSettings = async (userId: number = 1) => {
+//     try {
+//         const db = await getDB();
 
-        const settings = await db.getFirstAsync(
-            `SELECT notification_enabled, notification_time, notification_hour, notification_minute FROM user_settings WHERE id = ?`,
-            [userId]
-        );
+//         const settings = await db.getFirstAsync(
+//             `SELECT notification_enabled, notification_time, notification_hour, notification_minute FROM user_settings WHERE id = ?`,
+//             [userId]
+//         );
 
-        if (settings) {
-            return settings;
-        }
+//         if (settings) {
+//             return settings;
+//         }
 
-        return {
-            notification_enabled: 0,
-            notification_time: 'evening',
-            notification_hour: 20,
-            notification_minute: 0
-        };
+//         return {
+//             notification_enabled: 0,
+//             notification_time: 'evening',
+//             notification_hour: 20,
+//             notification_minute: 0
+//         };
 
-    } catch (error) {
-        console.error('❌ Failed to load notification settings:', error);
-        return {
-            notification_enabled: 0,
-            notification_time: 'evening',
-            notification_hour: 20,
-            notification_minute: 0
-        };
-    }
-};
+//     } catch (error) {
+//         console.error('❌ Failed to load notification settings:', error);
+//         return {
+//             notification_enabled: 0,
+//             notification_time: 'evening',
+//             notification_hour: 20,
+//             notification_minute: 0
+//         };
+//     }
+// };
