@@ -62,6 +62,8 @@ export interface DailyProgress {
     start_unit_val: number;
     end_unit_val: number;
     is_completed: number;
+    max_verses: number;
+    max_pages: number;
 }
 
 export const isEmpty = async (db: SQLite.SQLiteDatabase, table: string) => {
@@ -447,20 +449,20 @@ export const getBookMarks = async () => {
 //     }
 // }
 
-// export const updateWerdSegments = async (updates: Partial<WerdSegment>, id: number = 1) => {
-// 	try {
-// 		const db = await getDB()
-// 		const fields = Object.keys(updates)
-// 		const values = Object.values(updates)
-// 		values.push(id)
-// 		const query = fields.map(field => `${field} = ?`).join(", ")
-// 		await db.runAsync(`UPDATE werd_segments SET ${query} WHERE id = ?`, values)
-// 		console.log("Updated werd segments")
-// 	}
-// 	catch (error) {
-// 		console.log(error)
-// 	}
-// }
+export const updateDailyProgress = async (updates: Partial<DailyProgress>, day_number: number = 1) => {
+	try {
+		const db = await getDB()
+		const fields = Object.keys(updates)
+		const values = Object.values(updates)
+		values.push(day_number)
+		const query = fields.map(field => `${field} = ?`).join(", ")
+		await db.runAsync(`UPDATE daily_progress SET ${query} WHERE id = ?`, values)
+		console.log("Updated werd segments")
+	}
+	catch (error) {
+		console.log(error)
+	}
+}
 
 export const getDailyProgress = async (day_number: number) => {
 	try {
@@ -532,6 +534,17 @@ export const insertDate = async (day: number, month: number, year: number, is_do
     }
 }
 
+export const getLastStopped = async () => {
+    try {
+        const db = await getDB()
+        const today = await db.getFirstAsync(`SELECT day_number FROM daily_progress WHERE day_number = (SELECT MIN(day_number) WHERE is_completed = 0)`)
+        if (today) return today
+        console.log("Retrieved Last Stop at werd")
+    }
+    catch (error) {
+        console.log(error)
+    }
+}
 
 export const test = async (start: number, end: number) => {
 	const verses = await fetchVerses(start, end, 'surah'); 
