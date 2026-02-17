@@ -186,16 +186,14 @@ export const fetchQuranText = async (params: rp.ReaderParams): Promise<qd.Readin
 
         if (params.sessionType === "daily_werd") {
             const settings = await getSettings() as UserSettings;
+            
             if (!settings) {
-                 console.log("No settings found");
-                 return { sessionId: "-1", sessionType: params.sessionType, segments: [] };
+                console.log("No settings found");
+                return { sessionId: "-1", sessionType: params.sessionType, segments: [] };
             }
-            const currentDay = settings.currentWerd;
 
-            const segment = await db.getFirstAsync<{ start_verse: number, end_verse: number }>(
-                `SELECT start_verse, end_verse FROM daily_progress WHERE day_number = ?`,
-                [currentDay]
-            );
+            const currentWerdId = settings.currentWerd;
+            const segment = await getWerdSegment(currentWerdId) as WerdSegment;
 
             if (segment) {
                 verses = await fetchVerses(segment.start_verse, segment.end_verse, 'verse');
@@ -203,8 +201,7 @@ export const fetchQuranText = async (params: rp.ReaderParams): Promise<qd.Readin
                 console.log("No segment found for today");
                 return { sessionId: "-1", sessionType: params.sessionType, segments: [] };
             }
-
-        } 
+        }
 		else if(params.sessionType === "full_surah") {
 			// @ts-ignore
             verses = await fetchVerses(params.surahId, params.surahId, 'surah');
@@ -344,7 +341,11 @@ export const updateSettings = async(updates: Partial<UserSettings>, id: number =
 export const getSettings = async (id: number = 1) => {
     try {
         const db = await getDB();
+<<<<<<< feature/StreakManager
+        const data = await db.getFirstAsync(`SELECT * FROM user_settings WHERE id = ?`, [id]) as UserSettings
+=======
         const data = await db.getFirstAsync(`SELECT * FROM user_settings WHERE id = ?`, [id]) as UserSettings;
+>>>>>>> main
         return data || null;
     } catch (error) {
         console.error("getSettings error:", error);
