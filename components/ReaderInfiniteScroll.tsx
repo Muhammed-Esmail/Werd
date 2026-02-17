@@ -18,7 +18,7 @@ export const ReaderInfiniteScroll = () => {
     const [scrollProgress, setScrollProgress] = useState(0);
     const [contentHeight, setContentHeight] = useState(0);
     const [scrollViewHeight, setScrollViewHeight] = useState(0);
-    const scrollViewRef = useRef<ScrollView>(null);    
+    const scrollViewRef = useRef<ScrollView>(null);
 
     useEffect(() => {
         // If we have heights but the content doesn't exceed the screen
@@ -88,7 +88,7 @@ export const ReaderInfiniteScroll = () => {
     };
 
     return (
-        <SafeAreaView className='bg-matteBlack h-full flex-row'>
+        <SafeAreaView className='bg-white dark:bg-matteBlack h-full flex-row'>
             
             <Stack.Screen options={{ headerShown: false }} />
 

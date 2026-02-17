@@ -202,7 +202,7 @@ const changeLang = async (lang: string = "en", startup: boolean = false) => {
 useEffect(() => {
   const init = async () => {
     console.log("Initializing Settings");
-
+    // @ts-ignore
 	const current_settings = await DB.getSettings() as UserSettings
 
 	setIsEnabled(current_settings.theme === 0)

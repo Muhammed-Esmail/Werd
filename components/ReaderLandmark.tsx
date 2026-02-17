@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Animated, Easing, Text, View } from "react-native";
+import React from 'react';
 
 interface Marker{
     type: 'surah' | 'juz';
@@ -11,10 +12,10 @@ interface Marker{
 interface ReaderLandmarkProps {
     markers: Marker[];
     progress: number; // Progress in percentage (0-100)
-    totalHeight: number; // Total height of the reader content
+    totalHeight?: number; // Total height of the reader content
 }
 
-export const ReaderLandmark = ({markers, progress, totalHeight} : ReaderLandmarkProps) => {
+export const ReaderLandmark = ({markers, progress} : ReaderLandmarkProps) => {
     const [animatedProgress] = useState(new Animated.Value(0));
 
     useEffect(() => {
@@ -49,7 +50,7 @@ export const ReaderLandmark = ({markers, progress, totalHeight} : ReaderLandmark
         <View className="h-full w-10 items-center py-5">
             
             {/* THE TRACK (Background) */}
-            <View className="h-full w-1 bg-white/15 rounded-full overflow-hidden">
+            <View className="h-full w-1 bg-textDeep/15 dark:bg-white/15 rounded-full overflow-hidden">
                 {/* Progress Fill */}
                 <Animated.View
                     className="w-full bg-primaryGold"
@@ -90,7 +91,7 @@ export const ReaderLandmark = ({markers, progress, totalHeight} : ReaderLandmark
                             >
                                 {/* Shadow/Glow for contrast against the track */}
                                 <View 
-                                    className="absolute w-3.5 h-3.5 bg-black/40 rotate-0 rounded-sm" 
+                                    className="absolute w-3.5 h-3.5 bg-white/40 dark:bg-black/40 rotate-0 rounded-sm" 
                                     style={{ transform: [{ scale: 1.2 }] }}
                                 />
                                 
