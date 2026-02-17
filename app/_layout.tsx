@@ -1,4 +1,4 @@
-import { Stack, useRouter } from "expo-router";
+import { Stack } from "expo-router";
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
@@ -13,13 +13,13 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
     const [appIsReady, setAppIsReady] = useState(false);
-    const [isOnboarded, setIsOnboarded] = useState(false);
     const { setColorScheme } = useColorScheme();
-    const router = useRouter();
 
     const [loaded, error] = useFonts({
         'Amiri-Regular': require('../assets/fonts/Amiri-Regular.ttf'),
         'Amiri-Bold': require('../assets/fonts/Amiri-Bold.ttf'),
+        'Amiri-BoldItalic': require('../assets/fonts/Amiri-BoldItalic.ttf'),
+        'Amiri-Italic': require('../assets/fonts/Amiri-Italic.ttf'),
         'U1': require('../assets/fonts/UthmanTN1-Ver10.otf'),
         'Hafs': require('../assets/fonts/HAFS.otf'),
         'U2': require('../assets/fonts/UthmanTN_v2-0.ttf'),
@@ -42,15 +42,9 @@ export default function RootLayout() {
 
                 const settings = await DB.getSettings();
                 if (settings) {
-                    setColorScheme(settings.theme == 0 ? 'dark' : 'light');
-
+                    setColorScheme(settings.theme === 0 ? 'dark' : 'light');
                     if (settings.language) {
                         await i18n.changeLanguage(settings.language);
-                    }
-
-                    // @ts-ignore
-                    if (settings.setup_completed == 1) { // checking if onboarding is completed
-                        setIsOnboarded(true);
                     }
                 }
 
@@ -61,7 +55,7 @@ export default function RootLayout() {
                     console.log(`surahs size = ${rd.SURAH_DATA.length}`)
                 }
             } catch (e) {
-                console.error("Error during initialization:", e);
+                console.warn(e);
             } finally {
                 setAppIsReady(true);
             }
@@ -87,12 +81,9 @@ export default function RootLayout() {
 
     return (
         <Stack screenOptions={{ headerShown: false }}>
-            {/* If not onboarded, we force the onboarding screen */}
-            {!isOnboarded ? (
-                <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
-            ) : (
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            )}
+            <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         </Stack>
     );
 }
