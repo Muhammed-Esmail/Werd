@@ -10,15 +10,19 @@ import * as DB from "@/utils/DatabaseManager";
 import { ReaderParams, SessionType } from "@/types/reader_data";
 import { useStreak } from '@/services/StreakManager';
 import React from "react";
+import { useRouter } from "expo-router";
 
 export const ReaderPages = () => {
     const flatListRef = useRef<FlatList>(null);
-    const [currentPage, setCurrentPage] = useState(0); //
+    const [currentPage, setCurrentPage] = useState(0);
+    const currentPageRef = useRef(0);
     const [pages, setPages] = useState<{ items: PageAtom[] }[]>([]);
     const [isMeasuring, setIsMeasuring] = useState(true);
     const [quranData, setQuranData] = useState<PageAtom[]>([]);
     const { height, width } = useWindowDimensions();
     const { incrementStreak } = useStreak(); 
+    const isCompletedRef = useRef(false);
+    const router = useRouter();
     const raw_params = useLocalSearchParams();
     const surahId = raw_params.surahId ? parseInt(raw_params.surahId as string, 10) : undefined;
     const sessionType = (raw_params.sessionType as SessionType) || 'daily_werd';
@@ -36,19 +40,24 @@ export const ReaderPages = () => {
         fetchData();
     }, [surahId, sessionType]);
 
-    useFocusEffect(
+useFocusEffect(
     useCallback(() => {
+        isCompletedRef.current = false;
         return () => {
             const saveProgress = async () => {
+                if (isCompletedRef.current) return;
+                if (sessionType === 'full_surah') return;
                 const today = await DB.getLastStopped();
                 if (today !== null) {
-                    await DB.updateDailyProgress({ last_page: currentPage }, today);
-                    console.log(`Saved last_page = ${currentPage}`);
+                    const data = await DB.getDailyProgress(today);
+                    const best = Math.max(currentPageRef.current, data?.last_page ?? 0);
+                    await DB.updateDailyProgress({ last_page: best }, today);
+                    console.log(`Saved last_page = ${currentPageRef.current}`);
                 }
             };
             saveProgress();
         };
-    }, [currentPage])
+    }, [])
 );
 
     const goToPage = (pageIndex: number) => {
@@ -61,20 +70,25 @@ export const ReaderPages = () => {
         });
     };
 
-    const handleCompleted = async () => {
-        try {
-            await incrementStreak()
-            const today = await DB.getLastStopped()
-            await DB.updateDailyProgress({is_completed: 1}, today!)
-        }
-        catch (error) {
-            console.log(error)
-        }
+const handleCompleted = async () => {
+    try {
+        await incrementStreak()
+        const today = await DB.getLastStopped()
+        await DB.updateDailyProgress({ is_completed: 1, last_page: 0 }, today!)
+        isCompletedRef.current = true;
+        console.log("Marked as completed")
+        router.back();
     }
+    catch (error) {
+        console.log(error)
+    }
+}
 
     const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
         if (viewableItems.length > 0) {
-            setCurrentPage(viewableItems[0].index || 0);
+            const index = viewableItems[0].index || 0;
+            setCurrentPage(index);
+            currentPageRef.current = index;
         }
     });
 

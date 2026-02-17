@@ -58,7 +58,9 @@ const TodayCard = ({ progress, onExportPDF }: { progress: DailyProgress, onExpor
     <View className='bg-white dark:bg-surfaceBlack border-[1px] border-gray-200 dark:border-mutedWhite rounded-[20px]'>
       <View className='flex-row justify-between mt-3'>
         <View className='gap-2 mt-5 ml-5'>
-          <Text className='font-bold text-[25px] text-gray-900 dark:text-white'>Werd #{progress.day_number}</Text>
+          <Text className='font-bold text-[25px] text-gray-900 dark:text-white'>
+            {t('werdNumber', { number: progress.day_number })}
+          </Text>
           <Text className='text-gray-600 dark:text-mutedWhite'>
             {progress.last_page} / {progress.total_pages} {t('pages')}
           </Text>
@@ -94,7 +96,7 @@ const TodayCard = ({ progress, onExportPDF }: { progress: DailyProgress, onExpor
       <TouchableOpacity onPress={onExportPDF} activeOpacity={0.7} className='mt-3 h-15 p-4 bg-primaryGold rounded-2xl w-[80%] items-center justify-center self-center mb-7'>
         <View className='flex-row items-center justify-center gap-2'>
           <MaterialIcons name='picture-as-pdf' size={20} color={'#000'} />
-          <Text className='font-bold tracking-wide text-[15px] text-black'>{"Export Today's Werd as PDF"}</Text>
+          <Text className='font-bold tracking-wide text-[15px] text-black'>{t('exportPDF')}</Text>
         </View>
       </TouchableOpacity>
     </View>
@@ -102,6 +104,7 @@ const TodayCard = ({ progress, onExportPDF }: { progress: DailyProgress, onExpor
 }
 
 const PdfToast = ({ status }: { status: PdfStatus }) => {
+  const { t } = useTranslation();
   if (status === 'idle') return null;
   return (
     <View className={`mt-4 w-full flex-row items-center justify-center gap-3 px-5 py-3 rounded-full border self-start ${
@@ -115,7 +118,7 @@ const PdfToast = ({ status }: { status: PdfStatus }) => {
       {status === 'done' && <Text>✅</Text>}
       {status === 'error' && <Text>❌</Text>}
       <Text className='text-white font-semibold'>
-        {status === 'loading' ? 'جارٍ التوليد...' : status === 'done' ? 'تم التصدير بنجاح' : 'فشل التصدير'}
+        {status === 'loading' ? t('generating') : status === 'done' ? t('exportSuccess') : t('exportFailed')}
       </Text>
     </View>
   );
