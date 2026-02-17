@@ -222,20 +222,36 @@ const Onboarding = () => {
                             </Text>
 
                             <View className="flex-row flex-wrap justify-center gap-4">
-                                {[7, 30, 60, 90].map((days) => (
-                                    <TouchableOpacity
-                                        key={days.toString()}
-                                        onPress={() => setPlanDays(days)}
-                                        className={`w-[40%] p-5 rounded-2xl border-2 items-center ${planDays === days
-                                            ? 'bg-primaryGold border-primaryGold shadow-lg shadow-primaryGold/20'
-                                            : 'bg-white dark:bg-surfaceBlack border-gray-200 dark:border-white/10'
-                                            }`}
-                                    >
-                                        <Text className={`font-bold text-xl ${planDays === days ? 'text-white' : 'text-gray-600 dark:text-gray-300'}`}>
-                                            {days} Days
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
+                                {[7, 30, 60, 90].map((days) => {
+                                    const isSelected = planDays === days;
+                                    return (
+                                        <TouchableOpacity
+                                            key={days.toString()}
+                                            onPress={() => setPlanDays(days)}
+                                            className={`w-[40%] p-5 rounded-2xl border-2 items-center ${isSelected
+                                                ? 'bg-primaryGold border-primaryGold'
+                                                : 'bg-white dark:bg-surfaceBlack border-gray-200'
+                                                }`}
+                                            style={
+                                                isSelected
+                                                    ? {
+                                                        shadowColor: '#D4AF37',
+                                                        shadowOffset: { width: 0, height: 4 },
+                                                        shadowOpacity: 0.2,
+                                                        shadowRadius: 8,
+                                                        elevation: 5,
+                                                    }
+                                                    : {
+                                                        borderColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB',
+                                                    }
+                                            }
+                                        >
+                                            <Text className={`font-bold text-xl ${isSelected ? 'text-white' : 'text-gray-600 dark:text-gray-300'}`}>
+                                                {days} Days
+                                            </Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
                             </View>
 
                             <View className="mt-8 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-900/30">
@@ -253,7 +269,14 @@ const Onboarding = () => {
             <View className="w-full mt-4">
                 <TouchableOpacity
                     onPress={() => step < 3 ? setStep(step + 1) : handleFinish()}
-                    className="w-full bg-primaryGold p-4 rounded-xl items-center shadow-md shadow-primaryGold/20"
+                    className="w-full bg-primaryGold p-4 rounded-xl items-center"
+                    style={{
+                        shadowColor: '#D4AF37',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.2,
+                        shadowRadius: 4,
+                        elevation: 3,
+                    }}
                 >
                     <Text className="text-white font-bold text-lg">
                         {step === 3 ? "Start Journey" : "Next"}
