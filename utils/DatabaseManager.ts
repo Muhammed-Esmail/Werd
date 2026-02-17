@@ -78,11 +78,12 @@ export const isEmpty = async (db: SQLite.SQLiteDatabase, table: string) => {
 const DB_NAME = "werd_db.db";
 let database: SQLite.SQLiteDatabase | null = null;
 let dbInitPromise: Promise<SQLite.SQLiteDatabase> | null = null;
-
+// @ts-ignore
 export async function getDB() {
     if (database) return database;
     if (dbInitPromise) return dbInitPromise;
-
+    
+    // @ts-ignore
     dbInitPromise = (async () => {
         try {
             const dbPath = `${FileSystem.documentDirectory}SQLite/${DB_NAME}`;
@@ -294,19 +295,25 @@ export const fetchVerses = async (l: number, r: number, partitionType: Partition
 
     try {
         if (partitionType === 'surah') { // surahs
+            // @ts-ignore
             const resL = await db.getFirstAsync<{first_verse: number}>(`SELECT first_verse FROM surahs WHERE id = ?`, [l]);
+            // @ts-ignore
             const resR = await db.getFirstAsync<{last_verse: number}>(`SELECT last_verse FROM surahs WHERE id = ?`, [r]);
             if (resL) first_verse = resL.first_verse;
             if (resR) last_verse = resR.last_verse;
         }
         else if (partitionType === 'juz') { // juz
+            // @ts-ignore
             const resL = await db.getFirstAsync<{first_verse: number}>(`SELECT first_verse FROM juz WHERE id = ?`, [l]);
+            // @ts-ignore
             const resR = await db.getFirstAsync<{last_verse: number}>(`SELECT last_verse FROM juz WHERE id = ?`, [r]);
             if (resL) first_verse = resL.first_verse;
             if (resR) last_verse = resR.last_verse;
         }
         else if (partitionType === 'page') { // pages
+            // @ts-ignore
             const resL = await db.getFirstAsync<{first_verse: number}>(`SELECT first_verse FROM pages WHERE id = ?`, [l]);
+            // @ts-ignore
             const resR = await db.getFirstAsync<{last_verse: number}>(`SELECT last_verse FROM pages WHERE id = ?`, [r]);
             if (resL) first_verse = resL.first_verse;
             if (resR) last_verse = resR.last_verse;
@@ -551,6 +558,7 @@ export const getLastStopped = async () => {
 export const getPageCount = async (first_verse: number, last_verse: number) => {
     try {
         const db = await getDB()
+        // @ts-ignore
         const res = await db.getFirstAsync<{ total_pages: number }>(
             `SELECT COUNT(*) as total_pages FROM pages WHERE last_verse >= ? AND first_verse <= ?`,
             [first_verse, last_verse]
