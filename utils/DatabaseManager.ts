@@ -59,6 +59,8 @@ export interface DailyProgress {
     date: string;
     start_verse: number;
     end_verse: number;
+    total_verses: number;
+    total_pages: number;
     start_unit_val: number;
     end_unit_val: number;
     is_completed: number;
@@ -544,6 +546,21 @@ export const getLastStopped = async () => {
     catch (error) {
         console.log(error)
     }
+}
+
+export const getPageCount = async (first_verse: number, last_verse: number) => {
+    try {
+        const db = await getDB()
+        const res = await db.getFirstAsync<{ total_pages: number }>(
+            `SELECT COUNT(*) as total_pages FROM pages WHERE last_verse >= ? AND first_verse <= ?`,
+            [first_verse, last_verse]
+        );
+        return res.total_pages ?? 0;
+    }
+    catch (error) {
+        console.log(error)
+    }
+    
 }
 
 export const test = async (start: number, end: number) => {
