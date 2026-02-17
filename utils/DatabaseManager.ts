@@ -3,6 +3,7 @@ import * as FileSystem from 'expo-file-system/legacy'; // FORCE LEGACY
 import { Asset } from 'expo-asset';
 import * as rp from "@/types/reader_data"
 import * as qd from "@/types/quran_data"
+import { Double } from "react-native/Libraries/Types/CodegenTypes";
 
 export interface UserSettings {
     id: number;
@@ -63,13 +64,12 @@ export interface DailyProgress {
     date: string;
     start_verse: number;
     end_verse: number;
-    total_verses: number;
-    total_pages: number;
     start_unit_val: number;
     end_unit_val: number;
     is_completed: number;
-    max_verses: number;
-    max_pages: number;
+    last_page: number;
+    total_pages: number;
+    scroll_percentage: Double;
 }
 
 export const isEmpty = async (db: SQLite.SQLiteDatabase, table: string) => {
@@ -219,8 +219,9 @@ export const fetchQuranText = async (params: rp.ReaderParams): Promise<qd.Readin
                 return { sessionId: "-1", sessionType: params.sessionType, segments: [] };
             }
 
-            const currentWerdId = settings.currentWerd;
-            const segment = await getDailyProgress(currentWerdId) as DailyProgress;
+            const today = await getLastStopped()
+            console.log(`today = ${today}`)
+            const segment = await getDailyProgress(today!) as DailyProgress;
 
             if (segment) {
                 // Using start_verse/end_verse from daily_progress table
@@ -499,17 +500,17 @@ export const insertDate = async (day: number, month: number, year: number, is_do
     }
 }
 
-export const getLastStopped = async () => {
+export const getLastStopped = async (): Promise<number | null> => {
     try {
         const db = await getDB()
-        const today = await db.getFirstAsync(`SELECT day_number FROM daily_progress WHERE day_number = (
-                SELECT MIN(day_number) FROM daily_progress WHERE is_completed = 0
-            )`)
-        if (today) return today
-        console.log("Retrieved Last Stop at werd")
+        const row = await db.getFirstAsync<{ day_number: number }>(
+            `SELECT day_number FROM daily_progress WHERE is_completed = 0 ORDER BY day_number ASC LIMIT 1`
+        )
+        return row ? row.day_number : null;
     }
     catch (error) {
         console.log(error)
+        return null;
     }
 }
 
@@ -558,6 +559,19 @@ export const resetWerdSegments = async () => {
         console.log("✅ Werd segments reset");
     } catch (error) {
         console.error("❌ Error resetting werd segments:", error);
+    }
+}
+
+export const getDoneVersesCount = async (): Promise<number> => {
+    try {
+        const db = await getDB();
+        const res = await db.getFirstAsync<{ total: number }>(
+            `SELECT SUM(total_pages) as total FROM daily_progress WHERE is_completed = 1`
+        );
+        return res?.total ?? 0;
+    } catch (error) {
+        console.log(error);
+        return 0;
     }
 }
 

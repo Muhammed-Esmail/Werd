@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams } from "expo-router";
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { ScrollView, View, ActivityIndicator, Animated,TouchableOpacity,Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ReaderLandmark } from "./ReaderLandmark";
@@ -9,6 +9,7 @@ import { SessionType } from "@/types/reader_data";
 import { ReadingSession } from "@/types/quran_data";
 import { useStreak } from '@/services/StreakManager';
 import React from "react";
+import { useFocusEffect } from 'expo-router';
 
 
 export const ReaderInfiniteScroll = () => {
@@ -17,6 +18,7 @@ export const ReaderInfiniteScroll = () => {
     const [contentHeight, setContentHeight] = useState(0);
     const [scrollViewHeight, setScrollViewHeight] = useState(0);
     const [surahPositions, setSurahPositions] = useState<Record<number, number>>({});
+    const [progressPercent, setProgressPercent] = useState(0);
     const { incrementStreak } = useStreak(); 
 
     // Use standard Animated.Value for the landmark progress
@@ -43,6 +45,40 @@ export const ReaderInfiniteScroll = () => {
         };
         fetchData();
     }, [params]);
+
+    useFocusEffect(
+    useCallback(() => {
+        return () => {
+            const saveProgress = async () => {
+                console.log(`progressPercent = ${progressPercent}`)
+                const today = await DB.getLastStopped();
+                if (today !== null) {
+                    await DB.updateDailyProgress({ scroll_percentage: progressPercent }, today);
+                }
+            };
+            saveProgress();
+        };
+    }, [progressPercent])
+);
+
+    useEffect(() => {
+        const listener = scrollProgress.addListener(({ value }) => {
+            setProgressPercent(Math.round(value)); // 0–100
+        });
+        return () => scrollProgress.removeListener(listener);
+    }, []);
+
+    const handleCompleted = async () => {
+        try {
+            await incrementStreak()
+            const today = await DB.getLastStopped()
+            await DB.updateDailyProgress({is_completed: 1}, today!)
+            console.log("Marked as completed")
+        }
+        catch (error) {
+            console.log(error)
+        }
+    }
 
     const segments = quranData?.segments || [];
 
@@ -122,7 +158,7 @@ export const ReaderInfiniteScroll = () => {
                     {!isLoading && params.sessionType === 'daily_werd' && (
                         <View className="p-8 items-center justify-center">
                             <TouchableOpacity 
-                                onPress={incrementStreak}
+                                onPress={handleCompleted}
                                 className="bg-hassibGreen px-10 py-4 rounded-full shadow-md"
                             >
                                 <Text 

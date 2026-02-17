@@ -3,8 +3,8 @@ import { DailyProgress } from '@/utils/DatabaseManager';
 import * as DB from '@/utils/DatabaseManager';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -28,18 +28,28 @@ const Card = ({ sideIcon, sideText, mainText, underText }: any) => {
 
 const TodayCard = ({ progress }: { progress: DailyProgress }) => {
   const { t } = useTranslation();
+  const [progressPercent, setProgressPercent] = useState(0);
+
+  useEffect(() => {
+    const load = async () => {
+      const settings = await DB.getSettings();
+      if (settings?.reading_mode === 0) {
+        setProgressPercent(progress.scroll_percentage ?? 0);
+      } else {
+        setProgressPercent(
+          progress.last_page > 0
+            ? Math.min((progress.last_page / progress.total_pages) * 100, 100)
+            : 0
+        );
+      }
+    };
+    load();
+  }, [progress]);
 
   const onReadTodaysWerd = () => {
-    const params: ReaderParams = {
-      surahId: 0,
-      sessionType: 'daily_werd'
-    };
+    const params: ReaderParams = { surahId: 0, sessionType: 'daily_werd' };
     router.push({ pathname: '/reader', params: params as any });
-  }
-
-  const progressPercent = progress.max_pages > 0 
-    ? Math.min((progress.total_pages / progress.max_pages) * 100, 100) 
-    : 0;
+  };
 
   return (
     <View className='bg-white dark:bg-surfaceBlack border-[1px] border-gray-200 dark:border-mutedWhite rounded-[20px]'>
@@ -47,7 +57,7 @@ const TodayCard = ({ progress }: { progress: DailyProgress }) => {
         <View className='gap-2 mt-5 ml-5'>
           <Text className='font-bold text-[25px] text-gray-900 dark:text-white'>Werd #{progress.day_number}</Text>
           <Text className='text-gray-600 dark:text-mutedWhite'>
-            {progress.total_pages} / {progress.max_pages} {t('pages')}
+            {progress.last_page} / {progress.total_pages} {t('pages')}
           </Text>
         </View>
         <View className='border-[2px] border-primaryGold rounded-[20px] bg-goldGlow p-4 justify-center items-center mr-5 mt-4' >
@@ -85,37 +95,33 @@ const werd = () => {
   const [loading, setLoading] = useState(true);
   const [streak, setStreak] = useState<DB.StreakData | null>(null);
   const [progress, setProgress] = useState<DailyProgress | null>(null);
+  const [donePages, setDonePages] = useState(0);
     
-   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const streakData = await DB.getStreak();
-        setStreak(streakData);
+useFocusEffect(
+    useCallback(() => {
+        const loadData = async () => {
+            try {
+                const streakData = await DB.getStreak();
+                console.log(`found streak = ${streakData?.count}`)
+                //@ts-ignore
+                setStreak(streakData);
 
-        const result = await DB.getLastStopped();
-        const dayNum = typeof result === 'number' ? result : (result as any)?.day_number;
-        
-        if (dayNum) {
-          const dailyData = await DB.getDailyProgress(dayNum);
-          if (dailyData) {
-            const first = typeof dailyData.start_verse === 'number' ? dailyData.start_verse : (dailyData.start_verse as any)?.id;
-            const last = typeof dailyData.end_verse === 'number' ? dailyData.end_verse : (dailyData.end_verse as any)?.id;
-
-            const totalPages = await DB.getPageCount(first, last);
-            setProgress({ 
-              ...dailyData, 
-              max_pages: totalPages || dailyData.max_pages 
-            });
-          }
-        }
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadData();
-  }, []);
+                const result = await DB.getLastStopped();
+                if (result !== null) {
+                    const dailyData = await DB.getDailyProgress(result);
+                    if (dailyData) setProgress(dailyData);
+                }
+                const count = await DB.getDoneVersesCount();
+                setDonePages(count || 0);  
+            } catch (e) {
+                console.error(e);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadData();
+    }, [])
+);
 
   if (loading) return <SafeAreaView className="flex-1 justify-center"><ActivityIndicator color="#D4AF37" /></SafeAreaView>;
 
@@ -127,7 +133,7 @@ const werd = () => {
 
       <View className='w-[100%] mt-10 flex-row justify-center items-center'>
         <Card sideIcon="local-fire-department" sideText={t('streak')} mainText={`${streak?.count || 0} ${t('days')}`} underText={t('personalBest')} />
-        <Card sideText={t('totalPages')} mainText="412" underText={t('thisMonth')} />
+        <Card sideText={t('totalPages')} mainText={donePages} underText={t('thisMonth')} />
       </View>
 
       <View className='mt-10 ml-4 mr-4'>
