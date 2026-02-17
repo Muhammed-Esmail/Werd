@@ -32,10 +32,9 @@ const NotificationSettings = () => {
 
         try {
             console.log('🔔 Ensuring notification columns exist...');
-            await DatabaseManager.addNotificationColumns();
             await new Promise(resolve => setTimeout(resolve, 100));
             console.log('🔔 Loading notification settings...');
-            const savedSettings = await DatabaseManager.getNotificationSettings();
+            const savedSettings = await DatabaseManager.getSettings();
 
             if (savedSettings) {
                 setNotificationsEnabled(savedSettings.notification_enabled === 1);
@@ -83,12 +82,7 @@ const NotificationSettings = () => {
 
             const timeOption = TIME_OPTIONS.find(opt => opt.id === selectedTime);
             if (timeOption) {
-                await DatabaseManager.updateNotificationSettings(
-                    true,
-                    selectedTime,
-                    timeOption.hour,
-                    timeOption.minute
-                );
+                await DatabaseManager.updateSettings({notification_enabled: 1, notification_time: selectedTime, notification_hour: timeOption.hour, notification_minute: timeOption.minute})
             }
         } else {
             await NotificationManager.cancelAllNotifications();
@@ -96,12 +90,7 @@ const NotificationSettings = () => {
 
             const timeOption = TIME_OPTIONS.find(opt => opt.id === selectedTime);
             if (timeOption) {
-                await DatabaseManager.updateNotificationSettings(
-                    false,
-                    selectedTime,
-                    timeOption.hour,
-                    timeOption.minute
-                );
+                await DatabaseManager.updateSettings({notification_enabled: 0, notification_time: selectedTime, notification_hour: timeOption.hour, notification_minute: timeOption.minute})
             }
 
             Alert.alert(
@@ -144,12 +133,7 @@ const NotificationSettings = () => {
                 throw new Error('Failed to schedule notification');
             }
 
-            await DatabaseManager.updateNotificationSettings(
-                true,
-                selectedTime,
-                timeOption.hour,
-                timeOption.minute
-            );
+            await DatabaseManager.updateSettings({notification_enabled: 1, notification_time: selectedTime, notification_hour: timeOption.hour, notification_minute: timeOption.minute})
 
             Alert.alert(
                 '✅ Settings Saved!',
