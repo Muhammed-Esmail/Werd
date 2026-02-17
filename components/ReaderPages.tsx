@@ -1,5 +1,5 @@
-import { Stack, useLocalSearchParams } from "expo-router";
-import { useRef, useState, useEffect } from "react";
+import { Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { FlatList, View, Text, useWindowDimensions, TouchableOpacity, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { PageAtom, ReadingSession } from "@/types/quran_data";
@@ -13,7 +13,7 @@ import React from "react";
 
 export const ReaderPages = () => {
     const flatListRef = useRef<FlatList>(null);
-    const [currentPage, setCurrentPage] = useState(0);
+    const [currentPage, setCurrentPage] = useState(0); //
     const [pages, setPages] = useState<{ items: PageAtom[] }[]>([]);
     const [isMeasuring, setIsMeasuring] = useState(true);
     const [quranData, setQuranData] = useState<PageAtom[]>([]);
@@ -36,6 +36,21 @@ export const ReaderPages = () => {
         fetchData();
     }, [surahId, sessionType]);
 
+    useFocusEffect(
+    useCallback(() => {
+        return () => {
+            const saveProgress = async () => {
+                const today = await DB.getLastStopped();
+                if (today !== null) {
+                    await DB.updateDailyProgress({ last_page: currentPage }, today);
+                    console.log(`Saved last_page = ${currentPage}`);
+                }
+            };
+            saveProgress();
+        };
+    }, [currentPage])
+);
+
     const goToPage = (pageIndex: number) => {
         if (!pages || pages.length === 0) return;
         if (pageIndex < 0 || pageIndex >= pages.length) return;
@@ -45,6 +60,17 @@ export const ReaderPages = () => {
             animated: true,
         });
     };
+
+    const handleCompleted = async () => {
+        try {
+            await incrementStreak()
+            const today = await DB.getLastStopped()
+            await DB.updateDailyProgress({is_completed: 1}, today!)
+        }
+        catch (error) {
+            console.log(error)
+        }
+    }
 
     const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
         if (viewableItems.length > 0) {
@@ -100,7 +126,7 @@ export const ReaderPages = () => {
             {!isMeasuring && isLastPage && sessionType === 'daily_werd' && (
                 <View className="p-8 items-center justify-center">
                     <TouchableOpacity 
-                        onPress={incrementStreak}
+                        onPress={handleCompleted}
                         className="bg-hassibGreen py-4 px-8 rounded-full shadow-md"
                     >
                         <Text 
