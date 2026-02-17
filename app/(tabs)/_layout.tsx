@@ -28,7 +28,7 @@ const TabIcon = ({focused, iconName, title}: any) =>{
                 hitSlop={{ top: val, bottom: val, left: val, right: val }}
             >
                 <MaterialIcons name={iconName} size={20} color={'rgba(212, 175, 55, 0.5)'} />
-                <Text className='text-[10px] text-mutedWhite font-medium mt-1'>{title}</Text>
+                <Text className='text-[10px] text-gray-500 dark:text-mutedWhite font-medium mt-1'>{title}</Text>
             </View>
         )
     }

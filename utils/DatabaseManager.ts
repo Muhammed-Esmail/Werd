@@ -16,6 +16,7 @@ export interface UserSettings {
     theme: number;
 	language: string;
 	currentWerd: number;
+    setup_completed: number;
 }
 
 export interface UserProgress {
@@ -170,9 +171,15 @@ export async function initDB(clear: number = 0) {
 
         if (await isEmpty(db, "user_settings")) {
             await db.runAsync(`
-                INSERT INTO user_settings (id, font, font_size, reading_mode, partition_type, starting_date, ending_date, theme, language, currentWerd, werd_plan_days) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
-                [1, "D1", 14, 0, "page", "6/6/2006", "7/7/2007", 0, "en", 1, 30]);
+                INSERT INTO user_settings (id, font, font_size, reading_mode, partition_type, starting_date, ending_date, theme, language, currentWerd, werd_plan_days, setup_completed) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+                [1, "D1", 14, 0, "page", "6/6/2006", "7/7/2007", 1, "en", 1, 30, 0]);
+        } else {
+            try {
+                await db.runAsync(`ALTER TABLE user_settings ADD COLUMN setup_completed INTEGER DEFAULT 1`);
+            } catch(e) {
+                console.log("Bro what is happening 😭");
+            }
         }
 
         if (await isEmpty(db, "werd_segments")) {

@@ -19,6 +19,7 @@ const SearchBar = ({placeholder, value, onChangeText}: Props) => {
       <MaterialIcons name='search' size={23} color={'#D4AF37'}/>
       <TextInput
         placeholder={placeholder}
+        placeholderTextColor={'#9CA3AF'}
         value={value}
         onChangeText={onChangeText}
         className='flex-1 ml-2 text-white dark:text-textDeep ml-3'
