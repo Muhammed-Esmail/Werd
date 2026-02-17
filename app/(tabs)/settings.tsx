@@ -26,7 +26,7 @@ interface UserSettings {
 
 const OPTIONS = [
     {id: 1, text: 'goal', path: "goalSetup", icon: "book"},
-    {id: 2, text: "notifications", path: "notifications", icon: "notifications"},
+    {id: 2, text: "notifications", path: "/notificationSettings", icon: "notifications"},
     {id: 3, text: "fonts", path: null, icon: "pencil"},
     {id: 4, text: "darkMode", path: null, icon: "contrast"},
     {id: 5, text: "readingMode", path: null, icon: "book"},
