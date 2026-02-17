@@ -74,7 +74,7 @@ const Onboarding = () => {
                         <Text className="text-gray-500 mb-8 text-center px-4">In how many days do you wish to complete the Quran?</Text>
                         
                         <View className="flex-row flex-wrap justify-center gap-4">
-                            {[30, 60, 90, 365].map((days) => (
+                            {[7, 30, 60, 90].map((days) => (
                                 <TouchableOpacity 
                                     key={days}
                                     onPress={() => setPlanDays(days)}

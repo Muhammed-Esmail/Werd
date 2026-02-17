@@ -165,6 +165,13 @@ export async function initDB(clear: number = 0) {
             db = await getDB(); 
         }
 
+        try {
+            await db.runAsync('ALTER TABLE user_settings ADD COLUMN setup_completed INTEGER DEFAULT 0');
+            console.log("Added setup_completed column");
+        } catch (e) {
+            console.log("setup_completed column already exists, skipping...");
+        }
+
         if (await isEmpty(db, "streaks")) {
             await db.runAsync(`INSERT INTO streaks VALUES (?, ?, ?, ?)`, [1, 0, 0, '9/9/2009'])
         }
@@ -174,12 +181,6 @@ export async function initDB(clear: number = 0) {
                 INSERT INTO user_settings (id, font, font_size, reading_mode, partition_type, starting_date, ending_date, theme, language, currentWerd, werd_plan_days, setup_completed) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
                 [1, "D1", 14, 0, "page", "6/6/2006", "7/7/2007", 1, "en", 1, 30, 0]);
-        } else {
-            try {
-                await db.runAsync(`ALTER TABLE user_settings ADD COLUMN setup_completed INTEGER DEFAULT 1`);
-            } catch(e) {
-                console.log("Bro what is happening 😭");
-            }
         }
 
         if (await isEmpty(db, "werd_segments")) {
