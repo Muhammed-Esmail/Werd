@@ -100,17 +100,6 @@ const StreakPage = () => {
           </View>
         </View>
 
-        <TouchableOpacity 
-          onPress={() => incrementStreak()}
-          activeOpacity={0.3}
-          className="bg-yellow-500 py-4 rounded-2xl mb-8 items-center justify-center shadow-lg shadow-yellow-500/20"
-        >
-          <View className="flex-row items-center">
-            <Text className="text-black font-bold text-base mr-2">{t('testIncrementStreak')}</Text>
-            <Text>⚡</Text>
-          </View>
-        </TouchableOpacity>
-
         <View className="bg-white dark:bg-zinc-900/50 pt-6 pb-6 rounded-[32px] border border-gray-200 dark:border-zinc-800/50 mb-8 items-center w-full">
           
           <View 

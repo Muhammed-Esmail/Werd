@@ -1,20 +1,24 @@
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState, useMemo } from "react";
-import { ScrollView, View, ActivityIndicator, Animated } from "react-native";
+import { ScrollView, View, ActivityIndicator, Animated,TouchableOpacity,Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ReaderLandmark } from "./ReaderLandmark";
 import { SurahSection } from "./SurahSection";
 import * as DB from "@/utils/DatabaseManager";
 import { SessionType } from "@/types/reader_data";
 import { ReadingSession } from "@/types/quran_data";
+import { useStreak } from '@/services/StreakManager';
 import React from "react";
+
 
 export const ReaderInfiniteScroll = () => {
     const [quranData, setQuranData] = useState<ReadingSession>();
     const [isLoading, setIsLoading] = useState(true);
     const [contentHeight, setContentHeight] = useState(0);
     const [scrollViewHeight, setScrollViewHeight] = useState(0);
-    
+    const [surahPositions, setSurahPositions] = useState<Record<number, number>>({});
+    const { incrementStreak } = useStreak(); 
+
     // Use standard Animated.Value for the landmark progress
     const scrollProgress = useRef(new Animated.Value(0)).current;
     const scrollViewRef = useRef<ScrollView>(null);
@@ -41,14 +45,23 @@ export const ReaderInfiniteScroll = () => {
     }, [params]);
 
     const segments = quranData?.segments || [];
-    const markers = segments.map((segment, index) => ({
-        type: 'surah' as const,
-        position: (index / segments.length) * 100,
-        id: segment.surahId,
-        name: `Surah ${segment.surahId}`
-    }));
 
-    const allMarkers = [...markers, { type: 'juz' as const, position: 25, id: 1 }];
+    const markers = useMemo(() => {
+        return segments.map((segment) => {
+            const yPos = surahPositions[segment.surahId] || 0;
+            // Calculate position as a percentage of total content height
+            const position = contentHeight > 0 ? (yPos / contentHeight) * 100 : 0;
+
+            return {
+                type: 'surah' as const,
+                position: position,
+                id: segment.surahId,
+                name: `Surah ${segment.surahId}`
+            };
+        });
+    }, [segments, surahPositions, contentHeight]);      
+
+    const allMarkers = [...markers];
 
     // Standard Animated.event fix
     const handleScroll = (event: any) => {
@@ -90,12 +103,41 @@ export const ReaderInfiniteScroll = () => {
                     }}
                 >
                     {segments.map((item, index) => (
-                        <SurahSection 
+                        <View 
                             key={index}
-                            segment={item} 
-                            isLastSegment={index === segments.length - 1} 
-                        />
+                            onLayout={(event) => {
+                                const { y } = event.nativeEvent.layout;
+                                setSurahPositions(prev => ({
+                                    ...prev,
+                                    [item.surahId]: y
+                                }));
+                            }}
+                        >
+                            <SurahSection 
+                                segment={item} 
+                                isLastSegment={index === segments.length - 1} 
+                            />
+                        </View>
                     ))}
+                    {!isLoading && params.sessionType === 'daily_werd' && (
+                        <View className="p-8 items-center justify-center">
+                            <TouchableOpacity 
+                                onPress={incrementStreak}
+                                className="bg-hassibGreen px-10 py-4 rounded-full shadow-md"
+                            >
+                                <Text 
+                                    className="text-white font-bold text-center"
+                                    style = {{
+                                        textShadowColor: 'rgba(0, 0, 0, 0.25)', // The color and opacity
+                                        textShadowOffset: { width: 2, height: 2 }, // Direction (X, Y)
+                                        textShadowRadius: 4, // The blurriness
+                                    }}
+                                >
+                                    Mark Today's Werd as Complete
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
                 </ScrollView>
             </View>
 
