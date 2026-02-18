@@ -5,7 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Text, TouchableOpacity, View, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { Text, TouchableOpacity, View, ScrollView, ActivityIndicator, Alert  } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import * as PDFExporter from '@/services/PDFExporter';
@@ -28,11 +28,33 @@ const Card = ({ sideIcon, sideText, mainText, underText }: any) => (
   </View>
 );
 
+const PdfToast = ({ status }: { status: PdfStatus }) => {
+  const { t } = useTranslation();
+  if (status === 'idle') return null;
+  return (
+    <View className={`mt-4 w-full flex-row items-center justify-center gap-3 px-5 py-3 rounded-full border self-start ${
+      status === 'error'
+        ? 'bg-red-950 border-red-500'
+        : status === 'done'
+        ? 'bg-neutral-900 border-settingsGold'
+        : 'bg-neutral-900 border-settingsGold/30'
+    }`}>
+      {status === 'loading' && <ActivityIndicator size="small" color="#D4AF37" />}
+      {status === 'done' && <Text>✅</Text>}
+      {status === 'error' && <Text>❌</Text>}
+      <Text className='text-white font-semibold'>
+        {status === 'loading' ? t('generating') : status === 'done' ? t('exportSuccess') : t('exportFailed')}
+      </Text>
+    </View>
+  );
+}
+
 const TodayCard = ({ progress, onExportPDF, onComplete }: { progress: DailyProgress, onExportPDF: () => void, onComplete: () => void }) => {
   const { t } = useTranslation();
   const [progressPercent, setProgressPercent] = useState(0);
   const [displayPagesDone, setDisplayPagesDone] = useState(0);
   const [displayTotalPages, setDisplayTotalPages] = useState(0);
+  const [pdfStatus, setPdfStatus] = useState<PdfStatus>('idle');
 
   useEffect(() => {
   const loadProgressDetails = async () => {
@@ -71,6 +93,8 @@ const TodayCard = ({ progress, onExportPDF, onComplete }: { progress: DailyProgr
       ]
     );
   };
+
+
 
   return (
     <View className='bg-white dark:bg-surfaceBlack border-[1px] border-gray-200 dark:border-mutedWhite rounded-[20px]'>
@@ -160,6 +184,15 @@ const WerdPage = () => {
     loadData();
   };
 
+  const onExportPDF = async () => {
+    setPdfStatus('loading');
+    const mockData = await PDFExporter.getTodaysWerdData();
+    // @ts-ignore
+    const success = await PDFExporter.generateAndSharePDF(mockData);
+    setPdfStatus(success ? 'done' : 'error');
+    setTimeout(() => setPdfStatus('idle'), 3000);
+  };
+
   if (loading) return <SafeAreaView className="flex-1 justify-center"><ActivityIndicator color="#D4AF37" /></SafeAreaView>;
 
   return (
@@ -177,7 +210,8 @@ const WerdPage = () => {
             <Text className='font-bold tracking-widest text-gray-600 dark:text-mutedWhite'>{t('todaysGoal')}</Text>
             <Text className='text-xs text-primaryGold font-bold'>{t('werd')} #{progress?.day_number || '00'}</Text>
           </View>
-          {progress && <TodayCard progress={progress} onExportPDF={() => {}} onComplete={handleCompleted}/>}
+          {progress && <TodayCard progress={progress} onExportPDF={onExportPDF} onComplete={handleCompleted}/>}
+          <PdfToast status={pdfStatus} />
         </View>
       </ScrollView>
     </SafeAreaView>
