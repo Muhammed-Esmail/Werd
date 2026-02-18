@@ -1,12 +1,12 @@
-import { StyleSheet, Text, View, Pressable, FlatList, ScrollView, TouchableOpacity } from 'react-native'
-import React, { useState } from 'react'
+import { StyleSheet, Text, View, Pressable, FlatList, ScrollView, TouchableOpacity, ActivityIndicator, Modal } from 'react-native'
+import React, { useEffect, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import Slider from '@react-native-community/slider';
 import * as DB from "@/utils/DatabaseManager"
 import { useTranslation } from 'react-i18next';
 import * as engine from "@/core/SegmentationEngine"
+import { useColorScheme } from 'nativewind';
 
 const RadioButton = ({ text, selected, description, onSelected }: any) => {
     return (
@@ -33,6 +33,8 @@ const RadioButton = ({ text, selected, description, onSelected }: any) => {
 
 const goalSetup = () => {
     const { t } = useTranslation();
+    const { colorScheme } = useColorScheme();
+    const router = useRouter();
     const [date, setDate] = useState(new Date())
     const [show, setShow] = useState<boolean>(false)
 
@@ -40,12 +42,13 @@ const goalSetup = () => {
     const [prevGoal, setPrevGoal] = useState<number>(1);
     const [selectedPartition, setPartition] = useState<number>(1);
 
-    const [sliderValue, setSliderValue] = useState<number>(3)
+    const [isLoading, setIsLoading] = useState(false);
 
     const GOAL_OPTIONS = [
         { id: 1, text: t('casual'), description: t('threeMonths'), days: 90 },
-        { id: 2, text: t('regular'), description: t('oneMonth'), days: 30 },
-        { id: 3, text: t('serious'), description: t('oneWeek'), days: 7 },
+        { id: 2, text: t('regular'), description: t('twoMonths'), days: 60 },
+        { id: 3, text: t('Ramdan Special'), description: t('oneMonth'), days: 30 },
+        { id: 4, text: t('serious'), description: t('oneWeek'), days: 7 },
     ];
 
     const PARTITION_OPTIONS = [
@@ -55,42 +58,49 @@ const goalSetup = () => {
     ]
 
     const setWerdSettings = async () => {
-        let goal = 0
-        if (selectedGoal === 4) {
-            const now = new Date()
-            goal = Math.ceil(Math.abs(date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-        }
-        else goal = GOAL_OPTIONS[selectedGoal - 1].days
-        await DB.updateSettings({ werd_plan_days: goal, partition_type: PARTITION_OPTIONS[selectedPartition - 1].partitionType })
-        alert("Werd Settings Set!")
-        const settings = await DB.getSettings() as DB.UserSettings
-        console.log(`settings = ${settings.werd_plan_days} , ${settings.partition_type}`)
-        let partition: engine.PartitionType
-        if (selectedPartition === 1) partition = engine.PartitionType.JUZ
-        if (selectedPartition === 2) partition = engine.PartitionType.SURAH
-        else partition = engine.PartitionType.PAGE
+        setIsLoading(true);
+        try {
+            let goal = 0
+            if (selectedGoal === 5) {
+                const now = new Date()
+                goal = Math.ceil(Math.abs(date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+            }
+            else goal = GOAL_OPTIONS[selectedGoal - 1].days
+            await DB.updateSettings({ werd_plan_days: goal, partition_type: PARTITION_OPTIONS[selectedPartition - 1].partitionType })
+            const settings = await DB.getSettings() as DB.UserSettings
+            console.log(`settings = ${settings.werd_plan_days} , ${settings.partition_type}`)
+            let partition: engine.PartitionType
+            if (selectedPartition === 1) partition = engine.PartitionType.JUZ
+            if (selectedPartition === 2) partition = engine.PartitionType.SURAH
+            else partition = engine.PartitionType.PAGE
 
-        const db = await DB.getDB()
-        let currentDay, lastCompletedVerse;
-        const firstNotDoneProgress = await db.getFirstAsync(`SELECT * FROM daily_progress WHERE day_number = (
-                SELECT MIN(day_number) FROM daily_progress WHERE is_completed = 0
-            )`) as DB.DailyProgress
-        if (!firstNotDoneProgress) {
-            currentDay = 1
-            lastCompletedVerse = 1
+            const db = await DB.getDB()
+            let currentDay, lastCompletedVerse;
+            const firstNotDoneProgress = await db.getFirstAsync(`SELECT * FROM daily_progress WHERE day_number = (
+                    SELECT MIN(day_number) FROM daily_progress WHERE is_completed = 0
+                )`) as DB.DailyProgress
+            if (!firstNotDoneProgress) {
+                currentDay = 1
+                lastCompletedVerse = 1
+            }
+            else {
+                currentDay = firstNotDoneProgress.day_number
+                lastCompletedVerse = firstNotDoneProgress.start_verse - 1
+            }
+            const userSettings = await DB.getSettings() as DB.UserSettings
+            const totalDays: number = userSettings.werd_plan_days
+            let partitionType: engine.PartitionType
+            if (settings.partition_type === "juz") partitionType = engine.PartitionType.JUZ
+            else if (settings.partition_type === "surah") partitionType = engine.PartitionType.SURAH
+            else partitionType = engine.PartitionType.PAGE
+            if (await DB.isEmpty(await DB.getDB(), "daily_progress")) await engine.SegmentationEngine.calculatePlan(goal, engine.PartitionType.JUZ)
+            else await engine.SegmentationEngine.recalculatePlan(db, currentDay, lastCompletedVerse, totalDays, partitionType)
+            router.back();
+        } catch (e) {
+            console.error("Goal Setup Error:", e);
+        } finally {
+            setIsLoading(false);
         }
-        else {
-            currentDay = firstNotDoneProgress.day_number
-            lastCompletedVerse = firstNotDoneProgress.end_verse
-        }
-        const userSettings = await DB.getSettings() as DB.UserSettings
-        const totalDays: number = userSettings.werd_plan_days
-        let partitionType: engine.PartitionType
-        if (settings.partition_type === "juz") partitionType = engine.PartitionType.JUZ
-        else if (settings.partition_type === "surah") partitionType = engine.PartitionType.SURAH
-        else partitionType = engine.PartitionType.PAGE
-        if (await DB.isEmpty(await DB.getDB(), "daily_progress") || firstNotDoneProgress.day_number === 1) await engine.SegmentationEngine.calculatePlan(goal, engine.PartitionType.JUZ)
-        else await engine.SegmentationEngine.recalculatePlan(db, currentDay, lastCompletedVerse, totalDays, partitionType)
     }
 
     const renderOption = (item: any, currentSelected: number, setter: (id: number) => void) => {
@@ -103,9 +113,85 @@ const goalSetup = () => {
         );
     }
 
+    useEffect(() => {
+        const init = async () => {
+            // @ts-ignore
+            const current_settings = await DB.getSettings() as DB.UserSettings
+            if(!current_settings) return;
+            const days = current_settings.werd_plan_days
+            const partition = current_settings.partition_type
+            if (days === 90) setGoal(1);
+            else if (days === 60) setGoal(2)
+            else if (days === 30) setGoal(3)
+            else if (days === 7) setGoal(4)
+            else setGoal(5)
+
+            if (partition === 'juz') setPartition(1)
+            else if (partition === 'surah') setPartition(2)
+            else setPartition(3);
+        };
+        init();
+    }, []);
+
     return (
         <>
             <Stack.Screen options={{ headerShown: false }} />
+
+            {/* Full-screen Loading Overlay */}
+            <Modal
+                visible={isLoading}
+                transparent
+                animationType="fade"
+                statusBarTranslucent
+            >
+                <View
+                    style={{
+                        flex: 1,
+                        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                    }}
+                >
+                    <View
+                        style={{
+                            backgroundColor: colorScheme === 'dark' ? '#1a1a1a' : '#ffffff',
+                            borderRadius: 24,
+                            padding: 36,
+                            alignItems: 'center',
+                            width: '75%',
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 8 },
+                            shadowOpacity: 0.3,
+                            shadowRadius: 16,
+                            elevation: 10,
+                        }}
+                    >
+                        <ActivityIndicator size="large" color="#D4AF37" />
+                        <Text
+                            style={{
+                                color: colorScheme === 'dark' ? '#ffffff' : '#111827',
+                                fontSize: 17,
+                                fontWeight: '700',
+                                marginTop: 20,
+                                textAlign: 'center',
+                            }}
+                        >
+                            {t('calculatingPlan')}
+                        </Text>
+                        <Text
+                            style={{
+                                color: colorScheme === 'dark' ? '#9ca3af' : '#6b7280',
+                                fontSize: 13,
+                                marginTop: 8,
+                                textAlign: 'center',
+                            }}
+                        >
+                            {t('pleaseWait')}
+                        </Text>
+                    </View>
+                </View>
+            </Modal>
+
             <SafeAreaView className="flex-1 bg-gray-50 dark:bg-matteBlack">
                 <ScrollView
                     className="flex-1 px-6"
@@ -124,7 +210,7 @@ const goalSetup = () => {
                         scrollEnabled={false}
                     />
 
-                    <RadioButton text={t('custom')} description={t('customPeriod')} selected={selectedGoal === 4} onSelected={() => { setPrevGoal(selectedGoal); setShow(true) }}></RadioButton>
+                    <RadioButton text={t('custom')} description={t('customPeriod')} selected={selectedGoal === 5} onSelected={() => { setPrevGoal(selectedGoal); setShow(true) }}></RadioButton>
                     {show && (
                         <DateTimePicker
                             value={date}
@@ -134,7 +220,7 @@ const goalSetup = () => {
                                 if (event.type === 'set') {
                                     console.log(selectedDate);
                                     if (selectedDate) setDate(selectedDate);
-                                    setGoal(4)
+                                    setGoal(5)
                                 }
                                 else {
                                     console.log("user cancelled")
@@ -156,33 +242,11 @@ const goalSetup = () => {
                         scrollEnabled={false}
                     />
 
-                    {selectedPartition === 3 && (
-                        <View className="mt-4 mb-2 p-4 bg-gray-100 dark:bg-[#1A1A1A] rounded-2xl border-2 border-gray-300 dark:border-gray-800">
-                            <Text className="text-primaryGold mb-3 text-center text-lg font-bold">
-                                {sliderValue} {t('pagesPerDay')}
-                            </Text>
-                            <Slider
-                                style={{ width: '100%', height: 40 }}
-                                minimumValue={1}
-                                maximumValue={50}
-                                step={1}
-                                value={sliderValue}
-                                onValueChange={(value) => setSliderValue(value)}
-                                minimumTrackTintColor="#D4AF37"
-                                maximumTrackTintColor="#374151"
-                                thumbTintColor="#D4AF37"
-                            />
-                            <View className="flex-row justify-between mt-1">
-                                <Text className="text-gray-400 text-xs">1 {t('page')}</Text>
-                                <Text className="text-gray-400 text-xs">50 {t('page')}</Text>
-                            </View>
-                        </View>
-                    )}
-
                     <View className="h-[1px] bg-gray-300 dark:bg-gray-800 w-full my-8" />
 
                     <TouchableOpacity
                         onPress={setWerdSettings}
+                        disabled={isLoading}
                         className="bg-gray-100 dark:bg-[#1A1A1A] border-2 border-primaryGold rounded-2xl py-4 px-8 mt-10 active:opacity-70"
                     >
                         <Text className="text-primaryGold text-base font-bold text-xl text-center">{t('startMyWerd')}</Text>

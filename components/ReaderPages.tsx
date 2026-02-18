@@ -10,6 +10,7 @@ import * as DB from "@/utils/DatabaseManager";
 import { ReaderParams, SessionType } from "@/types/reader_data";
 import { useStreak } from '@/services/StreakManager';
 import React from "react";
+import { useRouter } from "expo-router";
 
 export const ReaderPages = () => {
     const flatListRef = useRef<FlatList>(null);
@@ -21,6 +22,7 @@ export const ReaderPages = () => {
     const { height, width } = useWindowDimensions();
     const { incrementStreak } = useStreak(); 
     const isCompletedRef = useRef(false);
+    const router = useRouter();
     const raw_params = useLocalSearchParams();
     const surahId = raw_params.surahId ? parseInt(raw_params.surahId as string, 10) : undefined;
     const sessionType = (raw_params.sessionType as SessionType) || 'daily_werd';
@@ -40,10 +42,11 @@ export const ReaderPages = () => {
 
 useFocusEffect(
     useCallback(() => {
-        isCompletedRef.current = false; // reset on enter
+        isCompletedRef.current = false;
         return () => {
             const saveProgress = async () => {
-                if (isCompletedRef.current) return; // skip if just completed
+                if (isCompletedRef.current) return;
+                if (sessionType === 'full_surah') return;
                 const today = await DB.getLastStopped();
                 if (today !== null) {
                     const data = await DB.getDailyProgress(today);
@@ -74,6 +77,7 @@ const handleCompleted = async () => {
         await DB.updateDailyProgress({ is_completed: 1, last_page: 0 }, today!)
         isCompletedRef.current = true;
         console.log("Marked as completed")
+        router.back();
     }
     catch (error) {
         console.log(error)
@@ -84,7 +88,7 @@ const handleCompleted = async () => {
         if (viewableItems.length > 0) {
             const index = viewableItems[0].index || 0;
             setCurrentPage(index);
-            currentPageRef.current = index; // keep ref in sync
+            currentPageRef.current = index;
         }
     });
 

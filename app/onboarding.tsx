@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Dimensions, Image, Switch, ScrollView, I18nManager } from 'react-native';
+import { View, Text, TouchableOpacity, Dimensions, Image, Switch, ScrollView, I18nManager, ActivityIndicator, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useColorScheme } from "nativewind";
@@ -25,6 +25,7 @@ const Onboarding = () => {
     const [selectedFont, setSelectedFont] = useState('D1');
     const [readingMode, setReadingMode] = useState(0);
     const [partitionType, setPartitionType] = useState('page');
+    const [isLoading, setIsLoading] = useState(false);
 
     const toggleTheme = async (val: boolean) => {
         const newTheme = val ? 'dark' : 'light';
@@ -36,6 +37,7 @@ const Onboarding = () => {
         const isRTL = lang === 'ar';
         I18nManager.allowRTL(isRTL);
         I18nManager.forceRTL(isRTL);
+        await DB.updateSettings({language: lang})
         await (async () => {
             return await Updates.reloadAsync();
         })();
@@ -64,6 +66,7 @@ const Onboarding = () => {
     };
 
     const applySettingsAndFinish = async (finalSettings: any) => {
+        setIsLoading(true);
         try {
             await DB.updateSettings({
                 ...finalSettings,
@@ -84,11 +87,67 @@ const Onboarding = () => {
             router.replace('/(tabs)/werd');
         } catch (e) {
             console.error("Onboarding Finish Error:", e);
+            setIsLoading(false);
         }
     };
 
     return (
         <SafeAreaView className="flex-1 bg-gray-50 dark:bg-bgBlack justify-between p-6">
+
+            {/* Full-screen Loading Overlay */}
+            <Modal
+                visible={isLoading}
+                transparent
+                animationType="fade"
+                statusBarTranslucent
+            >
+                <View
+                    style={{
+                        flex: 1,
+                        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                    }}
+                >
+                    <View
+                        style={{
+                            backgroundColor: colorScheme === 'dark' ? '#1a1a1a' : '#ffffff',
+                            borderRadius: 24,
+                            padding: 36,
+                            alignItems: 'center',
+                            width: width * 0.75,
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 8 },
+                            shadowOpacity: 0.3,
+                            shadowRadius: 16,
+                            elevation: 10,
+                        }}
+                    >
+                        <ActivityIndicator size="large" color="#D4AF37" />
+                        <Text
+                            style={{
+                                color: colorScheme === 'dark' ? '#ffffff' : '#111827',
+                                fontSize: 17,
+                                fontWeight: '700',
+                                marginTop: 20,
+                                textAlign: 'center',
+                            }}
+                        >
+                            {t('calculatingPlan')}
+                        </Text>
+                        <Text
+                            style={{
+                                color: colorScheme === 'dark' ? '#9ca3af' : '#6b7280',
+                                fontSize: 13,
+                                marginTop: 8,
+                                textAlign: 'center',
+                            }}
+                        >
+                            {t('pleaseWait')}
+                        </Text>
+                    </View>
+                </View>
+            </Modal>
 
             {/* Header: Progress & Skip */}
             <View className="flex-row justify-between items-center mt-2">
@@ -97,7 +156,7 @@ const Onboarding = () => {
                         <View key={i} className={`h-1.5 rounded-full ${step >= i ? 'w-6 bg-primaryGold' : 'w-2 bg-gray-300 dark:bg-gray-700'}`} />
                     ))}
                 </View>
-                <TouchableOpacity onPress={handleSkip}>
+                <TouchableOpacity onPress={handleSkip} disabled={isLoading}>
                     <Text className="text-gray-400 dark:text-gray-500 font-medium">{t('skipSetup')}</Text>
                 </TouchableOpacity>
             </View>
@@ -271,6 +330,7 @@ const Onboarding = () => {
             <View className="w-full mt-4">
                 <TouchableOpacity
                     onPress={() => step < 3 ? setStep(step + 1) : handleFinish()}
+                    disabled={isLoading}
                     className="w-full bg-primaryGold p-4 rounded-xl items-center"
                     style={{
                         shadowColor: '#D4AF37',
@@ -286,7 +346,7 @@ const Onboarding = () => {
                 </TouchableOpacity>
 
                 {step > 0 && (
-                    <TouchableOpacity onPress={() => setStep(step - 1)} className="mt-4 items-center py-2">
+                    <TouchableOpacity onPress={() => setStep(step - 1)} disabled={isLoading} className="mt-4 items-center py-2">
                         <Text className="text-gray-500 dark:text-gray-400 font-medium">{t('back')}</Text>
                     </TouchableOpacity>
                 )}

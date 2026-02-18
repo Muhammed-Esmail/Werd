@@ -46,6 +46,7 @@
   "finishingPeriod": "Finishing Period",
   "casual": "Casual",
   "threeMonths": "3 Months",
+  "twoMonths": "2 Months",
   "regular": "Regular",
   "oneMonth": "1 Month",
   "serious": "Serious",
@@ -97,5 +98,17 @@
   "exportPDF": "Export Today's Werd as PDF",
   "generating": "Generating...",
   "exportSuccess": "Exported successfully",
-  "exportFailed": "Export failed"
+  "exportFailed": "Export failed",
+  "explore": "Explore",
+  "aboutUs": "About Us",
+  "readingModeTitle": "Reading Mode",
+  "aboutDescription": "This app was born from a simple desire to make the Quran a daily companion. We're a group of developers building for the sake of Allah, and we pray it brings you closer to His words.", 
+  "devs": {
+    "dev1": "Mohamed Ahmed Ismail",
+    "dev2": "Youssef Essam Abdelkader",
+    "dev3": "Saif Mohamed Lashin",
+    "dev4": "Ahmed Amin Mahmoud El-Metwally",
+    "dev5": "Youssef Mohamed Hasib"
+  },
+  "calculatingPlan": "Calculating Your Plan..."
 }
