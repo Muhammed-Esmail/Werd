@@ -66,10 +66,13 @@ export interface DailyProgress {
     end_verse: number;
     start_unit_val: number;
     end_unit_val: number;
-    is_completed: number;
-    last_page: number;
+    is_completed: number;    
     total_pages: number;
     scroll_percentage: Double;
+    start_page: number;
+    end_page: number;
+    exit_surah_id: number;
+    exit_verse_relative_id: number;
 }
 
 export const isEmpty = async (db: SQLite.SQLiteDatabase, table: string) => {
@@ -580,100 +583,21 @@ export const getDoneVersesCount = async (): Promise<number> => {
     }
 }
 
-
-export const getMushafPage = async (surahId: number, ayahNumber: number): Promise<number | null> => {
+export const getPage = async(id: number): Promise<number | null> => {
     const db = await getDB()
     //@ts-ignore
     const result = await db.getFirstAsync<{ page_number: number }>(
+        `SELECT page FROM verses WHERE id = ?`,
+        [id]
+    );
+    return result?.page_number ?? null;
+}
+
+export const getPageRelative = async (surahId: number, ayahNumber: number): Promise<number | null> => {
+    const db = await getDB();
+    const result = await db.getFirstAsync<{ page: number }>(
         `SELECT page FROM verses WHERE surah_id = ? AND relative_id = ?`,
         [surahId, ayahNumber]
     );
-    return result?.page_number ?? null;
+    return result?.page ?? null;
 };
-// export const addNotificationColumns = async () => {
-//     try {
-//         const db = await getDB();
-
-//         const tableInfo = await db.getAllAsync(`PRAGMA table_info(user_settings)`);
-//         const columns = tableInfo.map((col: any) => col.name);
-
-//         if (!columns.includes('notification_enabled')) {
-//             await db.execAsync(`ALTER TABLE user_settings ADD COLUMN notification_enabled INTEGER DEFAULT 0;`);
-//             console.log('✅ Added notification_enabled column');
-//         }
-
-//         if (!columns.includes('notification_time')) {
-//             await db.execAsync(`ALTER TABLE user_settings ADD COLUMN notification_time TEXT DEFAULT 'evening';`);
-//             console.log('✅ Added notification_time column');
-//         }
-
-//         if (!columns.includes('notification_hour')) {
-//             await db.execAsync(`ALTER TABLE user_settings ADD COLUMN notification_hour INTEGER DEFAULT 20;`);
-//             console.log('✅ Added notification_hour column');
-//         }
-
-//         if (!columns.includes('notification_minute')) {
-//             await db.execAsync(`ALTER TABLE user_settings ADD COLUMN notification_minute INTEGER DEFAULT 0;`);
-//             console.log('✅ Added notification_minute column');
-//         }
-
-//     } catch (error) {
-//         console.error('❌ Failed to add notification columns:', error);
-//     }
-// };
-
-// export const updateNotificationSettings = async (
-//     enabled: boolean,
-//     time: string,
-//     hour: number,
-//     minute: number,
-//     userId: number = 1
-// ) => {
-//     try {
-//         const db = await getDB();
-//         await db.runAsync(`
-//             UPDATE user_settings 
-//             SET notification_enabled = ?,
-//                 notification_time = ?,
-//                 notification_hour = ?,
-//                 notification_minute = ?
-//             WHERE id = ?
-//         `, [enabled ? 1 : 0, time, hour, minute, userId]);
-
-//         console.log('✅ Notification settings saved to database');
-//     } catch (error) {
-//         console.error('❌ Failed to save notification settings:', error);
-//         throw error;
-//     }
-// };
-
-// export const getNotificationSettings = async (userId: number = 1) => {
-//     try {
-//         const db = await getDB();
-
-//         const settings = await db.getFirstAsync(
-//             `SELECT notification_enabled, notification_time, notification_hour, notification_minute FROM user_settings WHERE id = ?`,
-//             [userId]
-//         );
-
-//         if (settings) {
-//             return settings;
-//         }
-
-//         return {
-//             notification_enabled: 0,
-//             notification_time: 'evening',
-//             notification_hour: 20,
-//             notification_minute: 0
-//         };
-
-//     } catch (error) {
-//         console.error('❌ Failed to load notification settings:', error);
-//         return {
-//             notification_enabled: 0,
-//             notification_time: 'evening',
-//             notification_hour: 20,
-//             notification_minute: 0
-//         };
-//     }
-// };
