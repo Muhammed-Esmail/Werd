@@ -594,11 +594,10 @@ export const getPage = async(id: number): Promise<number | null> => {
 }
 
 export const getPageRelative = async (surahId: number, ayahNumber: number): Promise<number | null> => {
-    const db = await getDB()
-    //@ts-ignore
-    const result = await db.getFirstAsync<{ page_number: number }>(
+    const db = await getDB();
+    const result = await db.getFirstAsync<{ page: number }>(
         `SELECT page FROM verses WHERE surah_id = ? AND relative_id = ?`,
         [surahId, ayahNumber]
     );
-    return result?.page_number ?? null;
+    return result?.page ?? null;
 };
