@@ -87,13 +87,13 @@ export class SegmentationEngine {
             currentFloatUnit += unitsPerDay;
         }
 
-        // Save once after the full plan is built, not on every iteration
-        await this.savePlanToDB(db, plan);
+        await this.savePlanToDB(plan);
 
         return plan;
     }
 
-    static async savePlanToDB(db: SQLiteDatabase, plan: PlanSegment[]) {
+    static async savePlanToDB(plan: PlanSegment[]) {
+        const db = await DB.getDB(); 
         console.log("Saving Plan to DB")
         try {
             await db.execAsync('DELETE FROM daily_progress');

@@ -4,7 +4,7 @@ import * as DB from '@/utils/DatabaseManager';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Text, TouchableOpacity, View, ScrollView, ActivityIndicator, Alert  } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -56,35 +56,35 @@ const TodayCard = ({ progress, onExportPDF, onComplete }: { progress: DailyProgr
   const [displayTotalPages, setDisplayTotalPages] = useState(0);
   const [pdfStatus, setPdfStatus] = useState<PdfStatus>('idle');
 
-useEffect(() => {
-  const loadProgressDetails = async () => {
-      const total = progress.total_pages;
-      const scrollPercent = progress.scroll_percentage ?? 0;
-      const savedPagesPercent = progress.pages_percentage ?? 0;
-      let currentPagesPercent = 0;
-      if (progress.exit_surah_id !== 0) {
-          const lastPageAbsolute = await DB.getPageRelative(progress.exit_surah_id, progress.exit_verse_relative_id);
-          if (lastPageAbsolute !== null && lastPageAbsolute >= progress.start_page) {
-              const done = lastPageAbsolute - progress.start_page + 1;
-              currentPagesPercent = total > 0 ? (Math.min(done, total) / total) * 100 : 0;
-          }
-      }
+  useEffect(() => {
+    const loadProgressDetails = async () => {
+        const total = progress.total_pages;
+        const scrollPercent = progress.scroll_percentage ?? 0;
+        const savedPagesPercent = progress.pages_percentage ?? 0;
+        let currentPagesPercent = 0;
+        if (progress.exit_surah_id !== 0) {
+            const lastPageAbsolute = await DB.getPageRelative(progress.exit_surah_id, progress.exit_verse_relative_id);
+            if (lastPageAbsolute !== null && lastPageAbsolute >= progress.start_page) {
+                const done = lastPageAbsolute - progress.start_page + 1;
+                currentPagesPercent = total > 0 ? (Math.min(done, total) / total) * 100 : 0;
+            }
+        }
 
-      const bestPagesPercent = Math.max(currentPagesPercent, savedPagesPercent);
-      if (currentPagesPercent > savedPagesPercent) {
-          const today = await DB.getLastStopped();
-          if (today !== null) await DB.updateDailyProgress({ pages_percentage: bestPagesPercent }, today);
-      }
+        const bestPagesPercent = Math.max(currentPagesPercent, savedPagesPercent);
+        if (currentPagesPercent > savedPagesPercent) {
+            const today = await DB.getLastStopped();
+            if (today !== null) await DB.updateDailyProgress({ pages_percentage: bestPagesPercent }, today);
+        }
 
-      const percent = Math.max(scrollPercent, bestPagesPercent);
-      const done = Math.round((percent / 100) * total);
-      setDisplayPagesDone(done);
-      setDisplayTotalPages(total);
-      setProgressPercent(percent);
-  };
+        const percent = Math.max(scrollPercent, bestPagesPercent);
+        const done = Math.round((percent / 100) * total);
+        setDisplayPagesDone(done);
+        setDisplayTotalPages(total);
+        setProgressPercent(percent);
+    };
 
-  loadProgressDetails();
-}, [progress]);
+    loadProgressDetails();
+  }, [progress]);
 
   const handleCompletePress = () => {
     Alert.alert(
@@ -96,8 +96,6 @@ useEffect(() => {
       ]
     );
   };
-
-
 
   return (
     <View className='bg-white dark:bg-surfaceBlack border-[1px] border-gray-200 dark:border-mutedWhite rounded-[20px]'>
@@ -158,8 +156,14 @@ const WerdPage = () => {
   const [donePagesCount, setDonePagesCount] = useState(0);
   const [pdfStatus, setPdfStatus] = useState<PdfStatus>('idle');
   const { incrementStreak } = useStreak();
+  const skipNextLoadRef = useRef(false);
 
   const loadData = async () => {
+    if (skipNextLoadRef.current) {
+      skipNextLoadRef.current = false;
+      setLoading(false);
+      return;
+    }
     try {
       const streakData = await DB.getStreak();
       setStreak(streakData);
@@ -174,17 +178,26 @@ const WerdPage = () => {
   };
 
   useFocusEffect(useCallback(() => {
-  const timer = setTimeout(() => { loadData(); }, 300);
-  return () => clearTimeout(timer);
-}, []));
+    const timer = setTimeout(() => { loadData(); }, 300);
+    return () => clearTimeout(timer);
+  }, []));
 
   const handleCompleted = async () => {
     await incrementStreak();
     const today = await DB.getLastStopped();
     await DB.updateDailyProgress({ is_completed: 1 }, today!);
+    await DB.updateDailyProgress({ 
+        pages_percentage: 0.0, 
+        scroll_percentage: 0.0, 
+        exit_surah_id: 0, 
+        exit_verse_relative_id: 0 
+    }, today! + 1);
+    
     const tomorrow = await DB.getDailyProgress(today! + 1);
-    if (tomorrow) setProgress(tomorrow);
-    loadData();
+    if (tomorrow) {
+        skipNextLoadRef.current = true;
+        setProgress(tomorrow);
+    }
   };
 
   const onExportPDF = async () => {
