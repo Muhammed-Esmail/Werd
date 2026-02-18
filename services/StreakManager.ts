@@ -26,36 +26,39 @@ export const useStreak = () => {
 
     const fetchHeatmapData = useCallback(async () => {
         const today = new Date();
-        const monthsToLoad: MonthData[] = [];
 
-        for(let i = 0; i < 6; i++){
+        const monthPromises = Array.from({ length : 6}, (_, i) => {
             const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
             const year = d.getFullYear();
             const monthIndex = d.getMonth();
+            return DB.getDates(year, monthIndex).then(dbDates => ({
+                dbDates: dbDates as DB.DateData[],
+                year,
+                monthIndex
+            }));
+        });
+        
+        const results = await Promise.all(monthPromises);
 
+        const monthsToLoad: MonthData[] = results.map(({ dbDates, year, monthIndex }) => {
             const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
-
-            const dbDates = await DB.getDates(year, monthIndex) as DB.DateData[];
-
             const completedDays = new Set(dbDates.map(d => d.day));
 
-            const days: DayData[] = Array.from({ length: daysInMonth}, (_, index) =>{
-                const dayNumber = index + 1;
-                return {
-                    intensity: completedDays.has(dayNumber) ? 1 : 0
-                };
-            });
+            const days: DayData[] = Array.from({ length: daysInMonth }, (_, index) => ({
+                intensity: completedDays.has(index + 1) ? 1 : 0
+            }));
 
-            monthsToLoad.push({
+            return {
                 id: `${MONTH_NAMES[monthIndex]}-${year}`,
                 label: `${MONTH_NAMES[monthIndex]} ${year}`,
                 days,
                 year,
                 monthIndex
-            });
-        }
+            };
+        });
+        
 
-        setHeatmapData(monthsToLoad.reverse());
+        setHeatmapData([...monthsToLoad].reverse());
     }, []);
 
     const getTimeStamp = (dateInput?: string | Date) => {
@@ -93,9 +96,11 @@ export const useStreak = () => {
                 await ResetStreak(true);
             };
             init();
+            
             const interval = setInterval(() => {
                 ResetStreak(false);
             }, 5000);
+
             const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
                 if (nextAppState === 'active') {
                     ResetStreak(true);
