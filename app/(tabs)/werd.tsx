@@ -34,28 +34,29 @@ const TodayCard = ({ progress, onExportPDF, onComplete }: { progress: DailyProgr
   const [displayPagesDone, setDisplayPagesDone] = useState(0);
   const [displayTotalPages, setDisplayTotalPages] = useState(0);
 
-useEffect(() => {
-const loadProgressDetails = async () => {
-    let lastPageAbsolute: number | null = null;
+  useEffect(() => {
+  const loadProgressDetails = async () => {
+      let lastPageAbsolute: number | null = null;
+      const total = progress.total_pages;
 
-    if (progress.exit_surah_id !== 0) {
-        lastPageAbsolute = await DB.getPageRelative(progress.exit_surah_id, progress.exit_verse_relative_id);
-    }
-
-    const total = progress.total_pages;
-
-    let done = 0;
-    if (lastPageAbsolute !== null && lastPageAbsolute >= progress.start_page) {
-        done = lastPageAbsolute - progress.start_page + 1;
-    }
-
-    const safeDone = Math.min(done, total);
-    const percent = total > 0 ? (safeDone / total) * 100 : 0;
-
-    setDisplayTotalPages(total);
-    setDisplayPagesDone(safeDone);
-    setProgressPercent(percent);
-};
+      if (progress.exit_surah_id !== 0) {
+          lastPageAbsolute = await DB.getPageRelative(progress.exit_surah_id, progress.exit_verse_relative_id);
+          let done = 0;
+          if (lastPageAbsolute !== null && lastPageAbsolute >= progress.start_page) {
+              done = lastPageAbsolute - progress.start_page + 1;
+          }
+          const safeDone = Math.min(done, total);
+          setDisplayPagesDone(safeDone);
+          setDisplayTotalPages(total);
+          setProgressPercent(total > 0 ? (safeDone / total) * 100 : 0);
+      } else {
+          const percent = progress.scroll_percentage ?? 0;
+          const done = Math.round((percent / 100) * total);
+          setDisplayPagesDone(done);
+          setDisplayTotalPages(total);
+          setProgressPercent(percent);
+      }
+  };
     
     loadProgressDetails();
 }, [progress]);
