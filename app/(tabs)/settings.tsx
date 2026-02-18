@@ -113,19 +113,45 @@ const Settings = () => {
                     />
                 ) : item.id === 6 ? (
                     <View className="w-32">
-                        <SelectList 
-                            setSelected={(val: string) => {
-                                const lang = LANGUAGE_CHOICES.find(l => l.value === val);
-                                if (lang) changeLang(lang.key);
-                            }} 
-                            data={LANGUAGE_CHOICES} 
-                            save="value"
-                            search={false}
-                            placeholder={i18n.language === 'ar' ? 'Arabic' : 'English'}
-                            boxStyles={{ borderRadius: 10, borderWidth: 0, paddingVertical: 5, backgroundColor: 'rgba(212, 175, 55, 0.1)' }}
-                            inputStyles={{ color: '#D4AF37', fontSize: 12, fontWeight: 'bold' }}
-                            dropdownStyles={{ backgroundColor: colorScheme === 'dark' ? '#1A1A1A' : '#FFF' }}
-                        />
+                <SelectList 
+                    setSelected={(val: string) => {
+                        const lang = LANGUAGE_CHOICES.find(l => l.value === val);
+                        if (lang) changeLang(lang.key);
+                    }} 
+                    data={LANGUAGE_CHOICES} 
+                    save="value"
+                    search={false}
+                    placeholder={i18n.language === 'ar' ? t('arabic') : t('english')}
+                    boxStyles={{ 
+                        borderRadius: 10, 
+                        borderWidth: 0, 
+                        paddingVertical: 5, 
+                        backgroundColor: colorScheme === 'dark' ? 'rgba(212, 175, 55, 0.15)' : 'rgba(212, 175, 55, 0.05)' 
+                    }}
+                    inputStyles={{ 
+                        color: '#D4AF37', 
+                        fontSize: 12, 
+                        fontWeight: 'bold',
+                        textAlign: i18n.language === 'ar' ? 'right' : 'left'
+                    }}
+                    dropdownStyles={{ 
+                        backgroundColor: colorScheme === 'dark' ? '#1A1A1A' : '#FFFFFF',
+                        borderColor: colorScheme === 'dark' ? '#333333' : '#E5E5E5',
+                        marginTop: 5
+                    }}
+
+                    dropdownTextStyles={{
+                        color: colorScheme === 'dark' ? '#FFFFFF' : '#000000',
+                        fontSize: 14,
+                        textAlign: i18n.language === 'ar' ? 'right' : 'left'
+                    }}
+                    // This handles the hover/selected state color in the list
+                    dropdownItemStyles={{
+                        paddingVertical: 10,
+                        borderBottomWidth: 0.5,
+                        borderBottomColor: colorScheme === 'dark' ? '#333' : '#F0F0F0'
+                    }}
+                />
                     </View>
                 ) : (
                     <MaterialIcons 
