@@ -10,6 +10,8 @@ import { ReadingSession } from "@/types/quran_data";
 import { useStreak } from '@/services/StreakManager';
 import React from "react";
 import { useFocusEffect, useRouter } from 'expo-router';
+import i18n from '../i18n';
+import { useTranslation } from "react-i18next";
 
 
 export const ReaderInfiniteScroll = () => {
@@ -20,6 +22,7 @@ export const ReaderInfiniteScroll = () => {
     const [surahPositions, setSurahPositions] = useState<Record<number, number>>({});
     const { incrementStreak } = useStreak(); 
     const router = useRouter();
+    const { t } = useTranslation();
 
     const scrollProgress = useRef(new Animated.Value(0)).current;
     const scrollViewRef = useRef<ScrollView>(null);
@@ -167,7 +170,7 @@ const handleCompleted = async () => {
                                         textShadowRadius: 4,
                                     }}
                                 >
-                                    Mark Today's Werd as Complete
+                                    {t("markCompletedReader")}
                                 </Text>
                             </TouchableOpacity>
                         </View>

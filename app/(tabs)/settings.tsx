@@ -45,7 +45,21 @@ const Settings = () => {
         {key: 'ar', value: 'Arabic'}
     ]
 
-    const FONT_OPTIONS = ['Amiri-Regular', 'HAFS', 'UthmanTN_v2-0', 'D1', 'Q1'];
+    const FONT_OPTIONS = [
+        'Amiri-Bold', 
+        'Amiri-BoldItalic', 
+        'Amiri-Italic', 
+        'Amiri-Regular',
+        'D1', 
+        'D2', 
+        'HAFS', 
+        'J1', 
+        'J2', 
+        'Q1', 
+        'U3',
+        'UthmanTN1-Ver10', 
+        'UthmanTN_v2-0'
+    ];
 
     useEffect(() => {
         const loadSettings = async () => {
