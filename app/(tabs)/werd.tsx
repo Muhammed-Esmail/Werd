@@ -54,7 +54,6 @@ const TodayCard = ({ progress, onExportPDF, onComplete }: { progress: DailyProgr
   const [progressPercent, setProgressPercent] = useState(0);
   const [displayPagesDone, setDisplayPagesDone] = useState(0);
   const [displayTotalPages, setDisplayTotalPages] = useState(0);
-  const [pdfStatus, setPdfStatus] = useState<PdfStatus>('idle');
 
   useEffect(() => {
     const loadProgressDetails = async () => {
@@ -68,9 +67,9 @@ const TodayCard = ({ progress, onExportPDF, onComplete }: { progress: DailyProgr
                 const done = lastPageAbsolute - progress.start_page + 1;
                 currentPagesPercent = total > 0 ? (Math.min(done, total) / total) * 100 : 0;
             }
-        }
+      }
 
-        const bestPagesPercent = Math.max(currentPagesPercent, savedPagesPercent);
+      const bestPagesPercent = Math.max(currentPagesPercent, savedPagesPercent);
         if (currentPagesPercent > savedPagesPercent) {
             const today = await DB.getLastStopped();
             if (today !== null) await DB.updateDailyProgress({ pages_percentage: bestPagesPercent }, today);
