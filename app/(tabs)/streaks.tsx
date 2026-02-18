@@ -135,7 +135,7 @@ const StreakPage = () => {
                         maxToRenderPerBatch={2}
                         windowSize={3}
                         showsHorizontalScrollIndicator={false}
-                        style={{ width: LIST_WIDTH, flexGrow: 0 }}
+                        style={{ width: LIST_WIDTH, flexGrow: 0, direction: 'ltr' }}
                         snapToInterval={LIST_WIDTH}
                         decelerationRate="fast"
                         getItemLayout={(_, index) => ({ length: LIST_WIDTH, offset: LIST_WIDTH * index, index })}

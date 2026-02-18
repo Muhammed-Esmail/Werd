@@ -27,7 +27,7 @@ export const ReaderPages = () => {
     const raw_params = useLocalSearchParams();
     const surahId = raw_params.surahId ? parseInt(raw_params.surahId as string, 10) : undefined;
     const sessionType = (raw_params.sessionType as SessionType) || 'daily_werd';
-        const { t } = useTranslation();
+    const { t } = useTranslation();
 
     useEffect(() => {
         const fetchData = async () => {
