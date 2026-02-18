@@ -87,13 +87,13 @@ export class SegmentationEngine {
             currentFloatUnit += unitsPerDay;
         }
 
-        // Save once after the full plan is built, not on every iteration
-        await this.savePlanToDB(db, plan);
+        await this.savePlanToDB(plan);
 
         return plan;
     }
 
-    static async savePlanToDB(db: SQLiteDatabase, plan: PlanSegment[]) {
+    static async savePlanToDB(plan: PlanSegment[]) {
+        const db = await DB.getDB(); 
         console.log("Saving Plan to DB")
         try {
             await db.execAsync('DELETE FROM daily_progress');
@@ -104,14 +104,32 @@ export class SegmentationEngine {
             const valueRows = await Promise.all(
                 plan.map(async p => {
                     const pageCount = await DB.getPageCount(p.start_verse, p.end_verse);
-                    const start_page = await DB.getPage(p.start_verse)
-                    const end_page = await DB.getPage(p.end_verse)
-                    return `(${p.day}, '${p.date}', ${p.start_verse}, ${p.end_verse}, ${p.start_unit_val}, ${p.end_unit_val}, 0, 0, ${pageCount}, 0, ${start_page}, ${end_page}, 0, 0)`;
+                    
+                    // Add a fallback (|| 1) to prevent NULL errors
+                    const start_page = (await DB.getPage(p.start_verse)) || 1;
+                    const end_page = (await DB.getPage(p.end_verse)) || 604;
+
+                    return `(
+                        ${p.day}, 
+                        '${p.date}', 
+                        ${p.start_verse}, 
+                        ${p.end_verse}, 
+                        ${p.start_unit_val}, 
+                        ${p.end_unit_val}, 
+                        0, 
+                        ${pageCount}, 
+                        0,
+                        0,
+                        ${start_page}, 
+                        ${end_page}, 
+                        0, 
+                        0
+                    )`;
                 })
             );
             const values = valueRows.join(',');
             await db.execAsync(`
-                INSERT INTO daily_progress (day_number, date, start_verse, end_verse, start_unit_val, end_unit_val, is_completed, last_page, total_pages, scroll_percentage, start_page, end_page, exit_surah_id, exit_verse_relative_id)
+                INSERT INTO daily_progress (day_number, date, start_verse, end_verse, start_unit_val, end_unit_val, is_completed, total_pages, scroll_percentage, pages_percentage, start_page, end_page, exit_surah_id, exit_verse_relative_id)
                 VALUES ${values}
             `);
             console.log("Inserted Werd Plan into daily_progress")
@@ -224,15 +242,33 @@ export class SegmentationEngine {
             const valueRows = await Promise.all(
                 newPlan.map(async p => {
                     const pageCount = await DB.getPageCount(p.start_verse, p.end_verse);
-                    const start_page = await DB.getPage(p.start_verse)
-                    const end_page = await DB.getPage(p.end_verse)
-                    return `(${p.day}, '${p.date}', ${p.start_verse}, ${p.end_verse}, ${p.start_unit_val}, ${p.end_unit_val}, 0, 0, ${pageCount}, 0, ${start_page}, ${end_page}, 0, 0)`;
+                    
+                    // Add a fallback (|| 1) to prevent NULL errors
+                    const start_page = (await DB.getPage(p.start_verse)) || 1;
+                    const end_page = (await DB.getPage(p.end_verse)) || 604;
+
+                    return `(
+                        ${p.day}, 
+                        '${p.date}', 
+                        ${p.start_verse}, 
+                        ${p.end_verse}, 
+                        ${p.start_unit_val}, 
+                        ${p.end_unit_val}, 
+                        0, 
+                        ${pageCount}, 
+                        0, 
+                        0,
+                        ${start_page}, 
+                        ${end_page}, 
+                        0, 
+                        0
+                    )`;
                 })
             );
             const values = valueRows.join(',');
 
             await db.execAsync(`
-                INSERT INTO daily_progress (day_number, date, start_verse, end_verse, start_unit_val, end_unit_val, is_completed, last_page, total_pages, scroll_percentage, start_page, end_page, exit_surah_id, exit_verse_relative_id))
+                INSERT INTO daily_progress (day_number, date, start_verse, end_verse, start_unit_val, end_unit_val, is_completed, total_pages, scroll_percentage, pages_percentage, start_page, end_page, exit_surah_id, exit_verse_relative_id))
                 VALUES ${values}
             `);
             console.log("Inserted recalculated Werd Plan into daily_progress");

@@ -69,6 +69,7 @@ export interface DailyProgress {
     is_completed: number;    
     total_pages: number;
     scroll_percentage: Double;
+    pages_percentage: Double;
     start_page: number;
     end_page: number;
     exit_surah_id: number;
@@ -227,7 +228,6 @@ export const fetchQuranText = async (params: rp.ReaderParams): Promise<qd.Readin
             const segment = await getDailyProgress(today!) as DailyProgress;
 
             if (segment) {
-                // Using start_verse/end_verse from daily_progress table
                 verses = await fetchVerses(segment.start_verse, segment.end_verse, 'verse');
             } else {
                 console.log("No segment found for today");
@@ -585,20 +585,18 @@ export const getDoneVersesCount = async (): Promise<number> => {
 
 export const getPage = async(id: number): Promise<number | null> => {
     const db = await getDB()
-    //@ts-ignore
-    const result = await db.getFirstAsync<{ page_number: number }>(
+    const result = await db.getFirstAsync<{ page: number }>(
         `SELECT page FROM verses WHERE id = ?`,
         [id]
     );
-    return result?.page_number ?? null;
+    return result?.page ?? null;
 }
 
 export const getPageRelative = async (surahId: number, ayahNumber: number): Promise<number | null> => {
-    const db = await getDB()
-    //@ts-ignore
-    const result = await db.getFirstAsync<{ page_number: number }>(
+    const db = await getDB();
+    const result = await db.getFirstAsync<{ page: number }>(
         `SELECT page FROM verses WHERE surah_id = ? AND relative_id = ?`,
         [surahId, ayahNumber]
     );
-    return result?.page_number ?? null;
+    return result?.page ?? null;
 };
