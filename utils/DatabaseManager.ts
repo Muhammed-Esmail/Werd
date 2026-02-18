@@ -482,6 +482,19 @@ export const getDailyProgress = async (day_number: number) => {
     }
 }
 
+export const closeConnection = async () => {
+    if (database) {
+        try {
+            await database.closeAsync();
+            database = null;
+            dbInitPromise = null;
+            console.log("Database closed cleanly");
+        } catch (e) {
+            console.error("Error closing database:", e);
+        }
+    }
+};
+
 export const getDates = async (year: number, month: number) => {
     try {
         const db = await getDB()
@@ -498,7 +511,7 @@ export const getDates = async (year: number, month: number) => {
 export const insertDate = async (day: number, month: number, year: number, is_done: number) => {
     try {
         const db = await getDB()
-        await db.runAsync(`INSERT INTO dates VALUES (?, ?, ?, ?)`, [day, month, year, is_done])
+        await db.runAsync(`INSERT INTO dates (day, month, year, is_done) VALUES (?, ?, ?, ?)`, [day, month, year, is_done])
         console.log("Inserted New Date")
     }
     catch (error) {

@@ -54,7 +54,6 @@ const TodayCard = ({ progress, onExportPDF, onComplete }: { progress: DailyProgr
   const [progressPercent, setProgressPercent] = useState(0);
   const [displayPagesDone, setDisplayPagesDone] = useState(0);
   const [displayTotalPages, setDisplayTotalPages] = useState(0);
-  const [pdfStatus, setPdfStatus] = useState<PdfStatus>('idle');
 
   useEffect(() => {
     const loadProgressDetails = async () => {
