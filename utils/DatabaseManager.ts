@@ -69,6 +69,7 @@ export interface DailyProgress {
     is_completed: number;    
     total_pages: number;
     scroll_percentage: Double;
+    pages_percentage: Double;
     start_page: number;
     end_page: number;
     exit_surah_id: number;

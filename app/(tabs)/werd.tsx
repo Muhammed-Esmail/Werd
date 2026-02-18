@@ -56,31 +56,34 @@ const TodayCard = ({ progress, onExportPDF, onComplete }: { progress: DailyProgr
   const [displayTotalPages, setDisplayTotalPages] = useState(0);
   const [pdfStatus, setPdfStatus] = useState<PdfStatus>('idle');
 
-  useEffect(() => {
+useEffect(() => {
   const loadProgressDetails = async () => {
-      let lastPageAbsolute: number | null = null;
       const total = progress.total_pages;
-
+      const scrollPercent = progress.scroll_percentage ?? 0;
+      const savedPagesPercent = progress.pages_percentage ?? 0;
+      let currentPagesPercent = 0;
       if (progress.exit_surah_id !== 0) {
-          lastPageAbsolute = await DB.getPageRelative(progress.exit_surah_id, progress.exit_verse_relative_id);
-          let done = 0;
+          const lastPageAbsolute = await DB.getPageRelative(progress.exit_surah_id, progress.exit_verse_relative_id);
           if (lastPageAbsolute !== null && lastPageAbsolute >= progress.start_page) {
-              done = lastPageAbsolute - progress.start_page + 1;
+              const done = lastPageAbsolute - progress.start_page + 1;
+              currentPagesPercent = total > 0 ? (Math.min(done, total) / total) * 100 : 0;
           }
-          const safeDone = Math.min(done, total);
-          setDisplayPagesDone(safeDone);
-          setDisplayTotalPages(total);
-          setProgressPercent(total > 0 ? (safeDone / total) * 100 : 0);
-      } else {
-          const percent = progress.scroll_percentage ?? 0;
-          const done = Math.round((percent / 100) * total);
-          setDisplayPagesDone(done);
-          setDisplayTotalPages(total);
-          setProgressPercent(percent);
       }
+
+      const bestPagesPercent = Math.max(currentPagesPercent, savedPagesPercent);
+      if (currentPagesPercent > savedPagesPercent) {
+          const today = await DB.getLastStopped();
+          if (today !== null) await DB.updateDailyProgress({ pages_percentage: bestPagesPercent }, today);
+      }
+
+      const percent = Math.max(scrollPercent, bestPagesPercent);
+      const done = Math.round((percent / 100) * total);
+      setDisplayPagesDone(done);
+      setDisplayTotalPages(total);
+      setProgressPercent(percent);
   };
-    
-    loadProgressDetails();
+
+  loadProgressDetails();
 }, [progress]);
 
   const handleCompletePress = () => {

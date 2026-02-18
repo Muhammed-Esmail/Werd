@@ -118,7 +118,8 @@ export class SegmentationEngine {
                         ${p.end_unit_val}, 
                         0, 
                         ${pageCount}, 
-                        0, 
+                        0,
+                        0,
                         ${start_page}, 
                         ${end_page}, 
                         0, 
@@ -128,7 +129,7 @@ export class SegmentationEngine {
             );
             const values = valueRows.join(',');
             await db.execAsync(`
-                INSERT INTO daily_progress (day_number, date, start_verse, end_verse, start_unit_val, end_unit_val, is_completed, total_pages, scroll_percentage, start_page, end_page, exit_surah_id, exit_verse_relative_id)
+                INSERT INTO daily_progress (day_number, date, start_verse, end_verse, start_unit_val, end_unit_val, is_completed, total_pages, scroll_percentage, pages_percentage, start_page, end_page, exit_surah_id, exit_verse_relative_id)
                 VALUES ${values}
             `);
             console.log("Inserted Werd Plan into daily_progress")
@@ -256,6 +257,7 @@ export class SegmentationEngine {
                         0, 
                         ${pageCount}, 
                         0, 
+                        0,
                         ${start_page}, 
                         ${end_page}, 
                         0, 
@@ -266,7 +268,7 @@ export class SegmentationEngine {
             const values = valueRows.join(',');
 
             await db.execAsync(`
-                INSERT INTO daily_progress (day_number, date, start_verse, end_verse, start_unit_val, end_unit_val, is_completed, total_pages, scroll_percentage, start_page, end_page, exit_surah_id, exit_verse_relative_id))
+                INSERT INTO daily_progress (day_number, date, start_verse, end_verse, start_unit_val, end_unit_val, is_completed, total_pages, scroll_percentage, pages_percentage, start_page, end_page, exit_surah_id, exit_verse_relative_id))
                 VALUES ${values}
             `);
             console.log("Inserted recalculated Werd Plan into daily_progress");
