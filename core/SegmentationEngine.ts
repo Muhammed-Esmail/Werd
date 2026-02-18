@@ -104,12 +104,14 @@ export class SegmentationEngine {
             const valueRows = await Promise.all(
                 plan.map(async p => {
                     const pageCount = await DB.getPageCount(p.start_verse, p.end_verse);
-                    return `(${p.day}, '${p.date}', ${p.start_verse}, ${p.end_verse}, ${p.start_unit_val}, ${p.end_unit_val}, 0, 0, ${pageCount}, 0)`;
+                    const start_page = await DB.getPage(p.start_verse)
+                    const end_page = await DB.getPage(p.end_verse)
+                    return `(${p.day}, '${p.date}', ${p.start_verse}, ${p.end_verse}, ${p.start_unit_val}, ${p.end_unit_val}, 0, 0, ${pageCount}, 0, ${start_page}, ${end_page}, 0, 0)`;
                 })
             );
             const values = valueRows.join(',');
             await db.execAsync(`
-                INSERT INTO daily_progress (day_number, date, start_verse, end_verse, start_unit_val, end_unit_val, is_completed, last_page, total_pages, scroll_percentage)
+                INSERT INTO daily_progress (day_number, date, start_verse, end_verse, start_unit_val, end_unit_val, is_completed, last_page, total_pages, scroll_percentage, start_page, end_page, exit_surah_id, exit_verse_relative_id)
                 VALUES ${values}
             `);
             console.log("Inserted Werd Plan into daily_progress")
@@ -222,13 +224,15 @@ export class SegmentationEngine {
             const valueRows = await Promise.all(
                 newPlan.map(async p => {
                     const pageCount = await DB.getPageCount(p.start_verse, p.end_verse);
-                    return `(${p.day}, '${p.date}', ${p.start_verse}, ${p.end_verse}, ${p.start_unit_val}, ${p.end_unit_val}, 0, 0, ${pageCount}, 0)`;
+                    const start_page = await DB.getPage(p.start_verse)
+                    const end_page = await DB.getPage(p.end_verse)
+                    return `(${p.day}, '${p.date}', ${p.start_verse}, ${p.end_verse}, ${p.start_unit_val}, ${p.end_unit_val}, 0, 0, ${pageCount}, 0, ${start_page}, ${end_page}, 0, 0)`;
                 })
             );
             const values = valueRows.join(',');
 
             await db.execAsync(`
-                INSERT INTO daily_progress (day_number, date, start_verse, end_verse, start_unit_val, end_unit_val, is_completed, last_page, total_pages, scroll_percentage)
+                INSERT INTO daily_progress (day_number, date, start_verse, end_verse, start_unit_val, end_unit_val, is_completed, last_page, total_pages, scroll_percentage, start_page, end_page, exit_surah_id, exit_verse_relative_id))
                 VALUES ${values}
             `);
             console.log("Inserted recalculated Werd Plan into daily_progress");
