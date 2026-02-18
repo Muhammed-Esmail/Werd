@@ -1,5 +1,5 @@
 import { Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { FlatList, View, Text, useWindowDimensions, TouchableOpacity, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { PageAtom, ReadingSession } from "@/types/quran_data";
@@ -13,11 +13,16 @@ import React from "react";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
+interface PageData {
+    items: PageAtom[];
+    firstAyah: { surahId: number; ayahNumber: number } | null;
+}
+
 export const ReaderPages = () => {
     const flatListRef = useRef<FlatList>(null);
     const [currentPage, setCurrentPage] = useState(0);
     const currentPageRef = useRef(0);
-    const [pages, setPages] = useState<{ items: PageAtom[] }[]>([]);
+    const [pages, setPages] = useState<PageData[]>([]);
     const [isMeasuring, setIsMeasuring] = useState(true);
     const [quranData, setQuranData] = useState<PageAtom[]>([]);
     const { height, width } = useWindowDimensions();
@@ -29,6 +34,12 @@ export const ReaderPages = () => {
     const sessionType = (raw_params.sessionType as SessionType) || 'daily_werd';
     const { t } = useTranslation();
 
+    const firstAyahsArray = useMemo(() => {
+        return pages.map(page => page.firstAyah);
+    }, [pages]);
+
+    // console.log(firstAyahsArray);
+    
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -42,25 +53,25 @@ export const ReaderPages = () => {
         fetchData();
     }, [surahId, sessionType]);
 
-useFocusEffect(
-    useCallback(() => {
-        isCompletedRef.current = false;
-        return () => {
-            const saveProgress = async () => {
-                if (isCompletedRef.current) return;
-                if (sessionType === 'full_surah') return;
-                const today = await DB.getLastStopped();
-                if (today !== null) {
-                    const data = await DB.getDailyProgress(today);
-                    const best = Math.max(currentPageRef.current, data?.last_page ?? 0);
-                    await DB.updateDailyProgress({ last_page: best }, today);
-                    console.log(`Saved last_page = ${currentPageRef.current}`);
-                }
+    useFocusEffect(
+        useCallback(() => {
+            isCompletedRef.current = false;
+            return () => {
+                const saveProgress = async () => {
+                    if (isCompletedRef.current) return;
+                    if (sessionType === 'full_surah') return;
+                    const today = await DB.getLastStopped();
+                    if (today !== null) {
+                        const data = await DB.getDailyProgress(today);
+                        const best = Math.max(currentPageRef.current, data?.last_page ?? 0);
+                        await DB.updateDailyProgress({ last_page: best }, today);
+                        console.log(`Saved last_page = ${currentPageRef.current}`);
+                    }
+                };
+                saveProgress();
             };
-            saveProgress();
-        };
-    }, [])
-);
+        }, [])
+    );
 
     const goToPage = (pageIndex: number) => {
         if (!pages || pages.length === 0) return;
@@ -72,19 +83,19 @@ useFocusEffect(
         });
     };
 
-const handleCompleted = async () => {
-    try {
-        await incrementStreak()
-        const today = await DB.getLastStopped()
-        await DB.updateDailyProgress({ is_completed: 1, last_page: 0 }, today!)
-        isCompletedRef.current = true;
-        console.log("Marked as completed")
-        router.back();
+    const handleCompleted = async () => {
+        try {
+            await incrementStreak()
+            const today = await DB.getLastStopped()
+            await DB.updateDailyProgress({ is_completed: 1, last_page: 0 }, today!)
+            isCompletedRef.current = true;
+            console.log("Marked as completed")
+            router.back();
+        }
+        catch (error) {
+            console.log(error)
+        }
     }
-    catch (error) {
-        console.log(error)
-    }
-}
 
     const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
         if (viewableItems.length > 0) {
@@ -98,7 +109,7 @@ const handleCompleted = async () => {
         itemVisiblePercentThreshold: 50,
     });
 
-    const renderPage = ({ item }: { item: { items: PageAtom[] } }) => {
+    const renderPage = ({ item }: { item: PageData }) => {
         return (
             <View style={{ width, height: height * 0.85 }}>
                 <ReaderPageAtom items={item.items} />
@@ -114,8 +125,8 @@ const handleCompleted = async () => {
                 <PaginatedMeasurer
                     allItems={quranData || []}
                     targetHeight={height * 0.85}
-                    onPageGenerated={(page: PageAtom[], last: boolean) => {
-                        setPages(prev => [...prev, { items: page }]);
+                    onPageGenerated={(page: PageAtom[], last: boolean, firstAyah) => {
+                        setPages(prev => [...prev, { items: page, firstAyah }]);
                         if (last) setIsMeasuring(false);
                     }}
                 />

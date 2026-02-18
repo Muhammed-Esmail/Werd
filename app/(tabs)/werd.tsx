@@ -134,17 +134,17 @@ const werd = () => {
   const [pdfStatus, setPdfStatus] = useState<PdfStatus>('idle');
   const { incrementStreak } = useStreak();
 
-const handleCompleted = async () => {
-    await incrementStreak();
-    const today = await DB.getLastStopped();
-    await DB.updateDailyProgress({ is_completed: 1 }, today!);
-    const tomorrow = await DB.getDailyProgress(today! + 1);
-    setProgress(tomorrow);
-    const updatedStreak = await DB.getStreak();        
-    setStreak(updatedStreak);
-    const updatedCount = await DB.getDoneVersesCount();
-    setDonePages(updatedCount || 0); 
-  };
+  const handleCompleted = async () => {
+      await incrementStreak();
+      const today = await DB.getLastStopped();
+      await DB.updateDailyProgress({ is_completed: 1 }, today!);
+      const tomorrow = await DB.getDailyProgress(today! + 1);
+      setProgress(tomorrow);
+      const updatedStreak = await DB.getStreak();        
+      setStreak(updatedStreak);
+      const updatedCount = await DB.getDoneVersesCount();
+      setDonePages(updatedCount || 0); 
+    };
 
   useFocusEffect(
     useCallback(() => {
