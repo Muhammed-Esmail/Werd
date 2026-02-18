@@ -580,6 +580,16 @@ export const getDoneVersesCount = async (): Promise<number> => {
     }
 }
 
+
+export const getMushafPage = async (surahId: number, ayahNumber: number): Promise<number | null> => {
+    const db = await getDB()
+    //@ts-ignore
+    const result = await db.getFirstAsync<{ page_number: number }>(
+        `SELECT page FROM verses WHERE surah_id = ? AND relative_id = ?`,
+        [surahId, ayahNumber]
+    );
+    return result?.page_number ?? null;
+};
 // export const addNotificationColumns = async () => {
 //     try {
 //         const db = await getDB();

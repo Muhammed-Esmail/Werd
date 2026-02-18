@@ -9,6 +9,7 @@ import { Text, TouchableOpacity, View, ScrollView, ActivityIndicator } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import * as PDFExporter from '@/services/PDFExporter';
+import { useStreak } from '@/services/StreakManager';
 
 type PdfStatus = 'idle' | 'loading' | 'done' | 'error';
 
@@ -29,7 +30,7 @@ const Card = ({ sideIcon, sideText, mainText, underText }: any) => {
   )
 }
 
-const TodayCard = ({ progress, onExportPDF }: { progress: DailyProgress, onExportPDF: () => void }) => {
+const TodayCard = ({ progress, onExportPDF, onComplete }: { progress: DailyProgress, onExportPDF: () => void, onComplete: () => void }) => {
   const { t } = useTranslation();
   const [progressPercent, setProgressPercent] = useState(0);
 
@@ -89,7 +90,7 @@ const TodayCard = ({ progress, onExportPDF }: { progress: DailyProgress, onExpor
         <Text className='font-bold tracking-wide text-[17px]'>{t('readTodaysWerd')}</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity activeOpacity={0.7} className='mt-5 h-15 p-4 bg-goldMuted dark:bg-mutedBlack border-[1px] border-gray-300 dark:border-light-300 rounded-2xl w-[80%] items-center justify-center self-center mb-5'>
+      <TouchableOpacity onPress = {onComplete} activeOpacity={0.7} className='mt-5 h-15 p-4 bg-goldMuted dark:bg-mutedBlack border-[1px] border-gray-300 dark:border-light-300 rounded-2xl w-[80%] items-center justify-center self-center mb-5'>
         <Text className='font-bold tracking-wide text-[15px] text-gray-600'>{t('markCompleted')}</Text>
       </TouchableOpacity>
 
@@ -131,6 +132,19 @@ const werd = () => {
   const [progress, setProgress] = useState<DailyProgress | null>(null);
   const [donePages, setDonePages] = useState(0);
   const [pdfStatus, setPdfStatus] = useState<PdfStatus>('idle');
+  const { incrementStreak } = useStreak();
+
+const handleCompleted = async () => {
+    await incrementStreak();
+    const today = await DB.getLastStopped();
+    await DB.updateDailyProgress({ is_completed: 1 }, today!);
+    const tomorrow = await DB.getDailyProgress(today! + 1);
+    setProgress(tomorrow);
+    const updatedStreak = await DB.getStreak();        
+    setStreak(updatedStreak);
+    const updatedCount = await DB.getDoneVersesCount();
+    setDonePages(updatedCount || 0); 
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -189,7 +203,7 @@ const werd = () => {
             <Text className='font-bold tracking-widest text-gray-600 dark:text-mutedWhite'>{t('todaysGoal')}</Text>
             <Text className='text-xs text-primaryGold font-bold'>{t('werd')} #{progress?.day_number || '00'}</Text>
           </View>
-          {progress && <TodayCard progress={progress} onExportPDF={onExportPDF} />}
+          {progress && <TodayCard progress={progress} onExportPDF={onExportPDF} onComplete={handleCompleted}/>}
           <PdfToast status={pdfStatus} />
         </View>
       </ScrollView>
