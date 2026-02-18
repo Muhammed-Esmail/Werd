@@ -11,7 +11,7 @@
     "slug": "Werd",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/werd-logo.png",
+    "icon": "./assets/images/Werdd.png",
     "userInterfaceStyle": "light",
     "scheme": "werd",
     "newArchEnabled": true,
@@ -30,7 +30,7 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/werd-logo.png"
+      "favicon": "./assets/images/Werdd.png"
     },
     "plugins": [
       "expo-router",
