@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams } from "expo-router";
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { ScrollView, View, ActivityIndicator, Animated,TouchableOpacity,Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ReaderLandmark } from "./ReaderLandmark";
@@ -9,6 +9,9 @@ import { SessionType } from "@/types/reader_data";
 import { ReadingSession } from "@/types/quran_data";
 import { useStreak } from '@/services/StreakManager';
 import React from "react";
+import { useFocusEffect, useRouter } from 'expo-router';
+import i18n from '../i18n';
+import { useTranslation } from "react-i18next";
 
 
 export const ReaderInfiniteScroll = () => {
@@ -18,8 +21,9 @@ export const ReaderInfiniteScroll = () => {
     const [scrollViewHeight, setScrollViewHeight] = useState(0);
     const [surahPositions, setSurahPositions] = useState<Record<number, number>>({});
     const { incrementStreak } = useStreak(); 
+    const router = useRouter();
+    const { t } = useTranslation();
 
-    // Use standard Animated.Value for the landmark progress
     const scrollProgress = useRef(new Animated.Value(0)).current;
     const scrollViewRef = useRef<ScrollView>(null);
 
@@ -44,12 +48,48 @@ export const ReaderInfiniteScroll = () => {
         fetchData();
     }, [params]);
 
+const isCompletedRef = useRef(false);
+
+useFocusEffect(
+    useCallback(() => {
+        isCompletedRef.current = false;
+        return () => {
+            const saveProgress = async () => {
+                if (isCompletedRef.current) return;
+                const currentPercent = Math.round((scrollProgress as any)._value);
+                if (params.sessionType === 'full_surah') return;
+                console.log(`progressPercent = ${currentPercent}`);
+                const today = await DB.getLastStopped();
+                if (today !== null) {
+                    const data = await DB.getDailyProgress(today);
+                    const best = Math.max(currentPercent, data?.scroll_percentage ?? 0);
+                    await DB.updateDailyProgress({ scroll_percentage: best }, today);
+                }
+            };
+            saveProgress();
+        };
+    }, [])
+);
+
+const handleCompleted = async () => {
+    try {
+        await incrementStreak()
+        const today = await DB.getLastStopped()
+        await DB.updateDailyProgress({ is_completed: 1, scroll_percentage: 0 }, today!)
+        isCompletedRef.current = true;
+        console.log("Marked as completed")
+        router.back();
+    }
+    catch (error) {
+        console.log(error)
+    }
+}
+
     const segments = quranData?.segments || [];
 
     const markers = useMemo(() => {
         return segments.map((segment) => {
             const yPos = surahPositions[segment.surahId] || 0;
-            // Calculate position as a percentage of total content height
             const position = contentHeight > 0 ? (yPos / contentHeight) * 100 : 0;
 
             return {
@@ -63,14 +103,12 @@ export const ReaderInfiniteScroll = () => {
 
     const allMarkers = [...markers];
 
-    // Standard Animated.event fix
     const handleScroll = (event: any) => {
         const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
         const scrollableHeight = contentSize.height - layoutMeasurement.height;
         
         if (scrollableHeight > 0) {
             const progress = (contentOffset.y / scrollableHeight) * 100;
-            // setValue updates the Animated.Value directly without a re-render
             scrollProgress.setValue(Math.min(Math.max(progress, 0), 100));
         }
     };
@@ -91,10 +129,9 @@ export const ReaderInfiniteScroll = () => {
                 <ScrollView 
                     ref={scrollViewRef}
                     onScroll={handleScroll}
-                    scrollEventThrottle={16} // Essential for smooth 60fps tracking
+                    scrollEventThrottle={16}
                     onLayout={(event) => setScrollViewHeight(event.nativeEvent.layout.height)}
                     onContentSizeChange={(width, height) => {
-                        
                         setContentHeight(height);
                         if (height > 0 && scrollViewHeight > 0 && height <= scrollViewHeight + 1) {
                             scrollProgress.setValue(100);
@@ -122,18 +159,18 @@ export const ReaderInfiniteScroll = () => {
                     {!isLoading && params.sessionType === 'daily_werd' && (
                         <View className="p-8 items-center justify-center">
                             <TouchableOpacity 
-                                onPress={incrementStreak}
+                                onPress={handleCompleted}
                                 className="bg-hassibGreen px-10 py-4 rounded-full shadow-md"
                             >
                                 <Text 
                                     className="text-white font-bold text-center"
-                                    style = {{
-                                        textShadowColor: 'rgba(0, 0, 0, 0.25)', // The color and opacity
-                                        textShadowOffset: { width: 2, height: 2 }, // Direction (X, Y)
-                                        textShadowRadius: 4, // The blurriness
+                                    style={{
+                                        textShadowColor: 'rgba(0, 0, 0, 0.25)',
+                                        textShadowOffset: { width: 2, height: 2 },
+                                        textShadowRadius: 4,
                                     }}
                                 >
-                                    Mark Today's Werd as Complete
+                                    {t("markCompletedReader")}
                                 </Text>
                             </TouchableOpacity>
                         </View>

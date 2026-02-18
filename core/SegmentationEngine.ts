@@ -22,7 +22,7 @@ export class SegmentationEngine {
     private static TOTAL_SURAH = 114;
 
     static async calculatePlan(
-        days:number,
+        days: number,
         partitionType: PartitionType,
         startDate: Date = new Date()
     ): Promise<PlanSegment[]> {
@@ -50,25 +50,25 @@ export class SegmentationEngine {
         const plan: PlanSegment[] = [];
         let currentFloatUnit = 1.0;
 
-        for(let day = 1; day <= days; day++) {
+        for (let day = 1; day <= days; day++) {
             const startUnit = Math.floor(currentFloatUnit);
             let endUnit = Math.floor(currentFloatUnit + unitsPerDay);
 
-            if(endUnit > totalUnits) endUnit = totalUnits;
-            if(day === days) endUnit = totalUnits;
-
-            if(endUnit < startUnit) endUnit = startUnit;
+            if (endUnit > totalUnits) endUnit = totalUnits;
+            if (day === days) endUnit = totalUnits;
+            if (endUnit < startUnit) endUnit = startUnit;
 
             const startRes = await db.getFirstAsync<{ first_verse: number }>(
                 `SELECT first_verse FROM ${table} WHERE id = ?`,
                 [startUnit]
-            )
+            );
             const safeEndUnit = Math.max(startUnit, Math.min(endUnit, totalUnits));
             const endRes = await db.getFirstAsync<{ last_verse: number }>(
                 `SELECT last_verse FROM ${table} WHERE id = ?`,
                 [safeEndUnit]
-            )
-            if(startRes && endRes) {
+            );
+
+            if (startRes && endRes) {
                 const segmentDate = new Date(startDate);
                 segmentDate.setDate(startDate.getDate() + day - 1);
 
@@ -80,56 +80,76 @@ export class SegmentationEngine {
                     start_unit_val: startUnit,
                     end_unit_val: safeEndUnit
                 });
-
             } else {
                 console.error(`[SegmentationEngine] Error fetching bounds for ${table} IDs: ${startUnit}-${endUnit}`);
             }
-            
-            await this.savePlanToDB(db, plan)
+
             currentFloatUnit += unitsPerDay;
         }
+
+        await this.savePlanToDB(plan);
+
         return plan;
     }
 
-    static async savePlanToDB(db: SQLiteDatabase, plan: PlanSegment[]) {
+    static async savePlanToDB(plan: PlanSegment[]) {
+        const db = await DB.getDB(); 
         console.log("Saving Plan to DB")
         try {
-            // clear the table, not delete it
             await db.execAsync('DELETE FROM daily_progress');
-
             await DB.ensureDailyProgressTable();
 
-            if(plan.length == 0) return;
+            if (plan.length === 0) return;
 
             const valueRows = await Promise.all(
                 plan.map(async p => {
                     const pageCount = await DB.getPageCount(p.start_verse, p.end_verse);
-                    return `(${p.day}, '${p.date}', ${p.start_verse}, ${p.end_verse}, ${p.start_unit_val}, ${p.end_unit_val}, 0, 0, 0, ${p.end_verse - p.start_verse + 1}, ${pageCount})`;
+                    
+                    // Add a fallback (|| 1) to prevent NULL errors
+                    const start_page = (await DB.getPage(p.start_verse)) || 1;
+                    const end_page = (await DB.getPage(p.end_verse)) || 604;
+
+                    return `(
+                        ${p.day}, 
+                        '${p.date}', 
+                        ${p.start_verse}, 
+                        ${p.end_verse}, 
+                        ${p.start_unit_val}, 
+                        ${p.end_unit_val}, 
+                        0, 
+                        ${pageCount}, 
+                        0,
+                        0,
+                        ${start_page}, 
+                        ${end_page}, 
+                        0, 
+                        0
+                    )`;
                 })
             );
-            const values = valueRows.join(',');          
+            const values = valueRows.join(',');
             await db.execAsync(`
-                INSERT INTO daily_progress (day_number, date, start_verse, end_verse, start_unit_val, end_unit_val, is_completed, max_verse, max_page, total_verses, total_pages)
+                INSERT INTO daily_progress (day_number, date, start_verse, end_verse, start_unit_val, end_unit_val, is_completed, total_pages, scroll_percentage, pages_percentage, start_page, end_page, exit_surah_id, exit_verse_relative_id)
                 VALUES ${values}
             `);
             console.log("Inserted Werd Plan into daily_progress")
-
             console.log(`[SegmentationEngine] Saved ${plan.length} days to daily_progress.`);
-        } catch(e) {
+        } catch (e) {
             console.error("[SegmentationEngine] Failed to save plan:", e);
         }
     }
 
-    static async recalculatePlan(db: SQLiteDatabase,
+    static async recalculatePlan(
+        db: SQLiteDatabase,
         currentDay: number,
         lastCompletedVerse: number,
         totalDays: number,
-        partitionType: PartitionType) {
-        console.log("Recalcaulating Plan...")
-        
+        partitionType: PartitionType
+    ) {
+        console.log("Recalculating Plan...")
 
         const remainingDays = totalDays - currentDay;
-        if(remainingDays <= 0) return; // BRO IS COOKED
+        if (remainingDays <= 0) return;
 
         let totalUnits = 0;
         let table = '';
@@ -155,7 +175,7 @@ export class SegmentationEngine {
             [lastCompletedVerse]
         );
 
-        if(!currentUnitRes) {
+        if (!currentUnitRes) {
             console.error("[SegmentationEngine] Could not map last verse to unit.");
             return;
         }
@@ -163,35 +183,35 @@ export class SegmentationEngine {
         const nextStartUnit = currentUnitRes.id + 1;
         const remainingUnits = totalUnits - currentUnitRes.id;
 
-        if(remainingUnits <= 0) return; // BRO IS COOKED
+        if (remainingUnits <= 0) return;
 
         const unitsPerDay = remainingUnits / remainingDays;
         const newPlan: PlanSegment[] = [];
         let currentFloatUnit = nextStartUnit;
 
-        const startDate = new Date(); 
+        const startDate = new Date();
 
-        for(let i = 0; i <= remainingDays; i++) {
+        for (let i = 0; i < remainingDays; i++) {
             const day = currentDay + i;
 
             const startUnit = Math.floor(currentFloatUnit);
-            let  endUnit = Math.floor(currentFloatUnit + unitsPerDay);
+            let endUnit = Math.floor(currentFloatUnit + unitsPerDay);
 
-            if(endUnit > totalUnits) endUnit = totalUnits;
-            if(i === remainingDays) endUnit = totalUnits;
-
-            if(endUnit < startUnit) endUnit = startUnit;
+            if (endUnit > totalUnits) endUnit = totalUnits;
+            if (i === remainingDays - 1) endUnit = totalUnits; // last iteration
+            if (endUnit < startUnit) endUnit = startUnit;
 
             const startRes = await db.getFirstAsync<{ first_verse: number }>(
                 `SELECT first_verse FROM ${table} WHERE id = ?`,
                 [startUnit]
-            )
+            );
             const safeEndUnit = Math.max(startUnit, Math.min(endUnit, totalUnits));
             const endRes = await db.getFirstAsync<{ last_verse: number }>(
                 `SELECT last_verse FROM ${table} WHERE id = ?`,
                 [safeEndUnit]
-            )
-            if(startRes && endRes) {
+            );
+
+            if (startRes && endRes) {
                 const segmentDate = new Date(startDate);
                 segmentDate.setDate(startDate.getDate() + i);
 
@@ -222,20 +242,41 @@ export class SegmentationEngine {
             const valueRows = await Promise.all(
                 newPlan.map(async p => {
                     const pageCount = await DB.getPageCount(p.start_verse, p.end_verse);
-                    return `(${p.day}, '${p.date}', ${p.start_verse}, ${p.end_verse}, ${p.start_unit_val}, ${p.end_unit_val}, 0, 0, 0, ${p.end_verse - p.start_verse + 1}, ${pageCount})`;
+                    
+                    // Add a fallback (|| 1) to prevent NULL errors
+                    const start_page = (await DB.getPage(p.start_verse)) || 1;
+                    const end_page = (await DB.getPage(p.end_verse)) || 604;
+
+                    return `(
+                        ${p.day}, 
+                        '${p.date}', 
+                        ${p.start_verse}, 
+                        ${p.end_verse}, 
+                        ${p.start_unit_val}, 
+                        ${p.end_unit_val}, 
+                        0, 
+                        ${pageCount}, 
+                        0, 
+                        0,
+                        ${start_page}, 
+                        ${end_page}, 
+                        0, 
+                        0
+                    )`;
                 })
             );
             const values = valueRows.join(',');
 
             await db.execAsync(`
-                INSERT INTO daily_progress (day_number, date, start_verse, end_verse, start_unit_val, end_unit_val, is_completed, max_verse, max_page, total_verses, total_pages)
+                INSERT INTO daily_progress (day_number, date, start_verse, end_verse, start_unit_val, end_unit_val, is_completed, total_pages, scroll_percentage, pages_percentage, start_page, end_page, exit_surah_id, exit_verse_relative_id))
                 VALUES ${values}
             `);
-            console.log("Inserted Werd Plan into daily_progress")
+            console.log("Inserted recalculated Werd Plan into daily_progress");
         }
+
         console.log(`[SegmentationEngine] Recalculated ${newPlan.length} remaining days.`);
 
-        const newData = await db.getAllAsync(`SELECT * FROM daily_progress`)
+        const newData = await db.getAllAsync(`SELECT * FROM daily_progress`);
         console.log(`New Plan Data: ${JSON.stringify(newData, null, 2)}`);
     }
 }

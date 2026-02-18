@@ -7,14 +7,18 @@ import React from "react";
 interface PaginatedMeasureProps {
   allItems: PageAtom[];
   targetHeight: number;
-  onPageGenerated: (page: PageAtom[], last: boolean) => void;
+  onPageGenerated: (
+    page: PageAtom[], 
+    last: boolean, 
+    firstAyah: { surahId: number; ayahNumber: number } | null
+  ) => void;
 }
 
 // Configuration
-const CHARS_PER_PAGE = 120;      // Target characters per page
-const BUFFER_SIZE = 30;           // Extra atoms added to initial estimate
-const MIN_JUMP = 5;               // Minimum atoms to jump when searching
-const MAX_JUMP = 15;              // Maximum atoms to jump when searching
+const CHARS_PER_PAGE = 120;
+const BUFFER_SIZE = 30;           
+const MIN_JUMP = 5;               
+const MAX_JUMP = 15;              
 const BUFFER = 20;
 
 function estimatePageEnd(atoms: PageAtom[], start: number): number {
@@ -33,6 +37,52 @@ function estimatePageEnd(atoms: PageAtom[], start: number): number {
   return atoms.length;
 }
 
+function getFirstAyahInfo(allItems: PageAtom[], startIndex: number) {
+  if (!allItems || allItems.length === 0 || startIndex >= allItems.length) return null;
+
+  let surahId = 1;
+  let ayahNumber = 1;
+
+  for (let i = startIndex; i >= 0; i--) {
+    const atom = allItems[i] as any;
+    if (atom.type === 'header' && atom.surahId !== undefined) {
+      surahId = atom.surahId;
+      break;
+    }
+  }
+
+  const firstAtom = allItems[startIndex] as any;
+  if (firstAtom && firstAtom.type === 'header') {
+    ayahNumber = 1;
+  } else {
+    let foundMarker = false;
+    for (let i = startIndex; i < allItems.length; i++) {
+      const atom = allItems[i] as any;
+      if (atom.type === 'ayahMarker' && atom.number !== undefined) {
+        ayahNumber = atom.number;
+        foundMarker = true;
+        break;
+      } else if (atom.type === 'header' && i !== startIndex) {
+        ayahNumber = 1;
+        foundMarker = true;
+        break;
+      }
+    }
+
+    if (!foundMarker) {
+      for (let i = startIndex; i >= 0; i--) {
+        const atom = allItems[i] as any;
+        if (atom.type === 'ayahMarker' && atom.number !== undefined) {
+          ayahNumber = atom.number + 1;
+          break;
+        }
+      }
+    }
+  }
+
+  return { surahId, ayahNumber };
+}
+
 export const PaginatedMeasurer = ({ allItems, targetHeight, onPageGenerated }: PaginatedMeasureProps) => {
   const [currentStart, setCurrentStart] = useState(0);
   const [testEnd, setTestEnd] = useState(() => estimatePageEnd(allItems, 0));
@@ -44,11 +94,12 @@ export const PaginatedMeasurer = ({ allItems, targetHeight, onPageGenerated }: P
     setMeasureCount(prev => prev + 1);
 
     if (measuredHeight + BUFFER > targetHeight) {
-      // Content overflows - need to reduce
       if (testEnd === lastValidEnd + 1) {
-        // Found exact split point
         const pageAtoms = allItems.slice(currentStart, lastValidEnd);
-        onPageGenerated(pageAtoms, false);
+        
+        const firstAyah = getFirstAyahInfo(allItems, currentStart); 
+        
+        onPageGenerated(pageAtoms, false, firstAyah);
         console.log(`✅ Page: ${pageAtoms.length} atoms, ${measureCount} measurements`);
         
         const nextStart = lastValidEnd;
@@ -57,15 +108,16 @@ export const PaginatedMeasurer = ({ allItems, targetHeight, onPageGenerated }: P
         setMeasureCount(0);
         setTestEnd(estimatePageEnd(allItems, nextStart));
       } else {
-        // Binary search backward
         const midpoint = lastValidEnd + Math.max(1, Math.floor((testEnd - lastValidEnd) / 2));
         setTestEnd(midpoint);
       }
     } else {
-      // Content fits - can add more
       if (testEnd >= allItems.length) {
-        // Reached the end
-        onPageGenerated(allItems.slice(currentStart, allItems.length), true);
+        const pageAtoms = allItems.slice(currentStart, allItems.length);
+        
+        const firstAyah = getFirstAyahInfo(allItems, currentStart); 
+        
+        onPageGenerated(pageAtoms, true, firstAyah);
         console.log(`✅ Final page: ${allItems.length - currentStart} atoms, ${measureCount} measurements`);
         return;
       }

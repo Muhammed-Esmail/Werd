@@ -1,8 +1,9 @@
 import * as SQLite from "expo-sqlite";
-import * as FileSystem from 'expo-file-system/legacy'; // FORCE LEGACY
+import * as FileSystem from 'expo-file-system/legacy';
 import { Asset } from 'expo-asset';
 import * as rp from "@/types/reader_data"
 import * as qd from "@/types/quran_data"
+import { Double } from "react-native/Libraries/Types/CodegenTypes";
 
 export interface UserSettings {
     id: number;
@@ -63,13 +64,16 @@ export interface DailyProgress {
     date: string;
     start_verse: number;
     end_verse: number;
-    total_verses: number;
-    total_pages: number;
     start_unit_val: number;
     end_unit_val: number;
-    is_completed: number;
-    max_verses: number;
-    max_pages: number;
+    is_completed: number;    
+    total_pages: number;
+    scroll_percentage: Double;
+    pages_percentage: Double;
+    start_page: number;
+    end_page: number;
+    exit_surah_id: number;
+    exit_verse_relative_id: number;
 }
 
 export const isEmpty = async (db: SQLite.SQLiteDatabase, table: string) => {
@@ -219,11 +223,11 @@ export const fetchQuranText = async (params: rp.ReaderParams): Promise<qd.Readin
                 return { sessionId: "-1", sessionType: params.sessionType, segments: [] };
             }
 
-            const currentWerdId = settings.currentWerd;
-            const segment = await getDailyProgress(currentWerdId) as DailyProgress;
+            const today = await getLastStopped()
+            console.log(`today = ${today}`)
+            const segment = await getDailyProgress(today!) as DailyProgress;
 
             if (segment) {
-                // Using start_verse/end_verse from daily_progress table
                 verses = await fetchVerses(segment.start_verse, segment.end_verse, 'verse');
             } else {
                 console.log("No segment found for today");
@@ -300,6 +304,7 @@ export const fetchVerses = async (l: number, r: number, partitionType: Partition
 
     try {
         if (partitionType === 'surah') {
+            // @ts-ignore
             const resL = await db.getFirstAsync<{first_verse: number}>(`SELECT first_verse FROM surahs WHERE id = ?`, [l]);
             // @ts-ignore
             const resR = await db.getFirstAsync<{last_verse: number}>(`SELECT last_verse FROM surahs WHERE id = ?`, [r]);
@@ -307,6 +312,7 @@ export const fetchVerses = async (l: number, r: number, partitionType: Partition
             if (resR) last_verse = resR.last_verse;
         }
         else if (partitionType === 'juz') {
+            // @ts-ignore
             const resL = await db.getFirstAsync<{first_verse: number}>(`SELECT first_verse FROM juz WHERE id = ?`, [l]);
             // @ts-ignore
             const resR = await db.getFirstAsync<{last_verse: number}>(`SELECT last_verse FROM juz WHERE id = ?`, [r]);
@@ -314,6 +320,7 @@ export const fetchVerses = async (l: number, r: number, partitionType: Partition
             if (resR) last_verse = resR.last_verse;
         }
         else if (partitionType === 'page') {
+            // @ts-ignore
             const resL = await db.getFirstAsync<{first_verse: number}>(`SELECT first_verse FROM pages WHERE id = ?`, [l]);
             // @ts-ignore
             const resR = await db.getFirstAsync<{last_verse: number}>(`SELECT last_verse FROM pages WHERE id = ?`, [r]);
@@ -499,17 +506,18 @@ export const insertDate = async (day: number, month: number, year: number, is_do
     }
 }
 
-export const getLastStopped = async () => {
+export const getLastStopped = async (): Promise<number | null> => {
     try {
         const db = await getDB()
-        const today = await db.getFirstAsync(`SELECT day_number FROM daily_progress WHERE day_number = (
-                SELECT MIN(day_number) FROM daily_progress WHERE is_completed = 0
-            )`)
-        if (today) return today
-        console.log("Retrieved Last Stop at werd")
+        // @ts-ignore
+        const row = await db.getFirstAsync<{ day_number: number }>(
+            `SELECT day_number FROM daily_progress WHERE is_completed = 0 ORDER BY day_number ASC LIMIT 1`
+        )
+        return row ? row.day_number : null;
     }
     catch (error) {
         console.log(error)
+        return null;
     }
 }
 
@@ -561,90 +569,34 @@ export const resetWerdSegments = async () => {
     }
 }
 
-// export const addNotificationColumns = async () => {
-//     try {
-//         const db = await getDB();
+export const getDoneVersesCount = async (): Promise<number> => {
+    try {
+        const db = await getDB();
+        // @ts-ignore
+        const res = await db.getFirstAsync<{ total: number }>(
+            `SELECT SUM(total_pages) as total FROM daily_progress WHERE is_completed = 1`
+        );
+        return res?.total ?? 0;
+    } catch (error) {
+        console.log(error);
+        return 0;
+    }
+}
 
-//         const tableInfo = await db.getAllAsync(`PRAGMA table_info(user_settings)`);
-//         const columns = tableInfo.map((col: any) => col.name);
+export const getPage = async(id: number): Promise<number | null> => {
+    const db = await getDB()
+    const result = await db.getFirstAsync<{ page: number }>(
+        `SELECT page FROM verses WHERE id = ?`,
+        [id]
+    );
+    return result?.page ?? null;
+}
 
-//         if (!columns.includes('notification_enabled')) {
-//             await db.execAsync(`ALTER TABLE user_settings ADD COLUMN notification_enabled INTEGER DEFAULT 0;`);
-//             console.log('✅ Added notification_enabled column');
-//         }
-
-//         if (!columns.includes('notification_time')) {
-//             await db.execAsync(`ALTER TABLE user_settings ADD COLUMN notification_time TEXT DEFAULT 'evening';`);
-//             console.log('✅ Added notification_time column');
-//         }
-
-//         if (!columns.includes('notification_hour')) {
-//             await db.execAsync(`ALTER TABLE user_settings ADD COLUMN notification_hour INTEGER DEFAULT 20;`);
-//             console.log('✅ Added notification_hour column');
-//         }
-
-//         if (!columns.includes('notification_minute')) {
-//             await db.execAsync(`ALTER TABLE user_settings ADD COLUMN notification_minute INTEGER DEFAULT 0;`);
-//             console.log('✅ Added notification_minute column');
-//         }
-
-//     } catch (error) {
-//         console.error('❌ Failed to add notification columns:', error);
-//     }
-// };
-
-// export const updateNotificationSettings = async (
-//     enabled: boolean,
-//     time: string,
-//     hour: number,
-//     minute: number,
-//     userId: number = 1
-// ) => {
-//     try {
-//         const db = await getDB();
-//         await db.runAsync(`
-//             UPDATE user_settings 
-//             SET notification_enabled = ?,
-//                 notification_time = ?,
-//                 notification_hour = ?,
-//                 notification_minute = ?
-//             WHERE id = ?
-//         `, [enabled ? 1 : 0, time, hour, minute, userId]);
-
-//         console.log('✅ Notification settings saved to database');
-//     } catch (error) {
-//         console.error('❌ Failed to save notification settings:', error);
-//         throw error;
-//     }
-// };
-
-// export const getNotificationSettings = async (userId: number = 1) => {
-//     try {
-//         const db = await getDB();
-
-//         const settings = await db.getFirstAsync(
-//             `SELECT notification_enabled, notification_time, notification_hour, notification_minute FROM user_settings WHERE id = ?`,
-//             [userId]
-//         );
-
-//         if (settings) {
-//             return settings;
-//         }
-
-//         return {
-//             notification_enabled: 0,
-//             notification_time: 'evening',
-//             notification_hour: 20,
-//             notification_minute: 0
-//         };
-
-//     } catch (error) {
-//         console.error('❌ Failed to load notification settings:', error);
-//         return {
-//             notification_enabled: 0,
-//             notification_time: 'evening',
-//             notification_hour: 20,
-//             notification_minute: 0
-//         };
-//     }
-// };
+export const getPageRelative = async (surahId: number, ayahNumber: number): Promise<number | null> => {
+    const db = await getDB();
+    const result = await db.getFirstAsync<{ page: number }>(
+        `SELECT page FROM verses WHERE surah_id = ? AND relative_id = ?`,
+        [surahId, ayahNumber]
+    );
+    return result?.page ?? null;
+};
