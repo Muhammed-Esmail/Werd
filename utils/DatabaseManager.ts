@@ -1,5 +1,5 @@
 import * as SQLite from "expo-sqlite";
-import * as FileSystem from 'expo-file-system/legacy'; // FORCE LEGACY
+import * as FileSystem from 'expo-file-system/legacy';
 import { Asset } from 'expo-asset';
 import * as rp from "@/types/reader_data"
 import * as qd from "@/types/quran_data"
@@ -301,6 +301,7 @@ export const fetchVerses = async (l: number, r: number, partitionType: Partition
 
     try {
         if (partitionType === 'surah') {
+            // @ts-ignore
             const resL = await db.getFirstAsync<{first_verse: number}>(`SELECT first_verse FROM surahs WHERE id = ?`, [l]);
             // @ts-ignore
             const resR = await db.getFirstAsync<{last_verse: number}>(`SELECT last_verse FROM surahs WHERE id = ?`, [r]);
@@ -308,6 +309,7 @@ export const fetchVerses = async (l: number, r: number, partitionType: Partition
             if (resR) last_verse = resR.last_verse;
         }
         else if (partitionType === 'juz') {
+            // @ts-ignore
             const resL = await db.getFirstAsync<{first_verse: number}>(`SELECT first_verse FROM juz WHERE id = ?`, [l]);
             // @ts-ignore
             const resR = await db.getFirstAsync<{last_verse: number}>(`SELECT last_verse FROM juz WHERE id = ?`, [r]);
@@ -315,6 +317,7 @@ export const fetchVerses = async (l: number, r: number, partitionType: Partition
             if (resR) last_verse = resR.last_verse;
         }
         else if (partitionType === 'page') {
+            // @ts-ignore
             const resL = await db.getFirstAsync<{first_verse: number}>(`SELECT first_verse FROM pages WHERE id = ?`, [l]);
             // @ts-ignore
             const resR = await db.getFirstAsync<{last_verse: number}>(`SELECT last_verse FROM pages WHERE id = ?`, [r]);
@@ -503,6 +506,7 @@ export const insertDate = async (day: number, month: number, year: number, is_do
 export const getLastStopped = async (): Promise<number | null> => {
     try {
         const db = await getDB()
+        // @ts-ignore
         const row = await db.getFirstAsync<{ day_number: number }>(
             `SELECT day_number FROM daily_progress WHERE is_completed = 0 ORDER BY day_number ASC LIMIT 1`
         )
@@ -565,6 +569,7 @@ export const resetWerdSegments = async () => {
 export const getDoneVersesCount = async (): Promise<number> => {
     try {
         const db = await getDB();
+        // @ts-ignore
         const res = await db.getFirstAsync<{ total: number }>(
             `SELECT SUM(total_pages) as total FROM daily_progress WHERE is_completed = 1`
         );
@@ -575,6 +580,16 @@ export const getDoneVersesCount = async (): Promise<number> => {
     }
 }
 
+
+export const getMushafPage = async (surahId: number, ayahNumber: number): Promise<number | null> => {
+    const db = await getDB()
+    //@ts-ignore
+    const result = await db.getFirstAsync<{ page_number: number }>(
+        `SELECT page FROM verses WHERE surah_id = ? AND relative_id = ?`,
+        [surahId, ayahNumber]
+    );
+    return result?.page_number ?? null;
+};
 // export const addNotificationColumns = async () => {
 //     try {
 //         const db = await getDB();

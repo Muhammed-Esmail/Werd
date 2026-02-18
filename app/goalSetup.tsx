@@ -1,12 +1,12 @@
-import { StyleSheet, Text, View, Pressable, FlatList, ScrollView, TouchableOpacity } from 'react-native'
-import React, { useState } from 'react'
+import { StyleSheet, Text, View, Pressable, FlatList, ScrollView, TouchableOpacity, ActivityIndicator, Modal } from 'react-native'
+import React, { useEffect, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import Slider from '@react-native-community/slider';
 import * as DB from "@/utils/DatabaseManager"
 import { useTranslation } from 'react-i18next';
 import * as engine from "@/core/SegmentationEngine"
+import { useColorScheme } from 'nativewind';
 
 const RadioButton = ({ text, selected, description, onSelected }: any) => {
     return (
@@ -15,11 +15,11 @@ const RadioButton = ({ text, selected, description, onSelected }: any) => {
             className={`flex-row items-center justify-between p-4 mb-3 rounded-2xl border-2 ${selected ? "border-primaryGold bg-gray-100 dark:bg-[#1A1A1A]" : "border-gray-300 dark:border-gray-800 bg-transparent"
                 }`}
         >
-            <View>
-                <Text className={`${selected ? "text-green-600 dark:text-successGreen font-bold" : "text-gray-500 dark:text-gray-400"}`}>
+            <View className="flex-1 mr-2">
+                <Text className={`text-lg ${selected ? "text-primaryGold font-bold" : "text-gray-500 dark:text-gray-400"}`}>
                     {text}
                 </Text>
-                <Text className={`${selected ? "text-green-600 dark:text-successGreen" : "text-gray-500 dark:text-gray-300"}`}>
+                <Text className={`${selected ? "text-primaryGold/80" : "text-gray-400 dark:text-gray-500"} text-xs`}>
                     {description}
                 </Text>
             </View>
@@ -33,19 +33,22 @@ const RadioButton = ({ text, selected, description, onSelected }: any) => {
 
 const goalSetup = () => {
     const { t } = useTranslation();
+    const { colorScheme } = useColorScheme();
+    const router = useRouter();
+    
     const [date, setDate] = useState(new Date())
     const [show, setShow] = useState<boolean>(false)
-
     const [selectedGoal, setGoal] = useState<number>(1);
     const [prevGoal, setPrevGoal] = useState<number>(1);
     const [selectedPartition, setPartition] = useState<number>(1);
-
-    const [sliderValue, setSliderValue] = useState<number>(3)
+    const [isLoading, setIsLoading] = useState(false);
+    const [showResetModal, setShowResetModal] = useState(false);
 
     const GOAL_OPTIONS = [
         { id: 1, text: t('casual'), description: t('threeMonths'), days: 90 },
-        { id: 2, text: t('regular'), description: t('oneMonth'), days: 30 },
-        { id: 3, text: t('serious'), description: t('oneWeek'), days: 7 },
+        { id: 2, text: t('regular'), description: t('twoMonths'), days: 60 },
+        { id: 3, text: t('ramadanSpecial'), description: t('oneMonth'), days: 30 },
+        { id: 4, text: t('serious'), description: t('oneWeek'), days: 7 },
     ];
 
     const PARTITION_OPTIONS = [
@@ -53,143 +56,192 @@ const goalSetup = () => {
         { id: 2, text: t('bySurah'), description: t('readSurahPerDay'), partitionType: 'surah' },
         { id: 3, text: t('byPage'), description: t('readPagesPerDay'), partitionType: 'page' }
     ]
-
     const setWerdSettings = async () => {
-        let goal = 0
-        if (selectedGoal === 4) {
-            const now = new Date()
-            goal = Math.ceil(Math.abs(date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+        const db = await DB.getDB();
+        const isEmpty = await DB.isEmpty(db, "daily_progress");
+        
+        if (isEmpty) {
+            await executePlanCalculation(true);
+        } else {
+            setShowResetModal(true);
         }
-        else goal = GOAL_OPTIONS[selectedGoal - 1].days
-        await DB.updateSettings({ werd_plan_days: goal, partition_type: PARTITION_OPTIONS[selectedPartition - 1].partitionType })
-        alert("Werd Settings Set!")
-        const settings = await DB.getSettings() as DB.UserSettings
-        console.log(`settings = ${settings.werd_plan_days} , ${settings.partition_type}`)
-        let partition: engine.PartitionType
-        if (selectedPartition === 1) partition = engine.PartitionType.JUZ
-        if (selectedPartition === 2) partition = engine.PartitionType.SURAH
-        else partition = engine.PartitionType.PAGE
-
-        const db = await DB.getDB()
-        let currentDay, lastCompletedVerse;
-        const firstNotDoneProgress = await db.getFirstAsync(`SELECT * FROM daily_progress WHERE day_number = (
-                SELECT MIN(day_number) FROM daily_progress WHERE is_completed = 0
-            )`) as DB.DailyProgress
-        if (!firstNotDoneProgress) {
-            currentDay = 1
-            lastCompletedVerse = 1
-        }
-        else {
-            currentDay = firstNotDoneProgress.day_number
-            lastCompletedVerse = firstNotDoneProgress.end_verse
-        }
-        const userSettings = await DB.getSettings() as DB.UserSettings
-        const totalDays: number = userSettings.werd_plan_days
-        let partitionType: engine.PartitionType
-        if (settings.partition_type === "juz") partitionType = engine.PartitionType.JUZ
-        else if (settings.partition_type === "surah") partitionType = engine.PartitionType.SURAH
-        else partitionType = engine.PartitionType.PAGE
-        if (await DB.isEmpty(await DB.getDB(), "daily_progress") || firstNotDoneProgress.day_number === 1) await engine.SegmentationEngine.calculatePlan(goal, engine.PartitionType.JUZ)
-        else await engine.SegmentationEngine.recalculatePlan(db, currentDay, lastCompletedVerse, totalDays, partitionType)
     }
 
-    const renderOption = (item: any, currentSelected: number, setter: (id: number) => void) => {
-        return (
-            <RadioButton text={item.text} description={item.description} selected={currentSelected === item.id} onSelected={
-                async () => {
-                    setter(item.id)
+    const executePlanCalculation = async (reset: boolean) => {
+        setShowResetModal(false);
+        setIsLoading(true);
+        
+        try {
+            let goalDays = 0;
+            if (selectedGoal === 5) {
+                const now = new Date();
+                goalDays = Math.ceil(Math.abs(date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+            } else {
+                goalDays = GOAL_OPTIONS[selectedGoal - 1].days;
+            }
+
+            const pTypeString = PARTITION_OPTIONS[selectedPartition - 1].partitionType;
+            await DB.updateSettings({ werd_plan_days: goalDays, partition_type: pTypeString });
+
+            let partitionEnum: engine.PartitionType;
+            if (pTypeString === 'juz') partitionEnum = engine.PartitionType.JUZ;
+            else if (pTypeString === 'surah') partitionEnum = engine.PartitionType.SURAH;
+            else partitionEnum = engine.PartitionType.PAGE;
+
+            const db = await DB.getDB();
+
+            if (reset) {
+                console.log("HERE1111")
+                await engine.SegmentationEngine.calculatePlan(goalDays, partitionEnum);
+            } 
+            else {
+                const firstNotDone = await db.getFirstAsync(`SELECT * FROM daily_progress WHERE is_completed = 0 ORDER BY day_number ASC LIMIT 1`) as DB.DailyProgress;
+                if (firstNotDone.day_number === 1) {
+                    console.log("HERE2222")
+                    await engine.SegmentationEngine.calculatePlan(goalDays, partitionEnum);
+                } else {
+                    console.log("HERE3333")
+                    await engine.SegmentationEngine.recalculatePlan(db, firstNotDone.day_number, firstNotDone.start_verse - 1, goalDays, partitionEnum);
                 }
-            }></RadioButton>
-        );
+            }
+            router.back();
+        } catch (e) {
+            console.error("Calculation Error:", e);
+        } finally {
+            setIsLoading(false);
+        }
     }
+
+    useEffect(() => {
+        const init = async () => {
+            const current_settings = await DB.getSettings() as DB.UserSettings
+            if(!current_settings) return;
+            
+            const days = current_settings.werd_plan_days;
+            if (days === 90) setGoal(1);
+            else if (days === 60) setGoal(2);
+            else if (days === 30) setGoal(3);
+            else if (days === 7) setGoal(4);
+            else if (days > 0) setGoal(5);
+
+            const part = current_settings.partition_type;
+            if (part === 'juz') setPartition(1);
+            else if (part === 'surah') setPartition(2);
+            else setPartition(3);
+        };
+        init();
+    }, []);
 
     return (
-        <>
+        <SafeAreaView className="flex-1 bg-gray-50 dark:bg-matteBlack">
             <Stack.Screen options={{ headerShown: false }} />
-            <SafeAreaView className="flex-1 bg-gray-50 dark:bg-matteBlack">
-                <ScrollView
-                    className="flex-1 px-6"
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingBottom: 40 }}
+
+            {/* Reset Choice Modal */}
+            <Modal visible={showResetModal} transparent animationType="slide">
+                <View className="flex-1 justify-end bg-black/50">
+                    <View className="bg-white dark:bg-[#1A1A1A] p-6 rounded-t-[40px] border-t border-primaryGold">
+                        <View className="w-12 h-1 bg-gray-300 dark:bg-white/10 rounded-full self-center mb-6" />
+                        <Text className="text-xl font-bold text-center text-gray-900 dark:text-white mb-2">
+                            {t('existingProgressFound')}
+                        </Text>
+                        <Text className="text-gray-500 dark:text-gray-400 text-center mb-8 px-4">
+                            {t('chooseStartingPoint')}
+                        </Text>
+                        
+                        <TouchableOpacity 
+                            onPress={() => executePlanCalculation(false)}
+                            className="bg-primaryGold p-4 rounded-2xl mb-3 shadow-sm"
+                        >
+                            <Text className="text-matteBlack font-bold text-center text-lg">{t('continueFromLastStop')}</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity 
+                            onPress={() => executePlanCalculation(true)}
+                            className="bg-red-500/10 border border-red-500/50 p-4 rounded-2xl mb-6"
+                        >
+                            <Text className="text-red-500 font-bold text-center text-lg">{t('startFromBeginning')}</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity onPress={() => setShowResetModal(false)} className="pb-4">
+                            <Text className="text-gray-400 text-center font-semibold">{t('cancel')}</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Loading Modal */}
+            <Modal visible={isLoading} transparent animationType="fade">
+                <View className="flex-1 bg-black/60 justify-center items-center">
+                    <View className="bg-white dark:bg-surfaceBlack p-10 rounded-[30px] items-center w-3/4">
+                        <ActivityIndicator size="large" color="#D4AF37" />
+                        <Text className="text-black dark:text-white text-lg font-bold mt-5">{t('calculatingPlan')}</Text>
+                        <Text className="text-gray-500 text-sm mt-2">{t('pleaseWait')}</Text>
+                    </View>
+                </View>
+            </Modal>
+
+            <ScrollView className="px-6" showsVerticalScrollIndicator={false}>
+                <Text className="text-3xl font-bold text-primaryGold text-center mt-6">{t('werdGoal')}</Text>
+                <Text className="text-gray-500 dark:text-gray-400 text-sm text-center mb-10">{t('choosePlan')}</Text>
+
+                <Text className="text-primaryGold mb-4 text-xl font-bold uppercase tracking-widest">{t('finishingPeriod')}</Text>
+                
+                {GOAL_OPTIONS.map((item) => (
+                    <RadioButton 
+                        key={item.id}
+                        text={item.text} 
+                        description={item.description} 
+                        selected={selectedGoal === item.id} 
+                        onSelected={() => setGoal(item.id)} 
+                    />
+                ))}
+
+                <RadioButton 
+                    text={t('custom')} 
+                    description={t('customPeriod')} 
+                    selected={selectedGoal === 5} 
+                    onSelected={() => { setPrevGoal(selectedGoal); setShow(true); }} 
+                />
+
+                {show && (
+                    <DateTimePicker
+                        value={date}
+                        mode="date"
+                        onChange={(event, selectedDate) => {
+                            setShow(false);
+                            if (event.type === 'set' && selectedDate) {
+                                setDate(selectedDate);
+                                setGoal(5);
+                            } else {
+                                setGoal(prevGoal);
+                            }
+                        }}
+                        minimumDate={new Date()}
+                    />
+                )}
+
+                <View className="h-[1px] bg-gray-200 dark:bg-gray-800 w-full my-8" />
+
+                <Text className="text-primaryGold mb-4 text-xl font-bold uppercase tracking-widest">{t('partitioning')}</Text>
+                {PARTITION_OPTIONS.map((item) => (
+                    <RadioButton 
+                        key={item.id}
+                        text={item.text} 
+                        description={item.description} 
+                        selected={selectedPartition === item.id} 
+                        onSelected={() => setPartition(item.id)} 
+                    />
+                ))}
+
+                <TouchableOpacity
+                    onPress={setWerdSettings}
+                    disabled={isLoading}
+                    className="bg-primaryGold rounded-2xl py-5 mt-10 mb-10 shadow-lg active:opacity-80"
                 >
-                    <Text className="text-3xl font-bold text-primaryGold tracking-tight text-center mt-4">{t('werdGoal')}</Text>
-                    <Text className="text-gray-500 dark:text-light-300 text-sm mt-1 text-center mb-10">{t('choosePlan')}</Text>
-
-                    <Text className="text-primaryGold mb-4 text-2xl font-bold">{t('finishingPeriod')}</Text>
-                    <FlatList
-                        data={GOAL_OPTIONS}
-                        renderItem={({ item }) => renderOption(item, selectedGoal, setGoal)}
-                        keyExtractor={(item) => item.id.toString()}
-                        extraData={selectedGoal}
-                        scrollEnabled={false}
-                    />
-
-                    <RadioButton text={t('custom')} description={t('customPeriod')} selected={selectedGoal === 4} onSelected={() => { setPrevGoal(selectedGoal); setShow(true) }}></RadioButton>
-                    {show && (
-                        <DateTimePicker
-                            value={date}
-                            mode="date"
-                            display={'default'}
-                            onChange={async (event: any, selectedDate: any) => {
-                                if (event.type === 'set') {
-                                    console.log(selectedDate);
-                                    if (selectedDate) setDate(selectedDate);
-                                    setGoal(4)
-                                }
-                                else {
-                                    console.log("user cancelled")
-                                    setGoal(prevGoal)
-                                }
-                                setShow(false);
-                            }}
-                            minimumDate={new Date()}
-                        />
-                    )}
-                    <View className="h-[1px] bg-gray-300 dark:bg-gray-800 w-full my-8" />
-
-                    <Text className="text-primaryGold mb-4 text-2xl font-bold">{t('partitioning')}</Text>
-                    <FlatList
-                        data={PARTITION_OPTIONS}
-                        renderItem={({ item }) => renderOption(item, selectedPartition, setPartition)}
-                        keyExtractor={(item) => item.id.toString()}
-                        extraData={selectedPartition}
-                        scrollEnabled={false}
-                    />
-
-                    {selectedPartition === 3 && (
-                        <View className="mt-4 mb-2 p-4 bg-gray-100 dark:bg-[#1A1A1A] rounded-2xl border-2 border-gray-300 dark:border-gray-800">
-                            <Text className="text-primaryGold mb-3 text-center text-lg font-bold">
-                                {sliderValue} {t('pagesPerDay')}
-                            </Text>
-                            <Slider
-                                style={{ width: '100%', height: 40 }}
-                                minimumValue={1}
-                                maximumValue={50}
-                                step={1}
-                                value={sliderValue}
-                                onValueChange={(value) => setSliderValue(value)}
-                                minimumTrackTintColor="#D4AF37"
-                                maximumTrackTintColor="#374151"
-                                thumbTintColor="#D4AF37"
-                            />
-                            <View className="flex-row justify-between mt-1">
-                                <Text className="text-gray-400 text-xs">1 {t('page')}</Text>
-                                <Text className="text-gray-400 text-xs">50 {t('page')}</Text>
-                            </View>
-                        </View>
-                    )}
-
-                    <View className="h-[1px] bg-gray-300 dark:bg-gray-800 w-full my-8" />
-
-                    <TouchableOpacity
-                        onPress={setWerdSettings}
-                        className="bg-gray-100 dark:bg-[#1A1A1A] border-2 border-primaryGold rounded-2xl py-4 px-8 mt-10 active:opacity-70"
-                    >
-                        <Text className="text-primaryGold text-base font-bold text-xl text-center">{t('startMyWerd')}</Text>
-                    </TouchableOpacity>
-                </ScrollView>
-            </SafeAreaView>
-        </>
+                    <Text className="text-matteBlack font-black text-xl text-center">{t('startMyWerd')}</Text>
+                </TouchableOpacity>
+            </ScrollView>
+        </SafeAreaView>
     );
 }
 
