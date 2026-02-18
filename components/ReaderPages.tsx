@@ -11,6 +11,7 @@ import { ReaderParams, SessionType } from "@/types/reader_data";
 import { useStreak } from '@/services/StreakManager';
 import React from "react";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 
 export const ReaderPages = () => {
     const flatListRef = useRef<FlatList>(null);
@@ -26,6 +27,7 @@ export const ReaderPages = () => {
     const raw_params = useLocalSearchParams();
     const surahId = raw_params.surahId ? parseInt(raw_params.surahId as string, 10) : undefined;
     const sessionType = (raw_params.sessionType as SessionType) || 'daily_werd';
+        const { t } = useTranslation();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -151,7 +153,7 @@ const handleCompleted = async () => {
                                 textShadowRadius: 4,
                             }}
                         >
-                            Complete Today's Werd
+                            {t("markCompletedReader")}
                         </Text>
                     </TouchableOpacity>
                 </View>
@@ -163,7 +165,7 @@ const handleCompleted = async () => {
                     style={{ opacity: currentPage === pages.length - 1 ? 0.5 : 1 }}
                     disabled={currentPage === pages.length - 1}
                 >
-                    <Text className="text-matteBlack dark:text-white">Next</Text>
+                    <Text className="text-matteBlack dark:text-white">{t("next")}</Text>
                 </TouchableOpacity>
 
                 <View className="items-center">
@@ -182,7 +184,7 @@ const handleCompleted = async () => {
                     style={{ opacity: currentPage === 0 ? 0.5 : 1 }}
                     disabled={currentPage === 0}
                 >
-                    <Text className="text-matteBlack dark:text-white">Previous</Text>
+                    <Text className="text-matteBlack dark:text-white">{t("previous")}</Text>
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
