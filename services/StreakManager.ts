@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
-import * as DB from '../utils/DatabaseManager';
+import * as DB from '../utils/DatabaseManager'
+import i18n from '@/i18n';
+import { useTranslation } from 'react-i18next';
 
 export interface DayData {
     intensity: number;
@@ -13,7 +15,7 @@ export interface MonthData {
     monthIndex: number;
 }
 
-const MONTH_NAMES = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+const MONTH_NAMES = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
 
 // Helper to ensure we ALWAYS get Gregorian date parts regardless of System Locale
 const getGregorian = (date: Date) => {
@@ -31,22 +33,35 @@ export const useStreak = () => {
     const [lastCompleted, setLastCompleted] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [heatmapData, setHeatmapData] = useState<MonthData[]>([]);
+    const { t } = useTranslation();
 
     const oneDayInMs = 24 * 60 * 60 * 1000;
 
     const fetchHeatmapData = useCallback(async () => {
-        const now = new Date();
-        const { year: currentYear, month: currentMonth } = getGregorian(now);
+        // const now = new Date();
+        // const { year: currentYear, month: currentMonth } = getGregorian(now);
 
-        const monthPromises = Array.from({ length: 6 }, (_, i) => {
-            // Calculate previous months safely in Gregorian
-            const d = new Date(currentYear, currentMonth - i, 1);
-            const { year, month: monthIndex } = getGregorian(d);
+        // const monthPromises = Array.from({ length: 6 }, (_, i) => {
+        //     // Calculate previous months safely in Gregorian
+        //     const d = new Date(currentYear, currentMonth - i, 1);
+        //     const { year, month: monthIndex } = getGregorian(d);
             
-            return DB.getDates(year, monthIndex).then(dbDates => ({
+        //     return DB.getDates(year, monthIndex).then(dbDates => ({
+
+        const today = new Date();
+        const currentYear = today.getFullYear()
+        const currentMonth = today.getMonth()        
+        const monthPromises = Array.from({ length : 6}, (_, i) => {
+            let targetMonth = currentMonth-i
+            let targetYear = currentYear
+            if (targetMonth < 0) {
+                targetMonth += 12
+                --targetYear
+            }
+            return DB.getDates(targetYear, targetMonth).then(dbDates => ({
                 dbDates: dbDates as DB.DateData[],
-                year,
-                monthIndex
+                year: targetYear,
+                monthIndex: targetMonth
             }));
         });
 
@@ -62,7 +77,7 @@ export const useStreak = () => {
 
             return {
                 id: `${MONTH_NAMES[monthIndex]}-${year}`,
-                label: `${MONTH_NAMES[monthIndex]} ${year}`,
+                label: `${t(MONTH_NAMES[monthIndex])} ${year}`,
                 days,
                 year,
                 monthIndex
