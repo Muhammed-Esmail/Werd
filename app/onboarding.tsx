@@ -152,7 +152,7 @@ const Onboarding = () => {
             {/* Header: Progress & Skip */}
             <View className="flex-row justify-between items-center mt-2">
                 <View className="flex-row space-x-2">
-                    {[0, 1, 2, 3].map(i => (
+                    {[0, 1, 2].map(i => (
                         <View key={i} className={`h-1.5 rounded-full ${step >= i ? 'w-6 bg-primaryGold' : 'w-2 bg-gray-300 dark:bg-gray-700'}`} />
                     ))}
                 </View>
@@ -230,51 +230,8 @@ const Onboarding = () => {
                         </View>
                     )}
 
-                    {/* STEP 2: Reading Preferences */}
+                    {/* STEP 2: Goal */}
                     {step === 2 && (
-                        <View className="items-center w-full">
-                            <MaterialIcons name="chrome-reader-mode" size={60} color="#D4AF37" />
-                            <Text className="text-2xl font-bold text-gray-900 dark:text-white mt-4 mb-8">{t('readingStyle')}</Text>
-
-                            {/* Mode Selection */}
-                            <View className="flex-row w-full gap-4 mb-8">
-                                <TouchableOpacity
-                                    onPress={() => setReadingMode(0)}
-                                    className={`flex-1 p-4 rounded-2xl border-2 items-center ${readingMode === 0 ? 'border-primaryGold bg-goldGlow/10' : 'border-gray-200 dark:border-white/10'}`}
-                                >
-                                    <MaterialIcons name="smartphone" size={30} color={readingMode === 0 ? '#D4AF37' : 'gray'} />
-                                    <Text className={`mt-2 font-bold ${readingMode === 0 ? 'text-primaryGold' : 'text-gray-500'}`}>{t('verticalScroll')}</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    onPress={() => setReadingMode(1)}
-                                    className={`flex-1 p-4 rounded-2xl border-2 items-center ${readingMode === 1 ? 'border-primaryGold bg-goldGlow/10' : 'border-gray-200 dark:border-white/10'}`}
-                                >
-                                    <MaterialIcons name="menu-book" size={30} color={readingMode === 1 ? '#D4AF37' : 'gray'} />
-                                    <Text className={`mt-2 font-bold ${readingMode === 1 ? 'text-primaryGold' : 'text-gray-500'}`}>{t('pagedMode')}</Text>
-                                </TouchableOpacity>
-                            </View>
-
-                            {/* Partition Selection */}
-                            <Text className="self-start ml-2 mb-2 text-gray-500 font-bold uppercase text-xs tracking-widest">{t('divideWerdBy')}</Text>
-                            <View className="w-full bg-white dark:bg-surfaceBlack rounded-2xl border border-gray-200 dark:border-white/10 overflow-hidden">
-                                {['page', 'surah', 'juz'].map((type, index) => (
-                                    <TouchableOpacity
-                                        key={type}
-                                        onPress={() => setPartitionType(type)}
-                                        className={`p-4 flex-row justify-between items-center ${index !== 2 ? 'border-b border-gray-100 dark:border-white/5' : ''} ${partitionType === type ? 'bg-goldGlow/10' : ''}`}
-                                    >
-                                        <Text className={`capitalize text-base ${partitionType === type ? 'text-primaryGold font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
-                                            {t(`by_${type}`)}
-                                        </Text>
-                                        {partitionType === type && <Ionicons name="checkmark-circle" size={20} color="#D4AF37" />}
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                        </View>
-                    )}
-
-                    {/* STEP 3: Goal */}
-                    {step === 3 && (
                         <View className="items-center w-full">
                             <MaterialIcons name="track-changes" size={80} color="#D4AF37" />
                             <Text className="text-2xl font-bold text-gray-900 dark:text-white mt-6 text-center">{t('setYourGoal')}</Text>
@@ -329,7 +286,7 @@ const Onboarding = () => {
             {/* Footer Navigation */}
             <View className="w-full mt-4">
                 <TouchableOpacity
-                    onPress={() => step < 3 ? setStep(step + 1) : handleFinish()}
+                    onPress={() => step < 2 ? setStep(step + 1) : handleFinish()}
                     disabled={isLoading}
                     className="w-full bg-primaryGold p-4 rounded-xl items-center"
                     style={{
@@ -341,7 +298,7 @@ const Onboarding = () => {
                     }}
                 >
                     <Text className="text-white font-bold text-lg">
-                        {step === 3 ? t('startJourney') : t('next')}
+                        {step === 2 ? t('startJourney') : t('next')}
                     </Text>
                 </TouchableOpacity>
 
