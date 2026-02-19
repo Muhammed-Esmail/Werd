@@ -12,6 +12,12 @@
     },
     "slug": "Werd",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/ce82cbff-3f5f-4479-915a-b07faf07f21f"
+    },
     "orientation": "portrait",
     "icon": "./assets/images/Werdd.png",
     "userInterfaceStyle": "light",
@@ -59,9 +65,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "2608c95e-3c63-4809-8afe-148e3645a5b2"
+        "projectId": "ce82cbff-3f5f-4479-915a-b07faf07f21f"
       }
     },
-    "owner": "youssefessam"
+    "owner": "amadoo"
   }
 }
