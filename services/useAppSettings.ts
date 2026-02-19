@@ -110,6 +110,7 @@ export const useAppSettings = () => {
             setSettings(prev => prev ? { ...prev, language: lang } : null);
             
             if (shouldReload) {
+                await DB.closeConnection();
                 await Updates.reloadAsync();
             }
             

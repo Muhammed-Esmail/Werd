@@ -13,7 +13,7 @@
     "slug": "Werd",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/werd-logo.png",
+    "icon": "./assets/images/Werdd.png",
     "userInterfaceStyle": "light",
     "scheme": "werd",
     "newArchEnabled": true,
@@ -23,7 +23,7 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#000000",
-        "foregroundImage": "./assets/images/werd-logo.png"
+        "foregroundImage": "./assets/images/Werdd.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -31,14 +31,14 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/werd-logo.png"
+      "favicon": "./assets/images/Werdd.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/werd-logo.png",
+          "image": "./assets/images/Werdd.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#000000",
