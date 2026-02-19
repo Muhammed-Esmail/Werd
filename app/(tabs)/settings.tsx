@@ -25,17 +25,15 @@ const Settings = () => {
     const router = useRouter();
 
     const [fontModalVisible, setFontModalVisible] = useState(false)
-    const [readingModalVisible, setReadingModalVisible] = useState(false)
     const [aboutModalVisible, setAboutModalVisible] = useState(false)
-    const [readingMode, setReadingMode] = useState(false)
     const [isDarkMode, setIsDarkMode] = useState(false);
 
+    // Removed id: 5 (Reading Mode) from this array
     const OPTIONS = [
         {id: 1, text: 'goal', path: "goalSetup", icon: "book-outline"},
         {id: 2, text: "notifications", path: "/notificationSettings", icon: "notifications-outline"},
         {id: 3, text: "fonts", path: null, icon: "text-outline"},
         {id: 4, text: "darkMode", path: null, icon: "contrast-outline"},
-        {id: 5, text: "readingMode", path: null, icon: "reader-outline"},
         {id: 6, text: "language", path: null, icon: "language-outline"},
         {id: 7, text: "aboutUs", path: null, icon: "information-circle-outline"}
     ]
@@ -66,7 +64,6 @@ const Settings = () => {
             const settings = await DB.getSettings() as UserSettings;
             if (settings) {
                 setIsDarkMode(settings.theme === 0);
-                setReadingMode(settings.reading_mode === 1);
             }
         };
         loadSettings();
@@ -88,7 +85,6 @@ const Settings = () => {
             activeOpacity={0.7}
             onPress={() => {
                 if (item.id === 3) setFontModalVisible(true)
-                else if (item.id === 5) setReadingModalVisible(true)
                 else if (item.id === 7) setAboutModalVisible(true)
                 else if (item.path) router.push(item.path)
             }}
@@ -113,45 +109,43 @@ const Settings = () => {
                     />
                 ) : item.id === 6 ? (
                     <View className="w-32">
-                <SelectList 
-                    setSelected={(val: string) => {
-                        const lang = LANGUAGE_CHOICES.find(l => l.value === val);
-                        if (lang) changeLang(lang.key);
-                    }} 
-                    data={LANGUAGE_CHOICES} 
-                    save="value"
-                    search={false}
-                    placeholder={i18n.language === 'ar' ? t('arabic') : t('english')}
-                    boxStyles={{ 
-                        borderRadius: 10, 
-                        borderWidth: 0, 
-                        paddingVertical: 5, 
-                        backgroundColor: colorScheme === 'dark' ? 'rgba(212, 175, 55, 0.15)' : 'rgba(212, 175, 55, 0.05)' 
-                    }}
-                    inputStyles={{ 
-                        color: '#D4AF37', 
-                        fontSize: 12, 
-                        fontWeight: 'bold',
-                        textAlign: i18n.language === 'ar' ? 'right' : 'left'
-                    }}
-                    dropdownStyles={{ 
-                        backgroundColor: colorScheme === 'dark' ? '#1A1A1A' : '#FFFFFF',
-                        borderColor: colorScheme === 'dark' ? '#333333' : '#E5E5E5',
-                        marginTop: 5
-                    }}
-
-                    dropdownTextStyles={{
-                        color: colorScheme === 'dark' ? '#FFFFFF' : '#000000',
-                        fontSize: 14,
-                        textAlign: i18n.language === 'ar' ? 'right' : 'left'
-                    }}
-                    // This handles the hover/selected state color in the list
-                    dropdownItemStyles={{
-                        paddingVertical: 10,
-                        borderBottomWidth: 0.5,
-                        borderBottomColor: colorScheme === 'dark' ? '#333' : '#F0F0F0'
-                    }}
-                />
+                        <SelectList 
+                            setSelected={(val: string) => {
+                                const lang = LANGUAGE_CHOICES.find(l => l.value === val);
+                                if (lang) changeLang(lang.key);
+                            }} 
+                            data={LANGUAGE_CHOICES} 
+                            save="value"
+                            search={false}
+                            placeholder={i18n.language === 'ar' ? t('arabic') : t('english')}
+                            boxStyles={{ 
+                                borderRadius: 10, 
+                                borderWidth: 0, 
+                                paddingVertical: 5, 
+                                backgroundColor: colorScheme === 'dark' ? 'rgba(212, 175, 55, 0.15)' : 'rgba(212, 175, 55, 0.05)' 
+                            }}
+                            inputStyles={{ 
+                                color: '#D4AF37', 
+                                fontSize: 12, 
+                                fontWeight: 'bold',
+                                textAlign: i18n.language === 'ar' ? 'right' : 'left'
+                            }}
+                            dropdownStyles={{ 
+                                backgroundColor: colorScheme === 'dark' ? '#1A1A1A' : '#FFFFFF',
+                                borderColor: colorScheme === 'dark' ? '#333333' : '#E5E5E5',
+                                marginTop: 5
+                            }}
+                            dropdownTextStyles={{
+                                color: colorScheme === 'dark' ? '#FFFFFF' : '#000000',
+                                fontSize: 14,
+                                textAlign: i18n.language === 'ar' ? 'right' : 'left'
+                            }}
+                            dropdownItemStyles={{
+                                paddingVertical: 10,
+                                borderBottomWidth: 0.5,
+                                borderBottomColor: colorScheme === 'dark' ? '#333' : '#F0F0F0'
+                            }}
+                        />
                     </View>
                 ) : (
                     <MaterialIcons 
@@ -221,32 +215,6 @@ const Settings = () => {
                     </Pressable>
                 </Modal>
                 
-                {/* Reading Mode Modal */}
-                <Modal visible={readingModalVisible} transparent animationType="slide">
-                    <Pressable className="flex-1 bg-black/60 justify-end" onPress={() => setReadingModalVisible(false)}>
-                        <View className="bg-white dark:bg-surfaceBlack rounded-t-[40px] p-8">
-                            <Text className="text-xl font-bold dark:text-white text-center mb-6">{t('readingMode')}</Text>
-                            <View className="flex-row justify-around">
-                                <TouchableOpacity onPress={() => setReadingMode(false)} className={`p-4 rounded-2xl border-2 ${!readingMode ? 'border-primaryGold' : 'border-transparent'}`}>
-                                    <Image source={require('../../assets/images/scroll-preview.jpg')} style={{ width: 100, height: 160, borderRadius: 8 }} resizeMode="cover" />
-                                    <Text className="dark:text-white mt-2 text-center">{t('scroll')}</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity onPress={() => setReadingMode(true)} className={`p-4 rounded-2xl border-2 ${readingMode ? 'border-primaryGold' : 'border-transparent'}`}>
-                                    <Image source={require('../../assets/images/pages-preview.jpg')} style={{ width: 100, height: 160, borderRadius: 8 }} resizeMode="cover" />
-                                    <Text className="dark:text-white mt-2 text-center">{t('pages')}</Text>
-                                </TouchableOpacity>
-                            </View>
-                            <TouchableOpacity 
-                                className="bg-primaryGold p-4 rounded-xl mt-8"
-                                onPress={async () => {
-                                    await DB.updateSettings({reading_mode: readingMode ? 1 : 0});
-                                    setReadingModalVisible(false);
-                                }}>
-                                <Text className="text-center font-bold">{t('confirm')}</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </Pressable>
-                </Modal>
             </View>
         </SafeAreaView>
     )
