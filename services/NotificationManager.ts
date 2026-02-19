@@ -3,6 +3,7 @@ import {Platform} from 'react-native';
 import * as DatabaseManager from '@/utils/DatabaseManager';
 
 
+
 Notifications.setNotificationHandler({
     handleNotification: async () => {
         return ({

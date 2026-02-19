@@ -179,7 +179,7 @@ export async function initDB(clear: number = 0) {
         }
 
         try {
-            await db.runAsync('ALTER TABLE user_settings ADD COLUMN setup_completed INTEGER DEFAULT 0');
+            await db.runAsync('ALTER TABLE user_settings ADD COLUMN setup_completed INTEGER NOT NULL DEFAULT 0');
             console.log("Added setup_completed column");
         } catch (e) {
             console.log("setup_completed column already exists, skipping...");

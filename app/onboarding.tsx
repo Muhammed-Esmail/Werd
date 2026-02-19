@@ -37,10 +37,9 @@ const Onboarding = () => {
         const isRTL = lang === 'ar';
         I18nManager.allowRTL(isRTL);
         I18nManager.forceRTL(isRTL);
-        await DB.updateSettings({language: lang})
-        await (async () => {
-            return await Updates.reloadAsync();
-        })();
+        await DB.updateSettings({ language: lang });
+        await DB.closeConnection();
+        RNRestart.restart();
     };
 
     const handleSkip = async () => {

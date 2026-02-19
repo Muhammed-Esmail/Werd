@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import * as Updates from 'expo-updates';
 import i18n from '../../i18n';
 import { SelectList } from 'react-native-dropdown-select-list'
-import { devs } from '@/types/devs';
+import RNRestart from 'react-native-restart';
 
 interface UserSettings {
     font?: string;
@@ -69,16 +69,25 @@ const Settings = () => {
         loadSettings();
     }, []);
 
+    // const changeLang = async (lang: string) => {
+    //     await i18n.changeLanguage(lang);
+    //     const isRTL = lang === 'ar';
+    //     I18nManager.allowRTL(isRTL);
+    //     I18nManager.forceRTL(isRTL);
+    //     await DB.updateSettings({language: lang})
+    //     await (async () => {
+    //         return await Updates.reloadAsync();
+    //     })();
+    // }
     const changeLang = async (lang: string) => {
         await i18n.changeLanguage(lang);
         const isRTL = lang === 'ar';
         I18nManager.allowRTL(isRTL);
         I18nManager.forceRTL(isRTL);
-        await DB.updateSettings({language: lang})
-        await (async () => {
-            return await Updates.reloadAsync();
-        })();
-    }
+        await DB.updateSettings({ language: lang });
+        await DB.closeConnection();
+        RNRestart.restart();
+    };
 
     const renderOption = ({ item }: any) => (
         <TouchableOpacity 

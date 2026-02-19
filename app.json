@@ -5,26 +5,23 @@
       "**/*",
       "assets/database/*.db"
     ],
-    "packagerOpts": {
-      "assetExts": [
-        "db"
-      ]
-    },
     "slug": "Werd",
     "version": "1.0.0",
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/ce82cbff-3f5f-4479-915a-b07faf07f21f"
+      "url": "https://u.expo.dev/47f55b15-f240-44fd-a5f6-2035ad20d3ee"
     },
     "orientation": "portrait",
     "icon": "./assets/images/Werdd.png",
     "userInterfaceStyle": "light",
     "scheme": "werd",
     "newArchEnabled": true,
+    "jsEngine": "hermes",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "jsEngine": "hermes"
     },
     "android": {
       "adaptiveIcon": {
@@ -33,7 +30,8 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.Werd"
+      "package": "com.anonymous.Werd",
+      "jsEngine": "hermes"
     },
     "web": {
       "output": "static",
@@ -64,10 +62,13 @@
     },
     "extra": {
       "router": {},
+      "hermes": {
+        "intl": true
+      },
       "eas": {
-        "projectId": "ce82cbff-3f5f-4479-915a-b07faf07f21f"
+        "projectId": "47f55b15-f240-44fd-a5f6-2035ad20d3ee"
       }
     },
-    "owner": "amadoo"
+    "owner": "werd-team"
   }
 }

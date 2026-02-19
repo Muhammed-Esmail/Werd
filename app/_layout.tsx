@@ -37,7 +37,6 @@ export default function RootLayout() {
                 console.log("Initializing database...");
 
                 await DB.initDB(0);
-                // await DB.initDB(1);
                 // await DB.test(114, 114);
 
                 const settings = await DB.getSettings();
