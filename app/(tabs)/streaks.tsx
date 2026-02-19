@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, FlatList, Dimensions, ViewToken, ListRenderItem } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, FlatList, Dimensions, ViewToken, ListRenderItem, I18nManager } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useStreak, MonthData } from '@/services/StreakManager';
 import { useTranslation } from 'react-i18next';
@@ -28,7 +28,11 @@ const MonthItem = React.memo(({ item, colorScheme }: { item: MonthData, colorSch
         <Text className="text-zinc-500 dark:text-zinc-500 text-[10px] font-bold mb-4 tracking-widest uppercase">
             {item.label}
         </Text>
-        <View className="flex-row flex-wrap justify-between w-full">
+        {/* FIX 1: Enforce LTR direction so the calendar days always flow Left-to-Right */}
+        <View 
+            className="flex-row flex-wrap justify-between w-full"
+            style={{ direction: 'ltr' }}
+        >
             {item.days.map((day, index) => (
                 <DaySquare key={index} intensity={day.intensity} colorScheme={colorScheme} />
             ))}
@@ -112,7 +116,10 @@ const StreakPage = () => {
                             disabled={currentMonthIndex === 0}
                             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                         >
-                            <Text className={`text-2xl ${currentMonthIndex === 0 ? 'text-gray-300 dark:text-zinc-700' : 'text-yellow-500'}`}>‹</Text>
+                            {/* FIX 2: Flip visual arrows conditionally based on RTL */}
+                            <Text className={`text-2xl ${currentMonthIndex === 0 ? 'text-gray-300 dark:text-zinc-700' : 'text-yellow-500'}`}>
+                                {I18nManager.isRTL ? '›' : '‹'}
+                            </Text>
                         </TouchableOpacity>
                         <Text className="text-gray-900 dark:text-zinc-100 font-bold text-lg">{t('activityHistory')}</Text>
                         <TouchableOpacity 
@@ -120,7 +127,9 @@ const StreakPage = () => {
                             disabled={currentMonthIndex === heatmapData.length - 1}
                             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                         >
-                            <Text className={`text-2xl ${currentMonthIndex === heatmapData.length - 1 ? 'text-gray-300 dark:text-zinc-700' : 'text-yellow-500'}`}>›</Text>
+                            <Text className={`text-2xl ${currentMonthIndex === heatmapData.length - 1 ? 'text-gray-300 dark:text-zinc-700' : 'text-yellow-500'}`}>
+                                {I18nManager.isRTL ? '‹' : '›'}
+                            </Text>
                         </TouchableOpacity>
                     </View>
                     
@@ -130,10 +139,12 @@ const StreakPage = () => {
                         keyExtractor={(item) => item.id}
                         horizontal
                         pagingEnabled
-                        removeClippedSubviews={true}
-                        initialNumToRender={1}
-                        maxToRenderPerBatch={2}
-                        windowSize={3}
+                        // FIX 3: Disable removeClippedSubviews (causes unmounting in RTL Release builds)
+                        removeClippedSubviews={false} 
+                        // FIX 4: Render all 6 months immediately to prevent layout shift
+                        initialNumToRender={6}
+                        maxToRenderPerBatch={6}
+                        windowSize={5}
                         showsHorizontalScrollIndicator={false}
                         style={{ width: LIST_WIDTH, flexGrow: 0, direction: 'ltr' }}
                         snapToInterval={LIST_WIDTH}

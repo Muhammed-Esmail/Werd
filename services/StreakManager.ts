@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback} from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
-import * as DB from '../utils/DatabaseManager'
+import * as DB from '../utils/DatabaseManager';
 
-export interface DayData{
+export interface DayData {
     intensity: number;
 }
-export interface MonthData{
+export interface MonthData {
     id: string;
     label: string;
     days: DayData[];
@@ -14,6 +14,16 @@ export interface MonthData{
 }
 
 const MONTH_NAMES = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
+// Helper to ensure we ALWAYS get Gregorian date parts regardless of System Locale
+const getGregorian = (date: Date) => {
+    const s = date.toLocaleDateString('en-US', { calendar: 'gregory' }).split('/');
+    return {
+        month: parseInt(s[0]) - 1,
+        day: parseInt(s[1]),
+        year: parseInt(s[2])
+    };
+};
 
 export const useStreak = () => {
     const [streak, setStreak] = useState<number>(0);
@@ -25,19 +35,21 @@ export const useStreak = () => {
     const oneDayInMs = 24 * 60 * 60 * 1000;
 
     const fetchHeatmapData = useCallback(async () => {
-        const today = new Date();
+        const now = new Date();
+        const { year: currentYear, month: currentMonth } = getGregorian(now);
 
-        const monthPromises = Array.from({ length : 6}, (_, i) => {
-            const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-            const year = d.getFullYear();
-            const monthIndex = d.getMonth();
+        const monthPromises = Array.from({ length: 6 }, (_, i) => {
+            // Calculate previous months safely in Gregorian
+            const d = new Date(currentYear, currentMonth - i, 1);
+            const { year, month: monthIndex } = getGregorian(d);
+            
             return DB.getDates(year, monthIndex).then(dbDates => ({
                 dbDates: dbDates as DB.DateData[],
                 year,
                 monthIndex
             }));
         });
-        
+
         const results = await Promise.all(monthPromises);
 
         const monthsToLoad: MonthData[] = results.map(({ dbDates, year, monthIndex }) => {
@@ -56,20 +68,19 @@ export const useStreak = () => {
                 monthIndex
             };
         });
-        
 
         setHeatmapData([...monthsToLoad].reverse());
     }, []);
 
     const getTimeStamp = (dateInput?: string | Date) => {
         const date = dateInput ? new Date(dateInput) : new Date();
-        return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+        const { year, month, day } = getGregorian(date);
+        return new Date(year, month, day).getTime();
     };
-
 
     const ResetStreak = useCallback(async (UpdateHeatmap = false) => {
         const savedData = await DB.getStreak();
-        if(UpdateHeatmap)await fetchHeatmapData();
+        if (UpdateHeatmap) await fetchHeatmapData();
 
         if (!savedData) {
             setLoading(false);
@@ -85,33 +96,33 @@ export const useStreak = () => {
         } else {
             setStreak(savedData.count);
         }
-        
+
         setlongest(savedData.longest || 0);
         setLastCompleted(savedData.date);
         setLoading(false);
-    }, [fetchHeatmapData]);
+    }, [fetchHeatmapData, oneDayInMs]);
 
     useEffect(() => {
-            const init = async() => {
-                await ResetStreak(true);
-            };
-            init();
-            
-            const interval = setInterval(() => {
-                ResetStreak(false);
-            }, 5000);
+        const init = async () => {
+            await ResetStreak(true);
+        };
+        init();
 
-            const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
-                if (nextAppState === 'active') {
-                    ResetStreak(true);
-                }
-            });
-            
-            return () => {
-                clearInterval(interval);
-                subscription.remove();
-            };
-        }, [ResetStreak]);
+        const interval = setInterval(() => {
+            ResetStreak(false);
+        }, 5000);
+
+        const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+            if (nextAppState === 'active') {
+                ResetStreak(true);
+            }
+        });
+
+        return () => {
+            clearInterval(interval);
+            subscription.remove();
+        };
+    }, [ResetStreak]);
 
     const incrementStreak = useCallback(async () => {
         const savedData = await DB.getStreak();
@@ -120,20 +131,20 @@ export const useStreak = () => {
         const currentLastCompleted = savedData?.date || null;
 
         const now = new Date();
+        const { year, month, day } = getGregorian(now);
         const today = getTimeStamp(now);
         const lastDate = currentLastCompleted ? getTimeStamp(currentLastCompleted) : null;
-        
+
         const diffInMs = lastDate !== null ? today - lastDate : null;
 
         if (diffInMs === 0) {
-            console.log("Already completed today");
             return;
         }
 
-        await DB.insertDate(now.getDate(), now.getMonth(), now.getFullYear(), 1);
+        // Use Gregorian units for DB insert
+        await DB.insertDate(day, month, year, 1);
 
         let newStreak: number;
-
         if (diffInMs === oneDayInMs || currentLastCompleted === null) {
             newStreak = currentStreak + 1;
         } else {
@@ -142,20 +153,18 @@ export const useStreak = () => {
 
         const newLongest = newStreak > currentLongest ? newStreak : currentLongest;
 
-        const updatedData : DB.StreakData = { 
-            count: newStreak, 
-            date: now.toISOString(), 
+        const updatedData: DB.StreakData = {
+            count: newStreak,
+            date: now.toISOString(),
             longest: newLongest
         };
-        
-        await DB.updateStreak(updatedData);
 
+        await DB.updateStreak(updatedData);
         setStreak(newStreak);
         setlongest(newLongest);
         setLastCompleted(updatedData.date);
-        
-        await fetchHeatmapData();
 
+        await fetchHeatmapData();
     }, [oneDayInMs, fetchHeatmapData]);
 
     return { streak, incrementStreak, longest, loading, heatmapData };
