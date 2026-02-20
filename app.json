@@ -11,7 +11,7 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/5721874a-cf29-421b-90ff-0e45ebd979b4"
+      "url": "https://u.expo.dev/47f55b15-f240-44fd-a5f6-2035ad20d3ee"
     },
     "orientation": "portrait",
     "icon": "./assets/images/Werdd.png",
@@ -66,9 +66,9 @@
         "intl": true
       },
       "eas": {
-        "projectId": "5721874a-cf29-421b-90ff-0e45ebd979b4"
+        "projectId": "47f55b15-f240-44fd-a5f6-2035ad20d3ee"
       }
     },
-    "owner": "youssefessam3"
+    "owner": "werd-team"
   }
 }
