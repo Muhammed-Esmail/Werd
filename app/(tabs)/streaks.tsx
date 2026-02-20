@@ -6,14 +6,18 @@ import { useTranslation } from 'react-i18next';
 import { useColorScheme } from "nativewind";
 
 const { width } = Dimensions.get('window');
-const MAX_GRID_WIDTH = 360; 
+const MAX_GRID_WIDTH = 360;
 const LIST_WIDTH = Math.min(width - 88, MAX_GRID_WIDTH);
+
+// If RTL, we flip the FlatList container with scaleX(-1) to force LTR scroll order,
+// then flip each item back with scaleX(-1) so content appears correctly.
+const IS_RTL = I18nManager.isRTL;
 
 const DaySquare = React.memo(({ intensity, colorScheme }: { intensity: number, colorScheme: string | undefined }) => (
     <View className="w-[13.5%] aspect-square mb-1.5">
-        <View 
+        <View
             className="flex-1 rounded-md border border-gray-200/20 dark:border-white/5"
-            style={{ 
+            style={{
                 backgroundColor: intensity > 0 ? '#eab308' : (colorScheme === 'dark' ? '#18181b' : '#e5e7eb'),
                 shadowColor: intensity > 0 ? '#eab308' : 'transparent',
                 shadowOpacity: intensity > 0 ? 0.2 : 0,
@@ -24,12 +28,13 @@ const DaySquare = React.memo(({ intensity, colorScheme }: { intensity: number, c
 ), (prev, next) => prev.intensity === next.intensity && prev.colorScheme === next.colorScheme);
 
 const MonthItem = React.memo(({ item, colorScheme }: { item: MonthData, colorScheme: string | undefined }) => (
-    <View style={{ width: LIST_WIDTH }} className="items-center">
+    // scaleX(-1) flips this item back to normal when the parent FlatList is flipped
+    <View style={{ width: LIST_WIDTH, transform: [{ scaleX: IS_RTL ? -1 : 1 }] }} className="items-center">
         <Text className="text-zinc-500 dark:text-zinc-500 text-[10px] font-bold mb-4 tracking-widest uppercase">
             {item.label}
         </Text>
-        {/* FIX 1: Enforce LTR direction so the calendar days always flow Left-to-Right */}
-        <View 
+        {/* Force LTR layout for day grid so days always flow left-to-right */}
+        <View
             className="flex-row flex-wrap justify-between w-full"
             style={{ direction: 'ltr' }}
         >
@@ -44,7 +49,7 @@ const MonthItem = React.memo(({ item, colorScheme }: { item: MonthData, colorSch
 const StreakPage = () => {
     const { colorScheme } = useColorScheme();
     const { t } = useTranslation();
-    const { streak, longest, loading, heatmapData } = useStreak(); 
+    const { streak, longest, loading, heatmapData } = useStreak();
     const [currentMonthIndex, setCurrentMonthIndex] = useState(0);
     const flatListRef = useRef<FlatList>(null);
 
@@ -84,7 +89,7 @@ const StreakPage = () => {
     return (
         <SafeAreaView className="flex-1 bg-gray-50 dark:bg-[#0a0a0a]">
             <ScrollView className="flex-1 px-5">
-                
+
                 {/* Header */}
                 <View className='w-[100%] justify-center items-center mb-10'>
                     <Text className='text-primaryGold mt-10 text-xl font-bold'> {t('streaks')} </Text>
@@ -111,49 +116,48 @@ const StreakPage = () => {
                 {/* Heatmap Section */}
                 <View className="bg-white dark:bg-zinc-900/50 pt-6 pb-6 rounded-[32px] border border-gray-200 dark:border-zinc-800/50 mb-8 items-center w-full">
                     <View style={{ width: LIST_WIDTH + 10 }} className="flex-row justify-between items-center mb-2">
-                        <TouchableOpacity 
+                        {/* Left arrow always goes to previous month (lower index) */}
+                        <TouchableOpacity
                             onPress={() => scrollToIndex(currentMonthIndex - 1)}
                             disabled={currentMonthIndex === 0}
                             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                         >
-                            {/* FIX 2: Flip visual arrows conditionally based on RTL */}
-                            <Text className={`text-2xl ${currentMonthIndex === 0 ? 'text-gray-300 dark:text-zinc-700' : 'text-yellow-500'}`}>
-                                {I18nManager.isRTL ? '›' : '‹'}
-                            </Text>
+                            <Text className={`text-2xl ${currentMonthIndex === 0 ? 'text-gray-300 dark:text-zinc-700' : 'text-yellow-500'}`}>‹</Text>
                         </TouchableOpacity>
                         <Text className="text-gray-900 dark:text-zinc-100 font-bold text-lg">{t('activityHistory')}</Text>
-                        <TouchableOpacity 
+                        {/* Right arrow always goes to next month (higher index) */}
+                        <TouchableOpacity
                             onPress={() => scrollToIndex(currentMonthIndex + 1)}
                             disabled={currentMonthIndex === heatmapData.length - 1}
                             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                         >
-                            <Text className={`text-2xl ${currentMonthIndex === heatmapData.length - 1 ? 'text-gray-300 dark:text-zinc-700' : 'text-yellow-500'}`}>
-                                {I18nManager.isRTL ? '‹' : '›'}
-                            </Text>
+                            <Text className={`text-2xl ${currentMonthIndex === heatmapData.length - 1 ? 'text-gray-300 dark:text-zinc-700' : 'text-yellow-500'}`}>›</Text>
                         </TouchableOpacity>
                     </View>
-                    
-                    <FlatList
-                        ref={flatListRef}
-                        data={heatmapData}
-                        keyExtractor={(item) => item.id}
-                        horizontal
-                        pagingEnabled
-                        // FIX 3: Disable removeClippedSubviews (causes unmounting in RTL Release builds)
-                        removeClippedSubviews={false} 
-                        // FIX 4: Render all 6 months immediately to prevent layout shift
-                        initialNumToRender={6}
-                        maxToRenderPerBatch={6}
-                        windowSize={5}
-                        showsHorizontalScrollIndicator={false}
-                        style={{ width: LIST_WIDTH, flexGrow: 0, direction: 'ltr' }}
-                        snapToInterval={LIST_WIDTH}
-                        decelerationRate="fast"
-                        getItemLayout={(_, index) => ({ length: LIST_WIDTH, offset: LIST_WIDTH * index, index })}
-                        onViewableItemsChanged={onViewableItemsChanged}
-                        viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
-                        renderItem={renderMonth}
-                    />
+
+                    {/* scaleX(-1) on the FlatList container forces LTR scroll order in RTL mode.
+                        Each MonthItem also has scaleX(-1) to cancel out the flip on content. */}
+                    <View style={{ transform: [{ scaleX: IS_RTL ? -1 : 1 }] }}>
+                        <FlatList
+                            ref={flatListRef}
+                            data={heatmapData}
+                            keyExtractor={(item) => item.id}
+                            horizontal
+                            pagingEnabled
+                            removeClippedSubviews={false}
+                            initialNumToRender={6}
+                            maxToRenderPerBatch={6}
+                            windowSize={5}
+                            showsHorizontalScrollIndicator={false}
+                            style={{ width: LIST_WIDTH, flexGrow: 0 }}
+                            snapToInterval={LIST_WIDTH}
+                            decelerationRate="fast"
+                            getItemLayout={(_, index) => ({ length: LIST_WIDTH, offset: LIST_WIDTH * index, index })}
+                            onViewableItemsChanged={onViewableItemsChanged}
+                            viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
+                            renderItem={renderMonth}
+                        />
+                    </View>
                 </View>
 
                 {/* Quote Section */}

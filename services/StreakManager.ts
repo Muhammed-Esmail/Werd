@@ -33,7 +33,7 @@ export const useStreak = () => {
     const [lastCompleted, setLastCompleted] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [heatmapData, setHeatmapData] = useState<MonthData[]>([]);
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
 
     const oneDayInMs = 24 * 60 * 60 * 1000;
 
@@ -85,7 +85,7 @@ export const useStreak = () => {
         });
 
         setHeatmapData([...monthsToLoad].reverse());
-    }, []);
+    }, [t, i18n.language]);
 
     const getTimeStamp = (dateInput?: string | Date) => {
         const date = dateInput ? new Date(dateInput) : new Date();

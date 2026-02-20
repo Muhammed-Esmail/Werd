@@ -150,11 +150,10 @@ const TodayCard = ({ progress, onExportPDF, onComplete }: { progress: DailyProgr
 const WerdPage = () => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
-  const [streak, setStreak] = useState<DB.StreakData | null>(null);
+  const { incrementStreak, streak: currentStreakCount } = useStreak();
   const [progress, setProgress] = useState<DailyProgress | null>(null);
   const [donePagesCount, setDonePagesCount] = useState(0);
   const [pdfStatus, setPdfStatus] = useState<PdfStatus>('idle');
-  const { incrementStreak } = useStreak();
   const skipNextLoadRef = useRef(false);
 
   const loadData = async () => {
@@ -164,8 +163,6 @@ const WerdPage = () => {
       return;
     }
     try {
-      const streakData = await DB.getStreak();
-      setStreak(streakData);
       const dayIndex = await DB.getLastStopped();
       if (dayIndex !== null) {
         const dailyData = await DB.getDailyProgress(dayIndex);
@@ -181,23 +178,29 @@ const WerdPage = () => {
     return () => clearTimeout(timer);
   }, []));
 
-  const handleCompleted = async () => {
+const handleCompleted = async () => {
     await incrementStreak();
+
     const today = await DB.getLastStopped();
-    await DB.updateDailyProgress({ is_completed: 1 }, today!);
+    if (today === null) return;
+
+    await DB.updateDailyProgress({ is_completed: 1 }, today);
     await DB.updateDailyProgress({ 
         pages_percentage: 0.0, 
         scroll_percentage: 0.0, 
         exit_surah_id: 0, 
         exit_verse_relative_id: 0 
-    }, today! + 1);
+    }, today + 1);
     
-    const tomorrow = await DB.getDailyProgress(today! + 1);
+    const newDoneCount = await DB.getDoneVersesCount();
+    setDonePagesCount(newDoneCount || 0);
+
+    const tomorrow = await DB.getDailyProgress(today + 1);
     if (tomorrow) {
-        skipNextLoadRef.current = true;
+        skipNextLoadRef.current = true; 
         setProgress(tomorrow);
     }
-  };
+};
 
   const onExportPDF = async () => {
     setPdfStatus('loading');
@@ -217,7 +220,7 @@ const WerdPage = () => {
           <Text className='text-primaryGold mt-10 text-xl font-bold'>{t('dailyWerd')}</Text>
         </View>
         <View className='w-[100%] mt-10 flex-row justify-center items-center'>
-          <Card sideIcon="local-fire-department" sideText={t('streak')} mainText={`${streak?.count || 0} ${t('days')}`} underText={t('personalBest')} />
+          <Card sideIcon="local-fire-department" sideText={t('streak')} mainText={`${currentStreakCount || 0} ${t('days')}`} underText={t('personalBest')} />
           <Card sideText={t('totalPages')} mainText={donePagesCount} underText={t('thisMonth')} />
         </View>
         <View className='mt-10 ml-4 mr-4'>
